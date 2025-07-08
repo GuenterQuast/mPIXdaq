@@ -1,0 +1,4 @@
+################# LOG OPENED (08/07/2025 16:47:13.397) ###################### 
+(08_16:47:13.397) [MSG]: Listing FTDI devices (libftdi)...
+(08_16:47:13.403) [MSG]: Device #0 "EduMiniPIX TSWB sn: 2987"
+(08_16:47:13.403) [MSG]:     is Mpx2 device
