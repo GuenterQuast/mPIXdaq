@@ -333,7 +333,7 @@ if read_filename is None:
     if daq.dev == None:
         _a = input("No devices found - read data from file (y/n) > ")
         if _a in {'y', 'Y', 'j', 'J'}:
-            read_filename = "BlackForestStone.npy.gz"
+            read_filename = "data/BlackForestStone.npy.gz"
         else:
             exit("Exit - no devices found")
     else:
