@@ -25,7 +25,7 @@ key learning objectives.
 
 """
 
-## from advacam import pypixet  # the python API for miniPIX
+##from advacam import pypixet  # the python API for miniPIX
 import pypixet  # the python API for miniPIX from local directory
 
 import argparse
