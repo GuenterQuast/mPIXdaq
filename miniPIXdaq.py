@@ -25,7 +25,8 @@ key learning objectives.
 
 """
 
-import pypixet  # the python API for miniPIX
+## from advacam import pypixet  # the python API for miniPIX
+import pypixet  # the python API for miniPIX from local directory
 
 import argparse
 import sys
@@ -66,7 +67,9 @@ class mPIXdaq:
     def __init__(self, ac_count=10, ac_time=0.1, dataQ=None, cmdQ=None):
         """initialize miniPIX device and set up data acquisition"""
         # start miniPIX software
-        pypixet.start()
+        rc=pypixet.start()
+        if rc != 0:
+            print("rc from pypixet.start():", rc)
         self.pixet = pypixet.pixet
         devs = self.pixet.devicesByType(self.pixet.PX_DEVTYPE_MPX2)  # miniPIX EDU uses the mediPIX 2 chip
         if len(devs) == 0:
