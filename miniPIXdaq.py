@@ -1,6 +1,6 @@
-#!/usr/bin/env -S LD_LIBRARY_PATH=./libs python3
+#!/usr/bin/env python3
 
-# -S LD_LIBRARY_PATH=".:libs"
+# try   -S LD_LIBRARY_PATH=".:libs"
 #    !!! the -S option includes the script directory in the search path for libraries
 
 """miniPIXdaq: Minimalist Python Script to illustrate data acquisition and data analysis
