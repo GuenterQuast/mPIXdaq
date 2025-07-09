@@ -68,9 +68,12 @@ class mPIXdaq:
     def __init__(self, ac_count=10, ac_time=0.1, dataQ=None, cmdQ=None):
         """initialize miniPIX device and set up data acquisition"""
         # start miniPIX software
+        print(f"starting pypixet in directory {os.getcwd()}")
         rc=pypixet.start()
         if rc != 0:
             print("rc from pypixet.start():", rc)
+        if not pypixet.isrunning():
+            print("!!! pipixet did not start!")
         self.pixet = pypixet.pixet
         devs = self.pixet.devicesByType(self.pixet.PX_DEVTYPE_MPX2)  # miniPIX EDU uses the mediPIX 2 chip
         if len(devs) == 0:
@@ -298,6 +301,7 @@ class bhist:
 # wd_path = os.getcwd() + '/'
 # use path to python file
 wd_path = os.path.dirname(os.path.realpath(__file__)) + '/'
+os.chdir(wd_path)
 
 # parse command line arguments
 # ------
@@ -324,7 +328,7 @@ run_time = args.time
 
 integration_time = acq_count * acq_time * n_overlay
 
-print(f'\n*==* script {sys.argv[0]} executing')
+print(f"\n*==* script {sys.argv[0]} executing in working directory {wd_path}")
 print("       type <cntrl C> to end\n")
 
 if filename is not None:
