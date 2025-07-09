@@ -25,11 +25,12 @@ key learning objectives.
 
 """
 
-##from advacam import pypixet  # the python API for miniPIX
-import pypixet  # the python API for miniPIX from local directory
+from advacam import pypixet  # the python API for miniPIX
+#import pypixet  # the python API for miniPIX from local directory
 
 import argparse
 import sys
+import os
 import pathlib
 import gzip
 import time
@@ -293,6 +294,11 @@ class bhist:
 # main - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 #
 
+# get path to working directory
+# wd_path = os.getcwd() + '/'
+# use path to python file
+wd_path = os.path.dirname(os.path.realpath(__file__)) + '/'
+
 # parse command line arguments
 # ------
 parser = argparse.ArgumentParser(description="read, analyze and display data from miniPIX EDU device")
@@ -353,7 +359,7 @@ if read_filename is not None:
     print("data from file " + read_filename)
     suffix = pathlib.Path(read_filename).suffix
     if suffix == ".gz":
-        f = gzip.GzipFile(read_filename)
+        f = gzip.GzipFile(wd_path+read_filename)
         data = np.load(f)
     elif suffix == ".npy":
         data = np.load(read_filename, mmap_mode="r")
