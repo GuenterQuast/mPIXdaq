@@ -293,6 +293,11 @@ class bhist:
             self.ax.set_ylim(0.9, self.maxh)
 
 
+def on_mpl_close(event):
+    global mpl_active
+    mpl_active = False
+
+
 #
 # main - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 #
@@ -347,7 +352,9 @@ if read_filename is None:
         _a = input("No devices found - read data from file (y/n) > ")
         if _a in {'y', 'Y', 'j', 'J'}:
             read_filename = "data/BlackForestStone.npy.gz"
+            pypixet.exit()
         else:
+            pypixet.exit()
             exit("Exit - no devices found")
     else:
         if verbosity > 0:
@@ -396,6 +403,8 @@ frameAna = frameAnalyzer()
 # - prepare a figure with subplots
 fig = plt.figure('PIX data', figsize=(11.5, 8.5))
 fig.suptitle("miniPiX EDU Data Acquisition", size="xx-large", color="darkblue")
+fig.canvas.mpl_connect('close_event', on_mpl_close)
+mpl_active = True
 fig.subplots_adjust(left=0.05, bottom=0.03, right=0.97, top=0.99, wspace=0.0, hspace=0.1)
 plt.tight_layout()
 gs = fig.add_gridspec(nrows=16, ncols=16)
@@ -464,7 +473,7 @@ if read_filename is None:
     Thread(target=daq, daemon=True).start()
 t_start = time.time()
 try:
-    while dt_active < run_time:
+    while dt_active < run_time and mpl_active:
         if read_filename is None:
             frame2d = np.array(dataQ.get()).reshape((npx, npx))
             dt_alive += acq_count * acq_time
@@ -559,5 +568,9 @@ except KeyboardInterrupt:
 
 finally:
     # end daq loop
-    _a = input("\n       type <ret> to end --> ")
-    pypixet.exit()
+    if mpl_active:
+        _a = input("\n       type <ret> to end --> ")
+    else:
+        print("Window closed, ending ")
+    if read_filename is not None:
+        pypixet.exit()
