@@ -20,8 +20,15 @@ key learning objectives.
 
 """
 
-from . import pypixet  # the python API for miniPIX
-# import pypixet  # the python API for miniPIX from local directory
+# the python API for miniPIX for the corrext platform
+import platform
+arch = platform.machine()
+if arch == 'x86_64':
+    from .advacam_x86_64 import pypixet  
+elif arch == 'armhf':
+    from .advacam_armhf import pypixet
+else:
+    exit(" pypixrt not available for architechture ", arch)
 
 import argparse
 import sys
@@ -290,8 +297,10 @@ def on_mpl_close(event):
 
 
 def run():
-    """tun data acquition and analysis"""
+    """run data acquition and analysis"""
 
+    global mpl_active 
+    
     # get path to working directory
     # wd_path = os.getcwd() + '/'
     # use path to python file
