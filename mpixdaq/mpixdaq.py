@@ -1,8 +1,3 @@
-#!/usr/bin/env python3
-
-# try   -S LD_LIBRARY_PATH=".:libs"
-#    !!! the -S option includes the script directory in the search path for libraries
-
 """miniPIXdaq: Minimalist Python Script to illustrate data acquisition and data analysis
    for the miniPIX EDU device
 
@@ -25,7 +20,7 @@ key learning objectives.
 
 """
 
-from advacam import pypixet  # the python API for miniPIX
+from . import pypixet  # the python API for miniPIX
 # import pypixet  # the python API for miniPIX from local directory
 
 import argparse
@@ -95,7 +90,7 @@ class mPIXdaq:
         # OPMs = ["PX_TPXMODE_MEDIPIX", "PX_TPXMODE_TOT", "PX_TPXMODE_1HIT", "PX_TPXMODE_TIMEPIX"]
         # device initialization
         pixcfg = self.dev.pixCfg()  # Create the pixels configuration object
-        pixcfg.setModeAll(pixet.PX_TPXMODE_TOT)
+        pixcfg.setModeAll(self.pixet.PX_TPXMODE_TOT)
         self.dev.useCalibration(1)  # pixel values in keV
 
         # parameters controlling data acquisition
@@ -294,7 +289,7 @@ def on_mpl_close(event):
     mpl_active = False
 
 
-def run_mPIXdaq():
+def run():
     """tun data acquition and analysis"""
 
     # get path to working directory
@@ -579,4 +574,4 @@ def run_mPIXdaq():
 #
 if __name__ == "__main__":  # -  - - - - - - - - - -
     #
-    run_mPIXdaq()
+    run()
