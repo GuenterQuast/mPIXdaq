@@ -22,13 +22,17 @@ key learning objectives.
 
 # the python API for miniPIX for the corrext platform
 import platform
-arch = platform.machine()
-if arch == 'x86_64':
+mach = platform.machine()  # machine type
+arch = platform.architecture()  # architecture and  linker format
+if mach == 'x86_64':
     from .advacam_x86_64 import pypixet  
-elif arch == 'armhf':
+elif mach == 'aarch64' and arch[0] == "32bit":
     from .advacam_armhf import pypixet
+elif mach == 'aarch64' and arch[0] == "64bit":
+    from .advacam_arm64 import pypixet
+#elif: ### MAC to be done     
 else:
-    exit(" pypixrt not available for architechture ", arch)
+    exit(" !!! pypixet not available for architecture " + mach, + arch[0])
 
 import argparse
 import sys
