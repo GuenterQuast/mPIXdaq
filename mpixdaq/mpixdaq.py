@@ -359,7 +359,8 @@ def run(wd_path):
         if daq.dev == None:
             _a = input("No devices found - read data from file (y/n) > ")
             if _a in {'y', 'Y', 'j', 'J'}:
-                read_filename = "data/BlackForestStone.npy.gz"
+                path = os.path.dirname(os.path.realpath(__file__)) + '/'
+                read_filename = path + "data/BlackForestStone.npy.gz"
                 pypixet.exit()
             else:
                 pypixet.exit()
