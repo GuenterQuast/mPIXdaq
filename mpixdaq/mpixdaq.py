@@ -22,17 +22,18 @@ key learning objectives.
 
 # the python API for miniPIX for the corrext platform
 import platform
+
 mach = platform.machine()  # machine type
 arch = platform.architecture()  # architecture and  linker format
 if mach == 'x86_64':
-    from .advacam_x86_64 import pypixet  
+    from .advacam_x86_64 import pypixet
 elif mach == 'aarch64' and arch[0] == "32bit":
     from .advacam_armhf import pypixet
 elif mach == 'aarch64' and arch[0] == "64bit":
     from .advacam_arm64 import pypixet
-#elif: ### MAC to be done     
+# elif: ### MAC to be done
 else:
-    exit(" !!! pypixet not available for architecture " + mach, + arch[0])
+    exit(" !!! pypixet not available for architecture " + mach, +arch[0])
 
 import argparse
 import sys
@@ -247,11 +248,15 @@ class bhist:
         self.bcnt = (self.be[:-1] + self.be[1:]) / 2.0
         self.w = 0.8 * (self.be[1] - self.be[0])
         if ax is None:
-            self.bars = plt.bar(self.bcnt, self.bc, align="center", width=self.w, facecolor="b", edgecolor="grey", alpha=0.5)
+            self.bars = plt.bar(
+                self.bcnt, self.bc, align="center", width=self.w, facecolor="b", edgecolor="grey", alpha=0.5
+            )
             self.ax = plt.gca()
         else:
             self.ax = ax
-            self.bars = ax.bar(self.bcnt, self.bc, align="center", width=self.w, facecolor="b", edgecolor="grey", alpha=0.5)
+            self.bars = ax.bar(
+                self.bcnt, self.bc, align="center", width=self.w, facecolor="b", edgecolor="grey", alpha=0.5
+            )
 
         self.ax.set_xlabel(xlabel)
         self.ax.set_ylabel(ylabel)
@@ -303,8 +308,8 @@ def on_mpl_close(event):
 def run():
     """run data acquition and analysis"""
 
-    global mpl_active 
-    
+    global mpl_active
+
     # get path to working directory
     # wd_path = os.getcwd() + '/'
     # use path to python file
@@ -399,6 +404,7 @@ def run():
     unassigned_buf = np.zeros(n_overlay)
     o_n_clusters = 0
     o_energy = 0.0
+    o_np_unassigned = 0
     o_unassigned = 0.0
     _bidx = 0
 
@@ -458,7 +464,9 @@ def run():
     (gr_circ,) = ax3.plot(x3_circ, y3_circ, label="circular", marker='.', markersize=1, color="g", ls='', alpha=0.5)
     x3_unass = []
     y3_unass = []
-    (gr_unass,) = ax3.plot(x3_unass, y3_unass, label="unassigned", marker='.', markersize=1, color="r", ls='', alpha=0.8)
+    (gr_unass,) = ax3.plot(
+        x3_unass, y3_unass, label="unassigned", marker='.', markersize=1, color="r", ls='', alpha=0.8
+    )
     ax3.set_xlim(0, 10000)
     ax3.set_ylim(0, 50)
     ax3.legend(loc="upper right")
@@ -514,6 +522,7 @@ def run():
             image = image + frame2d
             o_n_clusters += n_clusters
             o_energy += Energy
+            o_np_unassigned += np_unassigned
             o_unassigned += E_unass
             # store in ring-buffers to subtract later
             framebuf[_bidx] = frame2d
@@ -525,6 +534,7 @@ def run():
             image = image - framebuf[_bidx]
             o_n_clusters -= n_clusters_buf[_bidx]
             o_energy -= energy_buf[_bidx]
+            o_np_unassigned -= np_unassigned
             o_unassigned -= unassigned_buf[_bidx]
 
             # update histogram 1 with pixel energies
@@ -558,7 +568,8 @@ def run():
             dead_time_fraction = 1.0 - dt_alive / dt_active
             status = (
                 f"#{n_frame}   active {dt_active:.0f}s   alive {dt_alive:.0f}s "
-                + f"  clusters = {o_n_clusters:.0f}  energy: {o_energy:.0f}keV  unassigned: {o_unassigned:.0f}keV"
+                + f"  clusters = {o_n_clusters:.0f}  energy: {o_energy:.0f}keV "
+                + f"unassigned: {o_np_unassigned}/{o_unassigned:.0f}keV"
                 + 10 * " "
             )
             im_text.set_text(status)
