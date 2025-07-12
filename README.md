@@ -15,8 +15,8 @@ the different types of radiation and measure their deposited energies.
 α-particles are completely absorbed and deposit all of their energy in 
 the sensitive area, allowing usage of the device as an energy spectrometer.  
 
-The vendor provides a ready-to-use program for different computer platforms 
-as well as a software-development kit for own applications. 
+The vendor provides a ready-to-use program for different computer
+platforms as well as a software-development kit for own applications. 
 
 The code provided here is a minimalist example to read out single
 frames, i.e. a set of 256x256 measurements accumulated over a given, 
@@ -41,17 +41,24 @@ or university students detailed insights.
    ``sudo install_driver_rules.sh`` (to be done only once),
    then connect the *miniPIX EDU* device to your computer  
 
-Now everything is set up to enjoy your miniPIX EDU. Just run the *Python* program:   
-  ``./run-mPIXdaq.py`` 
+The package may also be installed in your virtual python environment:
 
-*Note*: on some systems the current directory, ".", needs to be
-in the `LD_LIBRARY_PATH` so that the *Python* interface *pypixet* 
-finds all *C* libraries. This is achieved by the first line in the
-Python script ``run_mPIXdaq.py``. Starting the *Python* script
+  - `python -m pip install .`
+
+
+Now everything is set up to enjoy your miniPIX EDU. Just run the *Python* program from any working directory.  
+  ``run-mPIXdaq.py`` 
+
+If you record any data, the path to the  output file is relative to the current working directory. 
+
+*Note* that the *pypixet* initialization is set up to write log-files
+and co figuration data to the directory */tmp/mPIX/*.
+
+It is also worth noting that on some systems the current directory,
+".", needs to be in the `LD_LIBRARY_PATH` so that the *Python* interface *pypixet*  finds all *C* libraries. This is achieved by the first line in the Python script ``run_mPIXdaq.py``. Starting the *Python* script
 by a different mechanism may not work without adjusting the
 environment variable `LD_LIBRARY_PATH`. In the *bash* shell, this
-is achieved by `export LD_LIBRARY_PATH=.` on the command line or
-in the initialization script.
+is achieved by `export LD_LIBRARY_PATH='.'` on the command line.
  
 
 ## Running the example script
@@ -59,11 +66,12 @@ in the initialization script.
 Available options of the *Python* example to steer data taking 
 and data archival to disk are shown by typing 
 
-  ``./run_mPICdaq.py --help``; the output is shown below:
+  ``run_mPICdaq.py --help``; the output is shown below:
 
 ```
-usage: run_mPIXdaq.py [-h] [-v VERBOSITY] [-o OVERLAY] [-a ACQ_TIME] [-c ACQ_COUNT] [-f FILE]
-                      [-t TIME] [--circularity_cut CIRCULARITY_CUT] [-r READFILE]
+usage: run_mPIXdaq.py [-h] [-v VERBOSITY] [-o OVERLAY] [-a ACQ_TIME]  
+         [-c ACQ_COUNT] [-f FILE] [-t TIME]   
+         [--circularity_cut CIRCULARITY_CUT] [-r READFILE]
 
 read, analyze and display data from miniPIX EDU device
 
@@ -106,7 +114,7 @@ circular clusters due to their very high ionization loss in the
 detector material.   
 
 To test the software without access to a miniPIX EDU device or to a
-radioactive source, a files with recorded data are provided. Use the
+radioactive source, a file with recorded data is provided. Use the
 option `--readfile data/BlackForestStone.npy.gz` to start a demonstration.
 Note that the analysis of the recorded pixel frames is done in real
 time and may take some time on slow computers. 
@@ -115,8 +123,8 @@ time and may take some time on slow computers.
 ## Implementation Details
 
 The data acquisition is based on the function 
-*doSimpleIntegralAcquisition()* from  the *ADVACAM* *Python* API,
-since more advanced modes are not available for the Medipix2 chip
+*doSimpleIntegralAcquisition()* from  the *ADVACAM* *Python* API.
+More advanced modes are not available for the Medipix2 chip
 of the miniPIX EDU. A fixed number of frames (*qcq_counts*) with an 
 adjustable accumulation time (*acq_time*) are read from the miniPIX 
 device and added up. 
@@ -138,27 +146,28 @@ Macintosh systems. The contents of a typical directory is:
   __init__.py   # package initialization
   pypixet.so    # the Pixet Python interface
   minipix.so    # C library for pypixet
-  pxcore.so     # C library for pxpixet
-  pixet.ini     # initialization file, expected in same directory as pypixet
+  pxcore.so     # C library for pypixet
+  pixet.ini     # initialization file, in same directory as pypixet
   factory/      # initialization constants 
 ```
 
-Note that the copyright of these libraries belongs to ADVACAM. The libraries
-may be downloaded from their web page, 
-[ADVACAM DWONLOADS](https://advacam.com/downloads/). They are provided here
-as a python package for convenience. 
+Note that the copyright of these libraries belongs to ADVACAM. The
+libraries may be downloaded from their web page, 
+[ADVACAM DWONLOADS](https://advacam.com/downloads/). 
+They are provided here as a python package for convenience. 
 
 
 ## Data Analysis
 
 The analysis shown in this example is intentionally very simple and
 based on standard libraries and functions. Pixels are clustered with
-the *scipi.cluster.DBSCAN* (Density-Based Spatial Clustering of Applications
-with Noise). The shape of the clusters is determined from the ratio of
-the smaller and the larger one of the two eigenvalues of the covariance 
-matrix, which is calculated from the *x* and *y* coordinates of the pixels
-in a cluster. For circular clusters, as produced by α radiation, this ratio
-is close to one, while it is almost zero for the longer traces from β radiation. 
+the *scipi.cluster.DBSCAN* (Density-Based Spatial Clustering of
+Applications with Noise). The shape of the clusters is determined 
+from the ratio of the smaller and the larger one of the two 
+eigenvalues of the covariance matrix, which is calculated from the 
+*x* and *y* coordinates of the pixels in a cluster. For circular
+clusters, as produced by α radiation, this ratio is close to one, 
+while it is almost zero for the longer traces from β radiation.  
 
 The figure below shows the graphical display of the program and the
 typical distribution of the pixel and cluster energies and the
@@ -166,7 +175,14 @@ number of pixels per cluster. The source used was a weakly
 radioactive stone from the Black Forest containing a small amount of
 Uranium and its decay products. The pixel map shown in the figure was 
 sampled over a time of two seconds. The histogram in the lower-right
-corner shows how cluster types discriminate different types of radiation. 
+corner shows how well the cluster types discriminate different types
+of radiation:  α rays in the green band with relatively low numbers 
+of pixels pwr cluster, electons (β) as long tracks with large numbers
+of pixels per cluster and rather low energies, and 𝛾 rays as single
+pixels not associated to clusters. Some of the electron tracks 
+with typically low energies also stem from photon interactions 
+in the detector material (via the Compton process).
+
 
 ![The graphical display of miniPIXdaq](miniPIXdaq.png)
 
