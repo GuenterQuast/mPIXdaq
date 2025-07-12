@@ -400,6 +400,7 @@ def run():
     # - data structure to store miniPIX frames and analysis results per frame
     framebuf = np.zeros((n_overlay, npx, npx))
     n_clusters_buf = np.zeros(n_overlay)
+    np_unassigned_buf = np.zeros(n_overlay)
     energy_buf = np.zeros(n_overlay)
     unassigned_buf = np.zeros(n_overlay)
     o_n_clusters = 0
@@ -528,13 +529,14 @@ def run():
             framebuf[_bidx] = frame2d
             n_clusters_buf[_bidx] = n_clusters
             energy_buf[_bidx] = Energy
+            np_unassigned_buf[_bidx] = np_unass
             unassigned_buf[_bidx] = E_unass
             _bidx = _bidx + 1 if _bidx < n_overlay - 1 else 0
             # subtract oldest frame
             image = image - framebuf[_bidx]
             o_n_clusters -= n_clusters_buf[_bidx]
             o_energy -= energy_buf[_bidx]
-            o_np_unassigned -= np_unass
+            o_np_unassigned -= np_unassigned_buf[_bidx]
             o_unassigned -= unassigned_buf[_bidx]
 
             # update histogram 1 with pixel energies
@@ -568,8 +570,8 @@ def run():
             dead_time_fraction = 1.0 - dt_alive / dt_active
             status = (
                 f"#{n_frame}   active {dt_active:.0f}s   alive {dt_alive:.0f}s "
-                + f"  clusters = {o_n_clusters:.0f}  energy: {o_energy:.0f}keV "
-                + f"unassigned: {o_np_unassigned}/{o_unassigned:.0f}keV"
+                + f"  clusters = {o_n_clusters:.0f} / {o_energy:.0f}keV "
+                + f"  unassigned: {o_np_unassigned:.0f} / {o_unassigned:.0f}keV"
                 + 10 * " "
             )
             im_text.set_text(status)
