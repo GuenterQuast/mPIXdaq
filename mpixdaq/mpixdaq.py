@@ -20,7 +20,7 @@ key learning objectives.
 
 """
 
-# the python API for miniPIX for the corrext platform
+# the python API for miniPIX for the correct platform
 import platform
 
 mach = platform.machine()  # machine type
@@ -191,13 +191,13 @@ class frameAnalyzer:
         # find clusters (lines,  blobs and unassigned)
         #   find clusters with points separated by an euclidian distance less than 1.5 and
         #     min. of 3 points (i.e. tow neighbours) for central points
-        self.clabels = np.array(DBSCAN(eps=1.5, min_samples=3).fit(self.pixel_list).labels_)
+        self.clabels = np.array(DBSCAN(eps=1.5, min_samples=2).fit(self.pixel_list).labels_)
         self.n_clusters = len(set(self.clabels)) - (1 if -1 in self.clabels else 0)
 
         # sum up cluster energies
         self.n_cpixels = np.zeros(self.n_clusters + 1, dtype=np.int32)
-        self.cluster_energies = np.zeros(self.n_clusters + 1)
-        self.circularity = np.zeros(self.n_clusters + 1)
+        self.cluster_energies = np.zeros(self.n_clusters + 1, dtype=np.float32)
+        self.circularity = np.zeros(self.n_clusters + 1, dtype=np.float32)
         for _i, _l in enumerate(set(self.clabels)):
             pl = self.pixel_list[self.clabels == _l]
             # number of pixels in cluster
@@ -211,8 +211,8 @@ class frameAnalyzer:
             self.cluster_energies[_i] = f[pl[:, 0], pl[:, 1]].sum()  # a more readable approach
 
         self.Energy_in_clusters = self.cluster_energies[: self.n_clusters].sum()
-        self.np_unass = self.n_cpixels[self.n_clusters]
-        self.E_unass = self.cluster_energies[self.n_clusters]
+        # self.np_unass = self.n_cpixels[self.n_clusters]
+        # self.E_unass = self.cluster_energies[self.n_clusters]
 
         return self.n_pixels, self.n_clusters, self.n_cpixels, self.circularity, self.cluster_energies
 
@@ -305,15 +305,14 @@ def on_mpl_close(event):
     mpl_active = False
 
 
-def run():
+def run(wd_path):
     """run data acquition and analysis"""
 
     global mpl_active
 
-    # get path to working directory
-    # wd_path = os.getcwd() + '/'
-    # use path to python file
-    wd_path = os.path.dirname(os.path.realpath(__file__)) + '/'
+    # write to user HOME if no path given 
+    if wd_path is None:
+        wd_path = os.getenv("HOME")
     os.chdir(wd_path)
 
     # parse command line arguments
@@ -366,7 +365,7 @@ def run():
                 pypixet.exit()
                 exit("Exit - no devices found")
         else:
-            if verbosity > 0:
+            if verbosity > 1:
                 show_DeviceInfo = True
                 daq.device_info()
             npx = daq.npx
@@ -379,7 +378,7 @@ def run():
         print("data from file " + read_filename)
         suffix = pathlib.Path(read_filename).suffix
         if suffix == ".gz":
-            f = gzip.GzipFile(wd_path + read_filename)
+            f = gzip.GzipFile(read_filename)
             data = np.load(f)
         elif suffix == ".npy":
             data = np.load(read_filename, mmap_mode="r")
@@ -398,11 +397,12 @@ def run():
         print(f" found {n_mx} pixel frames in file")
 
     # - data structure to store miniPIX frames and analysis results per frame
-    framebuf = np.zeros((n_overlay, npx, npx))
-    n_clusters_buf = np.zeros(n_overlay)
-    np_unassigned_buf = np.zeros(n_overlay)
-    energy_buf = np.zeros(n_overlay)
-    unassigned_buf = np.zeros(n_overlay)
+    frame2d = np.zeros((npx, npx), dtype=np.float32)
+    framebuf = np.zeros((n_overlay, npx, npx), dtype=np.float32)
+    n_clusters_buf = np.zeros(n_overlay, dtype=np.float32)
+    np_unassigned_buf = np.zeros(n_overlay, dtype=np.float32)
+    energy_buf = np.zeros(n_overlay, dtype=np.float32)
+    unassigned_buf = np.zeros(n_overlay, dtype=np.float32)
     o_n_clusters = 0
     o_energy = 0.0
     o_np_unassigned = 0
@@ -490,7 +490,7 @@ def run():
     try:
         while dt_active < run_time and mpl_active:
             if read_filename is None:
-                frame2d = np.array(dataQ.get()).reshape((npx, npx))
+                frame2d[:, :] = np.array(dataQ.get()).reshape((npx, npx))
                 dt_alive += acq_count * acq_time
                 n_frame += 1
             else:

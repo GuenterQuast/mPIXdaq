@@ -3,5 +3,9 @@
 # so that all neccesary C-libraries are found by the pypixet interface
 #  the "addition -S LD_LIBRARY_PATH=." does the trick ... 
 
-from mpixdaq import mpixdaq
-mpixdaq.run()
+import os
+# get current working directory befor importing minipix libraries
+wd = os.getcwd()
+
+from mpixdaq import mpixdaq # changes wd !
+mpixdaq.run(wd)
