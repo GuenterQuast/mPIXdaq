@@ -30,55 +30,66 @@ or university students detailed insights.
 
 ## Getting ready for data taking
 
+ - get the code from gitlab @ kit  
+   ``git clone https://gitlab.kit.edu/Guenter.Quast/mPIXdaq``
+
+   This repository includes the python code and a minimalistic set
+   of libraries provided by ADVACAM. `cd` to the `mPIXdaq` directory
+   you just downloaded
+
  - set up the USB interface of your computer to recognize the miniPIX EDU:  
    ``sudo install_driver_rules.sh`` (to be done only once),
    then connect the *miniPIX EDU* device to your computer  
 
- - include the directory with all the relevant libraries 
- (`pypixet.so`, `minipix.so` and `pxcore.so`) in the LD_LIBRARY_PATH:  
-   ``export LD_LIBRARY_PATH="."``
+Now everything is set up to enjoy your miniPIX EDU. Just run the *Python* program:   
+  ``./run-mPIXdaq.py`` 
 
-- run the *Python* program:  
-   ``./miniPIXdaq.py`` 
-
+*Note*: on some systems the current directory, ".", needs to be
+in the `LD_LIBRARY_PATH` so that the *Python* interface *pypixet* 
+finds all *C* libraries. This is achieved by the first line in the
+Python script ``run_mPIXdaq.py``. Starting the *Python* script
+by a different mechanism may not work without adjusting the
+environment variable `LD_LIBRARY_PATH`. In the *bash* shell, this
+is achieved by `export LD_LIBRARY_PATH=.` on the command line or
+in the initialization script.
+ 
 
 ## Running the example script
 
 Available options of the *Python* example to steer data taking 
 and data archival to disk are shown by typing 
 
-  ``./miniPIXdaq.py --help``; the output is shown below:
+  ``./run_mPICdaq.py --help``; the output is shown below:
 
 ```
-  usage: miniPIXdaq.py [-h] [-v VERBOSITY] [-b NUMBER_OF_BUFFERS] 
-    [-a ACQ_TIME] [-c ACQ_COUNT] [-f FILE] [-t TIME]
-    [--circularity_cut CIRCULARITY_CUT]  [-r READFILE]
+usage: run_mPIXdaq.py [-h] [-v VERBOSITY] [-o OVERLAY] [-a ACQ_TIME] [-c ACQ_COUNT] [-f FILE]
+                      [-t TIME] [--circularity_cut CIRCULARITY_CUT] [-r READFILE]
 
-  read, analyze and display data from miniPIX EDU device
+read, analyze and display data from miniPIX EDU device
 
-  options:
-    -h, --help            show this help message and exit
-    -v VERBOSITY, --verbosity VERBOSITY
+options:
+  -h, --help            show this help message and exit
+  -v VERBOSITY, --verbosity VERBOSITY
                         verbosity level (1)
-    -b NUMBER_OF_BUFFERS, --number_of_buffers NUMBER_OF_BUFFERS
-                        number of buffers
-    -a ACQ_TIME, --acq_time ACQ_TIME
+  -o OVERLAY, --overlay OVERLAY
+                        number of frames to overlay in graph (25)
+  -a ACQ_TIME, --acq_time ACQ_TIME
                         acquisition time/frame (0.2)
-    -c ACQ_COUNT, --acq_count ACQ_COUNT
-                        number of frames to add(5)
-    -f FILE, --file FILE  file to store frame data
-    -t TIME, --time TIME  run time in seconds
-    --circularity_cut CIRCULARITY_CUT
+  -c ACQ_COUNT, --acq_count ACQ_COUNT
+                        number of frames to add (1)
+  -f FILE, --file FILE  file to store frame data
+  -t TIME, --time TIME  run time in seconds
+  --circularity_cut CIRCULARITY_CUT
                         cicrularity cut
-    -r READFILE, --readfile READFILE
+  -r READFILE, --readfile READFILE
                         file to read frame data
 ```
-The default values are adjusted to situations with low rates, where a
-number of `acq_count=5` samplings with an integration time of
-`acq_time = 0.2`s each are read from the device and added up to form
-one frame. These frames are displayed as a two-dimensional pixel map 
-with a color code indicating the energy measured in each pixel. 
-For the graphics display, `number_of_buffers=2` recent frames are overlaid.
+The default values are adjusted to situations with low rates, where
+frames from the *miniPIX* with an integration time of
+`acq_time = 0.2` are read. For the graphics display, `number_of_buffers=25` recent frames are overlaid, leading to an integration time of 5 s. 
+These images represent a two-dimensional pixel map with a color code 
+indicating the energy measured in each pixel. 
+
 Data analysis consists of clustering of pixels in each frame and
 determination of cluster parameters, like the number of pixels, energy
 and circularity. The threshold on circularity is controlled by the
@@ -88,12 +99,15 @@ matrix of the clusters is calculated, and the circularity is the
 ratio of the smaller and the larger of the two eigenvalues of the
 covariance matrix. This simple procedure already  provides a good
 separation of α and β particles and of isolated pixels not assigned
-to clusters, which have a high probability of being produced in
-interactions of photons.  
+to clusters. The latter ones have a high probability of being produced in
+interactions of photons, while electrons from β radiation or from 
+photon interactions produce tracks, and α particles produce large,
+circular clusters due to their very high ionization loss in the
+detector material.   
 
 To test the software without access to a miniPIX EDU device or to a
-radioactive source, a file with recorded data is provided. Use the
-option `--readfile BlackForestStone.npy.gz` to start a demonstration.
+radioactive source, a files with recorded data are provided. Use the
+option `--readfile data/BlackForestStone.npy.gz` to start a demonstration.
 Note that the analysis of the recorded pixel frames is done in real
 time and may take some time on slow computers. 
 
@@ -108,16 +122,31 @@ adjustable accumulation time (*acq_time*) are read from the miniPIX
 device and added up. 
 
 The chosen readout mode is *PX_TPXMODE_TOT*, where "ToT" means 
-"time over threshold". This quantity is used as an approximate 
-measure of the deposited energy.
+"time over threshold". This quantity is used as a very good  
+measure proportional to the deposited energy.
 
-Note that this is highly non-linear for small signals, but becomes
-more linear at high values reaching up to 1022. Since the clock
-of the miniPIC EDU chip runs at approx. 10 MHz, this corresponds 
-to about 100µs maximum signal length.
+Note that this is highly non-linear for small signals near the detection
+threshold of the miniPIX, but becomes more linear at high values. 
+Calibration constants are stored on the miniPIX device for each pixel, 
+which are used to provide deposited energies per Pixel in units of keV. 
 
-Calibration constants are stored on the chip for each pixel, which
-are used to provide deposited energies per Pixel in units of keV. 
+The relevant libraries for device control are provided in directories
+`advacam_<arch>` for `x86` Linux, `arm32` and `arm64` and for 
+Macintosh systems. The contents of a typical directory is: 
+
+```
+  __init__.py   # package initialization
+  pypixet.so    # the Pixet Python interface
+  minipix.so    # C library for pypixet
+  pxcore.so     # C library for pxpixet
+  pixet.ini     # initialization file, expected in same directory as pypixet
+  factory/      # initialization constants 
+```
+
+Note that the copyright of these libraries belongs to ADVACAM. The libraries
+may be downloaded from their web page, 
+[ADVACAM DWONLOADS](https://advacam.com/downloads/). They are provided here
+as a python package for convenience. 
 
 
 ## Data Analysis
@@ -133,11 +162,11 @@ is close to one, while it is almost zero for the longer traces from β radiation
 
 The figure below shows the graphical display of the program and the
 typical distribution of the pixel and cluster energies and the
-number of pixels per cluster. The radioactive source used was a weakly
+number of pixels per cluster. The source used was a weakly
 radioactive stone from the Black Forest containing a small amount of
 Uranium and its decay products. The pixel map shown in the figure was 
 sampled over a time of two seconds. The histogram in the lower-right
-corner shows how cluster types distinguish different types of radiation. 
+corner shows how cluster types discriminate different types of radiation. 
 
 ![The graphical display of miniPIXdaq](miniPIXdaq.png)
 
