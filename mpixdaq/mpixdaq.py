@@ -522,7 +522,7 @@ def run():
             image = image + frame2d
             o_n_clusters += n_clusters
             o_energy += Energy
-            o_np_unassigned += np_unassigned
+            o_np_unassigned += np_unass
             o_unassigned += E_unass
             # store in ring-buffers to subtract later
             framebuf[_bidx] = frame2d
@@ -534,7 +534,7 @@ def run():
             image = image - framebuf[_bidx]
             o_n_clusters -= n_clusters_buf[_bidx]
             o_energy -= energy_buf[_bidx]
-            o_np_unassigned -= np_unassigned
+            o_np_unassigned -= np_unass
             o_unassigned -= unassigned_buf[_bidx]
 
             # update histogram 1 with pixel energies
