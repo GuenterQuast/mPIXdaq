@@ -1,4 +1,7 @@
-# miniPIXdaq: Data acquisition for *miniPIX EDU* pixel detector   
+## mPIXdaq: Data acquisition for *miniPIX EDU* pixel detector 
+----------------------------------------------------------------  
+
+                                                Vers. 0.9.0, July 2025
 
 The [miniPIX EDU](https://advacam.com/camera/minipix-edu) is a camera
 for radiation based on the [Timepix](https://home.cern/tags/timepix) 
@@ -30,6 +33,12 @@ or university students detailed insights.
 
 ## Getting ready for data taking
 
+This code has been tested on *Ubuntu*, *openSuse* and on *Raspberry Pi*
+for the 32bit 64bit versions of *OS12*. 
+Other Linux distribution should not pose a problem.
+
+To get started, follow the steps below: 
+
  - get the code from gitlab @ kit  
    ``git clone https://gitlab.kit.edu/Guenter.Quast/mPIXdaq``
 
@@ -49,10 +58,11 @@ The package may also be installed in your virtual python environment:
 Now everything is set up to enjoy your miniPIX EDU. Just run the *Python* program from any working directory.  
   ``run-mPIXdaq.py`` 
 
-If you record any data, the path to the  output file is relative to the current working directory. 
+If you plan to record data, note that the path to the  output file
+is relative to the current working directory. 
 
 *Note* that the *pypixet* initialization is set up to write log-files
-and co figuration data to the directory */tmp/mPIX/*.
+and configuration data to the directory */tmp/mPIX/*.
 
 It is also worth noting that on some systems the current directory,
 ".", needs to be in the `LD_LIBRARY_PATH` so that the *Python* interface *pypixet*  finds all *C* libraries. This is achieved by the first line in the Python script ``run_mPIXdaq.py``. Starting the *Python* script
