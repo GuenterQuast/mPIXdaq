@@ -30,19 +30,21 @@ classifiers = [
 
 requires-python = ">=3.11"
 
-[project.scripts]
-run_mPIXdaq = "mpixdaq:run_mPIXdaq"
-
-[project.urls]
-Homepage = "http://www.etp.kit.edu/~quast/"
-
 [tool.setuptools.packages.find]
 include = ["mpixdaq*"]
 
 [tool.setuptools.dynamic]
 version = {attr = "mpixdaq.__version__"}
 
-# options for linting tools 
+[tool.setuptools]
+script-files = ["run_mPIXdaq.py"]
+
+[project.urls]
+Homepage = "http://www.etp.kit.edu/~quast/"
+
+
+# - - options for linting tools - - - 
+
 [tool.black]
 line-length = 150
 
