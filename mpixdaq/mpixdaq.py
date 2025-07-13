@@ -33,7 +33,7 @@ elif mach == 'aarch64' and arch[0] == "64bit":
     from .advacam_arm64 import pypixet
 # elif: ### MAC to be done
 else:
-    exit(" !!! pypixet not available for architecture " + mach, +arch[0])
+    exit(" !!! pypixet not available for architecture " + mach + arch[0])
 
 import argparse
 import sys
@@ -89,14 +89,6 @@ class mPIXdaq:
         # retrieve device parameters
         self.id = 0
         self.dev = devs[0]
-        pars = self.dev.parameters()
-        dn = pars.get("DeviceName").getString()
-        fw = pars.get("Firmware").getString()
-        temp = pars.get("Temperature").getDouble()
-        bias = pars.get("BiasSense").getDouble()
-        frq = self.dev.timepixClock()
-        print("miniPIX device found:")
-        print(f"   {dn}, Firmware: {fw}\n   Temp: {temp:.1f}, Bias: {bias:.1f}, frequency: {frq:.2f} MHz")
         self.npx = self.dev.width()
         # options for data acquisition
         # OPMs = ["PX_TPXMODE_MEDIPIX", "PX_TPXMODE_TOT", "PX_TPXMODE_1HIT", "PX_TPXMODE_TIMEPIX"]
@@ -115,8 +107,15 @@ class mPIXdaq:
         self.cmdQ = cmdQ
 
     def device_info(self):
-        npx = self.npx
-        print(" Detailed device info:")
+        pars = self.dev.parameters()
+        dn = pars.get("DeviceName").getString()
+        fw = pars.get("Firmware").getString()
+        temp = pars.get("Temperature").getDouble()
+        bias = pars.get("BiasSense").getDouble()
+        frq = self.dev.timepixClock()
+        print("miniPIX device info:")
+        print(f"   {dn}, Firmware: {fw}")
+        print(f"   Temp: {temp:.1f}, Bias: {bias:.1f}, frequency: {frq:.2f} MHz")
         print(
             f"   sensor type: {self.dev.sensorType(self.id)}"
             + f"  pitch: {self.dev.sensorPitch(self.id)} µm"
@@ -127,6 +126,7 @@ class mPIXdaq:
         print(f"   good pixels {n_good},  bad pixels {n_bad}") if rc == 0 else print("  Digital test failed")
         print(f"   acquisition time min: {self.dev.acqTimeMin()} s    max: {self.dev.acqTimeMax()} s")
         hasCalibration = self.dev.hasCalibration()
+        npx = self.npx
         if hasCalibration:
             a = [0] * npx * npx
             b = [0] * npx * npx
@@ -248,15 +248,11 @@ class bhist:
         self.bcnt = (self.be[:-1] + self.be[1:]) / 2.0
         self.w = 0.8 * (self.be[1] - self.be[0])
         if ax is None:
-            self.bars = plt.bar(
-                self.bcnt, self.bc, align="center", width=self.w, facecolor="b", edgecolor="grey", alpha=0.5
-            )
+            self.bars = plt.bar(self.bcnt, self.bc, align="center", width=self.w, facecolor="b", edgecolor="grey", alpha=0.5)
             self.ax = plt.gca()
         else:
             self.ax = ax
-            self.bars = ax.bar(
-                self.bcnt, self.bc, align="center", width=self.w, facecolor="b", edgecolor="grey", alpha=0.5
-            )
+            self.bars = ax.bar(self.bcnt, self.bc, align="center", width=self.w, facecolor="b", edgecolor="grey", alpha=0.5)
 
         self.ax.set_xlabel(xlabel)
         self.ax.set_ylabel(ylabel)
@@ -306,11 +302,11 @@ def on_mpl_close(event):
 
 
 def run(wd_path):
-    """run data acquition and analysis"""
+    """run miniPIX data acquition and analysis"""
 
     global mpl_active
 
-    # write to user HOME if no path given 
+    # write to user HOME if no path given
     if wd_path is None:
         wd_path = os.getenv("HOME")
     os.chdir(wd_path)
@@ -391,11 +387,11 @@ def run(wd_path):
             exit(f"unexpected shape {shape} of array, expected 256x256")
         elif shape[1] != 256:
             exit(f"unexpected shape {shape} of array, expected 256x256")
+        n_frames = shape[0]
         npx = shape[1]
         unit = "(keV)"
         title = "pixel energy map from file (keV)"
-        n_mx = shape[0]
-        print(f" found {n_mx} pixel frames in file")
+        print(f" found {n_frames} pixel frames in file")
 
     # - data structure to store miniPIX frames and analysis results per frame
     frame2d = np.zeros((npx, npx), dtype=np.float32)
@@ -466,9 +462,7 @@ def run(wd_path):
     (gr_circ,) = ax3.plot(x3_circ, y3_circ, label="circular", marker='.', markersize=1, color="g", ls='', alpha=0.5)
     x3_unass = []
     y3_unass = []
-    (gr_unass,) = ax3.plot(
-        x3_unass, y3_unass, label="unassigned", marker='.', markersize=1, color="r", ls='', alpha=0.8
-    )
+    (gr_unass,) = ax3.plot(x3_unass, y3_unass, label="unassigned", marker='.', markersize=1, color="r", ls='', alpha=0.8)
     ax3.set_xlim(0, 10000)
     ax3.set_ylim(0, 50)
     ax3.legend(loc="upper right")
@@ -496,7 +490,7 @@ def run(wd_path):
                 n_frame += 1
             else:
                 n_frame += 1
-                if n_frame > n_mx:
+                if n_frame > n_frames:
                     break
                 frame2d = data[n_frame - 1]
                 ##!time.sleep(1.0)

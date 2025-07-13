@@ -60,6 +60,7 @@ quote-style = "preserve"
 line-ending = "lf"
 
 [tool.ruff.lint.per-file-ignores]
-# allow imports not at top
+# allow imports not at top - needed for conditinal imports
 "__init__.py" = ["E402"]
-"builddoc/conf.py" = ["E402"]
+"mpixdaq.py" = ["E402"]
+"nun_mPIXdaq.py" = ["E402"]
