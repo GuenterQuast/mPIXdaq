@@ -1,13 +1,27 @@
-#!/usr/bin/env -S LD_LIBRARY_PATH=. python3
-# on some platforms, the currnt directory needs to be in LD_LIBRARY_PATH
-# so that all neccesary C-libraries are found by the pypixet interface
-#  the "addition -S LD_LIBRARY_PATH=." does the trick ...
+#!/usr/bin/env python3
+import os, sys
 
-import os
+# pypixet requires '.' in LD_LIBRARY_PATH so that al neccessary C-libratreis are found
+#  - add current directory to LD-LIBRARY_PATH
+#  - and restart python script for changes to take effect
 
-# get current working directory befor importing minipix libraries
-wd = os.getcwd()
+path_modified = False
 
-from mpixdaq import mpixdaq  # changes wd !
+if 'LD_LIBRARY_PATH' not in os.environ:
+    os.environ['LD_LIBRARY_PATH'] = '.'
+    path_modified = True        
+elif not '.' in os.environ['LD_LIBRARY_PATH']:
+    os.environ['LD_LIBRARY_PATH'] += ':.'
+    path_modified = True        
 
-mpixdaq.run(wd)
+if path_modified:
+    print(" ! added '.' to LD_LIBRARY_PATH") 
+    try:
+        os.execv(sys.argv[0], sys.argv)
+    except Exception as e:
+        sys.exit('EXCEPTION: Failed to Execute under modified environment, '+e)
+else:  # restart python script for setting to take effect
+    # get current working directory before importing minipix libraries
+    wd = os.getcwd()
+    from mpixdaq import mpixdaq  # this changes the working directory!
+    mpixdaq.run(wd)  # start daq in working directory 
