@@ -55,7 +55,6 @@ def import_npy_append_array():
     global NpyAppendArray
     from npy_append_array import NpyAppendArray
 
-
 #
 #  functions and classes - - - - -
 #
@@ -75,7 +74,6 @@ class mPIXdaq:
     def __init__(self, ac_count=10, ac_time=0.1, dataQ=None, cmdQ=None):
         """initialize miniPIX device and set up data acquisition"""
         # start miniPIX software
-        print(f"starting pypixet in directory {os.getcwd()}")
         rc = pypixet.start()
         if rc != 0:
             print("rc from pypixet.start():", rc)
@@ -89,7 +87,8 @@ class mPIXdaq:
             return
         # retrieve device parameters
         self.id = 0
-        self.dev = devs[0]
+        self.dev = devs[self.id]
+        print("*==* found device " + self.dev.parameters().get("DeviceName").getString())        
         self.npx = self.dev.width()
         # options for data acquisition
         # OPMs = ["PX_TPXMODE_MEDIPIX", "PX_TPXMODE_TOT", "PX_TPXMODE_1HIT", "PX_TPXMODE_TIMEPIX"]
@@ -339,8 +338,6 @@ def run(wd_path):
     integration_time = acq_count * acq_time * n_overlay
 
     print(f"\n*==* script {sys.argv[0]} executing in working directory {wd_path}")
-    print("       type <cntrl C> to end\n")
-
     if out_filename is not None:
         # data recording with npy_append_array()
         import_npy_append_array()
@@ -472,17 +469,17 @@ def run(wd_path):
     plt.ion()
     plt.show()
 
-    print()
-    # daq loop
+    # set up daq
     dt_alive = 0.0
     dt_active = 0.0
     n_frame = 0
-
     # start daq as a Thread
     if read_filename is None:
         Thread(target=daq, daemon=True).start()
-    t_start = time.time()
 
+    # start daq loop
+    print("\n       type <cntrl C> to end\n")
+    t_start = time.time()
     try:
         while dt_active < run_time and mpl_active:
             if read_filename is None:
