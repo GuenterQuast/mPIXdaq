@@ -80,7 +80,8 @@ class mPIXdaq:
         if rc != 0:
             print("rc from pypixet.start():", rc)
         if not pypixet.isrunning():
-            print("!!! pipixet did not start!")
+            exit("!!! pipixet did not start!")
+            
         self.pixet = pypixet.pixet
         devs = self.pixet.devicesByType(self.pixet.PX_DEVTYPE_MPX2)  # miniPIX EDU uses the mediPIX 2 chip
         if len(devs) == 0:
