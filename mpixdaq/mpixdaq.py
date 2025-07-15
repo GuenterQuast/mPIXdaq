@@ -314,11 +314,6 @@ class bhist:
             self.ax.set_ylim(0.9, self.maxh)
 
 
-def on_mpl_close(event):
-    global mpl_active
-    mpl_active = False
-
-
 class runDAQ:
     def __init__(self, wd_path):
         """run miniPIX data acquition and analysis"""
@@ -427,11 +422,14 @@ class runDAQ:
         # finally, initialize figures
         self.init_figs()
 
+    def on_mpl_close(self, event):
+        self.mpl_active = False
+
     def init_figs(self):
         # - prepare a figure with subplots
         fig = plt.figure('PIX data', figsize=(11.5, 8.5))
         fig.suptitle("miniPiX EDU Data Acquisition", size="xx-large", color="darkblue")
-        fig.canvas.mpl_connect('close_event', on_mpl_close)
+        fig.canvas.mpl_connect('close_event', self.on_mpl_close)
         self.mpl_active = True
         fig.subplots_adjust(left=0.05, bottom=0.03, right=0.97, top=0.99, wspace=0.0, hspace=0.1)
         plt.tight_layout()
@@ -627,7 +625,7 @@ class runDAQ:
             if self.mpl_active:
                 _a = input("\n" + 20 * ' ' + " type <ret> to close window --> ")
             else:
-                print("Window closed, ending ")
+                print("\n" + 20 * ' ' + " Window closed, ending ")
             if self.read_filename is None:
                 pypixet.exit()
 
