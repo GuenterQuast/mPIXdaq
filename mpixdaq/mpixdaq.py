@@ -12,28 +12,13 @@ This example uses standard libraries
   - numpy.cov
   - numpy.linalg.eig
 
-to display the pixel energy map, cluster pixels and determine the cluster energies.
+to display the pixel energy map, to cluster pixels and to determine the cluster energies.
 
 This example is meant as a starting point for use of the miniPIX in physics lab courses,
 where transparent insights concerning the input data and subsequent analysis steps are
 key learning objectives.
 
 """
-
-# the python API for miniPIX for the correct platform
-import platform
-
-mach = platform.machine()  # machine type
-arch = platform.architecture()  # architecture and  linker format
-if mach == 'x86_64':
-    from .advacam_x86_64 import pypixet
-elif mach == 'aarch64' and arch[0] == "32bit":
-    from .advacam_armhf import pypixet
-elif mach == 'aarch64' and arch[0] == "64bit":
-    from .advacam_arm64 import pypixet
-# elif: ### MAC to be done
-else:
-    exit(" !!! pypixet not available for architecture " + mach + arch[0])
 
 import argparse
 import sys
@@ -316,8 +301,15 @@ class bhist:
 
 
 class runDAQ:
+    """run miniPIX data acquition and analysis"""
+
     def __init__(self, wd_path):
-        """run miniPIX data acquition and analysis"""
+        """initialize
+        - options from command line arguments
+        - miniPIX detector or
+        - optionally input from file
+        - graphics display
+        """
 
         # write to user HOME if no path given
         if wd_path is None:
@@ -424,9 +416,11 @@ class runDAQ:
         self.init_figs()
 
     def on_mpl_close(self, event):
+        """call-back for matplotlib for 'close_event'"""
         self.mpl_active = False
 
     def init_figs(self):
+        """initialize figure with pixel image, histograms and scatter plot"""
         # - prepare a figure with subplots
         fig = plt.figure('PIX data', figsize=(11.5, 8.5))
         fig.suptitle("miniPiX EDU Data Acquisition", size="xx-large", color="darkblue")
@@ -483,13 +477,14 @@ class runDAQ:
         plt.ion()
         plt.show()
 
-    def run(self):
+    def __call__(self):
+        """run daq loop"""
         # - data structure to store miniPIX frames and analysis results per frame
         frame2d = np.zeros((self.npx, self.npx), dtype=np.float32)
         framebuf = np.zeros((self.n_overlay, self.npx, self.npx), dtype=np.float32)
         # accumulative image
-        image = np.zeros((self.npx, self.npx))
-        # cluster statistics
+        image = np.zeros((self.npx, self.npx), dtype=np.float32)
+        # arrays for cluster statistics
         n_clusters_buf = np.zeros(self.n_overlay, dtype=np.float32)
         np_unassigned_buf = np.zeros(self.n_overlay, dtype=np.float32)
         energy_buf = np.zeros(self.n_overlay, dtype=np.float32)
@@ -498,14 +493,14 @@ class runDAQ:
         o_energy = 0.0
         o_np_unassigned = 0
         o_unassigned = 0.0
-        _bidx = 0
-        # xluster cordinates for linear, circular and unassigned
+        # cordinates for linear and circular clusters and unassigned pixels
         x3_lin = []
         y3_lin = []
         x3_circ = []
         y3_circ = []
         x3_unass = []
         y3_unass = []
+        i_buf = 0
 
         # set-up analysis
         frameAna = frameAnalyzer()
@@ -513,25 +508,25 @@ class runDAQ:
         # set up daq
         dt_alive = 0.0
         dt_active = 0.0
-        n_frame = 0
+        i_frame = 0
         # start daq as a Thread
         if self.read_filename is None:
             Thread(target=self.daq, daemon=True).start()
 
         # start daq loop
-        print("\n" + 15 * ' ' + " type <cntrl C> to end", end='\r')
+        print("\n" + 15 * ' ' + "\033[37m type <cntrl C> to end" + "\033[31m", end='\r')
         t_start = time.time()
         try:
             while dt_active < self.run_time and self.mpl_active:
                 if self.read_filename is None:
                     frame2d[:, :] = np.array(self.dataQ.get()).reshape((self.npx, self.npx))
                     dt_alive += self.acq_count * self.acq_time
-                    n_frame += 1
+                    i_frame += 1
                 else:  # from file
-                    n_frame += 1
-                    if n_frame > self.n_frames_in_file:
+                    i_frame += 1
+                    if i_frame > self.n_frames_in_file:
                         break
-                    frame2d = self.fdata[n_frame - 1]
+                    frame2d = self.fdata[i_frame - 1]
                     ##!time.sleep(1.0)
                     time.sleep(0.1)
 
@@ -560,18 +555,18 @@ class runDAQ:
                 o_np_unassigned += np_unass
                 o_unassigned += E_unass
                 # store in ring-buffers to subtract later
-                framebuf[_bidx] = frame2d
-                n_clusters_buf[_bidx] = n_clusters
-                energy_buf[_bidx] = Energy
-                np_unassigned_buf[_bidx] = np_unass
-                unassigned_buf[_bidx] = E_unass
-                _bidx = _bidx + 1 if _bidx < self.n_overlay - 1 else 0
+                framebuf[i_buf] = frame2d
+                n_clusters_buf[i_buf] = n_clusters
+                energy_buf[i_buf] = Energy
+                np_unassigned_buf[i_buf] = np_unass
+                unassigned_buf[i_buf] = E_unass
+                i_buf = i_buf + 1 if i_buf < self.n_overlay - 1 else 0
                 # subtract oldest frame
-                image = image - framebuf[_bidx]
-                o_n_clusters -= n_clusters_buf[_bidx]
-                o_energy -= energy_buf[_bidx]
-                o_np_unassigned -= np_unassigned_buf[_bidx]
-                o_unassigned -= unassigned_buf[_bidx]
+                image = image - framebuf[i_buf]
+                o_n_clusters -= n_clusters_buf[i_buf]
+                o_energy -= energy_buf[i_buf]
+                o_np_unassigned -= np_unassigned_buf[i_buf]
+                o_unassigned -= unassigned_buf[i_buf]
 
                 # update histogram 1 with pixel energies
                 self.bhist1.add(frame2d[frame2d > 0])
@@ -603,7 +598,7 @@ class runDAQ:
                 dt_active = time.time() - t_start
                 dead_time_fraction = 1.0 - dt_alive / dt_active
                 status = (
-                    f"#{n_frame}   active {dt_active:.0f}s   alive {dt_alive:.0f}s "
+                    f"#{i_frame}   active {dt_active:.0f}s   alive {dt_alive:.0f}s "
                     + f"  clusters = {o_n_clusters:.0f} / {o_energy:.0f}keV "
                     + f"  unassigned: {o_np_unassigned:.0f} / {o_unassigned:.0f}keV"
                     + 10 * " "
@@ -613,20 +608,21 @@ class runDAQ:
                 # redraw and show all subplots in fig
                 self.fig.canvas.start_event_loop(0.001)  # better than plt.pause(), which would steal the focus
                 # heart-beat for console
-                print(f"    #{n_frame}", end="\r")
+                print(f"  #{i_frame}", end="\r")
 
         except KeyboardInterrupt:
-            if self.read_filename is None:
-                self.cmdQ.put("e")
+            pass
         except Exception as e:
             print("Excpetion in daq loop: ", str(e))
 
         finally:
             # end daq loop
+            if self.read_filename is None:
+                self.cmdQ.put("e")
             if self.mpl_active:
-                _a = input("\n" + 20 * ' ' + " type <ret> to close window --> ")
+                _a = input("\033[37m\n" + 20 * ' ' + " type <ret> to close window -->\033[0m")
             else:
-                print("\n" + 20 * ' ' + " Window closed, ending ")
+                print("\33[0m\n" + 20 * ' ' + " Window closed, ending ")
             if self.read_filename is None:
                 pypixet.exit()
 

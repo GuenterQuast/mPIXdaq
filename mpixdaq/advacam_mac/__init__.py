@@ -1,5 +1,4 @@
-""" ADVACAM pixet1.8.3 library for x86_64 systems
-"""
+"""ADVACAM pixet1.8.3 library for x86_64 systems"""
 
 import os
 import sys

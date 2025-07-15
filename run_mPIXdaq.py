@@ -9,20 +9,21 @@ path_modified = False
 
 if 'LD_LIBRARY_PATH' not in os.environ:
     os.environ['LD_LIBRARY_PATH'] = '.'
-    path_modified = True        
+    path_modified = True
 elif not '.' in os.environ['LD_LIBRARY_PATH']:
     os.environ['LD_LIBRARY_PATH'] += ':.'
-    path_modified = True        
+    path_modified = True
 
 if path_modified:
-    print(" ! added '.' to LD_LIBRARY_PATH") 
+    print(" ! added '.' to LD_LIBRARY_PATH")
     try:
         os.execv(sys.argv[0], sys.argv)
     except Exception as e:
-        sys.exit('EXCEPTION: Failed to Execute under modified environment, '+e)
+        sys.exit('EXCEPTION: Failed to Execute under modified environment, ' + e)
 else:  # restart python script for setting to take effect
     # get current working directory before importing minipix libraries
     wd = os.getcwd()
     from mpixdaq import mpixdaq  # this changes the working directory!
-    rD = mpixdaq.runDAQ(wd)  # start daq in working directory 
-    rD.run()
+
+    rD = mpixdaq.runDAQ(wd)  # start daq in working directory
+    rD()
