@@ -50,6 +50,23 @@ from matplotlib.colors import LogNorm
 from sklearn.cluster import DBSCAN
 
 
+# function for conditional import of ADVACAM libraries
+def import_pixet():
+    global pypixet
+    import platform
+    mach = platform.machine()  # machine type
+    arch = platform.architecture()  # architecture and  linker format
+    if mach == 'x86_64':
+        from .advacam_x86_64 import pypixet
+    elif mach == 'aarch64' and arch[0] == "32bit":
+        from .advacam_armhf import pypixet
+    elif mach == 'aarch64' and arch[0] == "64bit":
+        from .advacam_arm64 import pypixet
+    # elif: ### MAC to be done
+    else:
+        exit(" !!! pypixet not available for architecture " + mach + arch[0])
+
+
 # function for conditional import from npy_append_array !!!
 def import_npy_append_array():
     global NpyAppendArray
@@ -346,31 +363,43 @@ class runDAQ:
             # data recording with npy_append_array()
             import_npy_append_array()
 
+        # try to load pypixet library and connect to miniPIX
+        pypixet_ok = False
+        device_found = False
         if self.read_filename is None:
-            # set up Queues for communication with daq process
-            maxsize = 16
-            self.dataQ = Queue(maxsize)
-            self.cmdQ = Queue(1)
+            try:
+                import_pixet()
+                pypixet_ok = True
+                # set up Queues for communication with daq process
+                maxsize = 16
+                self.dataQ = Queue(maxsize)
+                self.cmdQ = Queue(1)
+                # initialize data acquisition object
+                self.daq = mPIXdaq(self.acq_count, self.acq_time, self.dataQ, self.cmdQ)
+                if self.daq.dev is None: 
+                    print(" !!! no miniPIX device found") 
+                else:
+                    device_found = True
+            except:
+                print(" !!! could not import pypixet library")
 
-            # initialize data acquisition object
-            self.daq = mPIXdaq(self.acq_count, self.acq_time, self.dataQ, self.cmdQ)
-            if self.daq.dev == None:
-                _a = input("No devices found - read data from file (y/n) > ")
+            if not pypixet_ok or not device_found:
+                if pypixet_ok:
+                    pypixet.exit()
+                _a = input("        - read data from file ? (y/n) > ")
                 if _a in {'y', 'Y', 'j', 'J'}:
                     path = os.path.dirname(os.path.realpath(__file__)) + '/'
                     self.read_filename = path + "data/BlackForestStone.npy.gz"
-                    pypixet.exit()
                 else:
-                    pypixet.exit()
-                    exit("Exit - no devices found")
-            else:
+                    exit("Exiting")           
+            else:  # library and device are ok 
                 if self.verbosity > 1:
                     self.show_DeviceInfo = True
                     self.daq.device_info()
                 self.npx = self.daq.npx
                 self.unit = "(keV)" if self.daq.dev.isUsingCalibration() else "ToT (µs)"
                 self.title = "pixel energy map " + self.unit
-        #   end device initialization ---
+        #  end device initialization ---
 
         if self.read_filename is not None:
             # read from file if requested
