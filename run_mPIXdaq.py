@@ -24,4 +24,5 @@ else:  # restart python script for setting to take effect
     # get current working directory before importing minipix libraries
     wd = os.getcwd()
     from mpixdaq import mpixdaq  # this changes the working directory!
-    mpixdaq.run(wd)  # start daq in working directory 
+    rD = mpixdaq.runDAQ(wd)  # start daq in working directory 
+    rD.run()
