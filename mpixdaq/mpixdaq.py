@@ -54,6 +54,7 @@ from sklearn.cluster import DBSCAN
 def import_pixet():
     global pypixet
     import platform
+
     mach = platform.machine()  # machine type
     arch = platform.architecture()  # architecture and  linker format
     if mach == 'x86_64':
@@ -371,8 +372,8 @@ class runDAQ:
                 self.cmdQ = Queue(1)
                 # initialize data acquisition object
                 self.daq = mPIXdaq(self.acq_count, self.acq_time, self.dataQ, self.cmdQ)
-                if self.daq.dev is None: 
-                    print(" !!! no miniPIX device found") 
+                if self.daq.dev is None:
+                    print(" !!! no miniPIX device found")
                 else:
                     device_found = True
             except:
@@ -386,8 +387,8 @@ class runDAQ:
                     path = os.path.dirname(os.path.realpath(__file__)) + '/'
                     self.read_filename = path + "data/BlackForestStone.npy.gz"
                 else:
-                    exit("Exiting")           
-            else:  # library and device are ok 
+                    exit("Exiting")
+            else:  # library and device are ok
                 if self.verbosity > 1:
                     self.show_DeviceInfo = True
                     self.daq.device_info()
