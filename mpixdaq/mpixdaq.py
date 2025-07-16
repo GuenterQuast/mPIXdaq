@@ -12,7 +12,8 @@ This example uses standard libraries
   - numpy.cov
   - numpy.linalg.eig
 
-to display the pixel energy map, to cluster pixels and to determine the cluster energies.
+to display the pixel energy map, to cluster pixels and to determine 
+the cluster shapes energies.
 
 This example is meant as a starting point for use of the miniPIX in physics lab courses,
 where transparent insights concerning the input data and subsequent analysis steps are
@@ -65,7 +66,7 @@ def import_npy_append_array():
 # - handling the miniPIX EDU device
 
 
-class mPIXdaq:
+class miniPIXdaq:
     """Initialize and readout miniPIX EDU device
 
     Args:
@@ -77,17 +78,30 @@ class mPIXdaq:
 
     def __init__(self, ac_count=10, ac_time=0.1, dataQ=None, cmdQ=None):
         """initialize miniPIX device and set up data acquisition"""
+
+        # no device yet
+        self.dev = None
+
+        # import python interface to ADVACAM libraries
+        try:
+            import_pixet()
+        except: 
+            print("!!! failed to import pypixet library")
+            return
+
         # start miniPIX software
         rc = pypixet.start()
         if rc != 0:
-            print("rc from pypixet.start():", rc)
+            print("!!! return code from pypixet.start():", rc)
+            return
         if not pypixet.isrunning():
-            exit("!!! pipixet did not start!")
+            print("!!! pipixet did not start!")
+            return
 
         self.pixet = pypixet.pixet
         devs = self.pixet.devicesByType(self.pixet.PX_DEVTYPE_MPX2)  # miniPIX EDU uses the mediPIX 2 chip
         if len(devs) == 0:
-            self.dev = None
+            print("!!! no miniPIX device found")
             return
         # retrieve device parameters
         self.id = 0
@@ -352,29 +366,14 @@ class runDAQ:
             import_npy_append_array()
 
         # try to load pypixet library and connect to miniPIX
-        pypixet_ok = False
-        device_found = False
         if self.read_filename is None:
-            try:
-                import_pixet()
-                pypixet_ok = True
-                # set up Queues for communication with daq process
-                maxsize = 16
-                self.dataQ = Queue(maxsize)
-                self.cmdQ = Queue(1)
-                # initialize data acquisition object
-                self.daq = mPIXdaq(self.acq_count, self.acq_time, self.dataQ, self.cmdQ)
-                if self.daq.dev is None:
-                    print(" !!! no miniPIX device found")
-                else:
-                    device_found = True
-            except:
-                print(" !!! could not import pypixet library")
-
-            if not pypixet_ok or not device_found:
-                if pypixet_ok:
-                    pypixet.exit()
-                _a = input("        - read data from file ? (y/n) > ")
+            maxsize = 16
+            self.dataQ = Queue(maxsize)
+            self.cmdQ = Queue(1)
+            # initialize data acquisition object
+            self.daq = miniPIXdaq(self.acq_count, self.acq_time, self.dataQ, self.cmdQ)
+            if self.daq.dev is None:
+                _a = input("  Problem with miniPIX device - read data from file ? (y/n) > ")
                 if _a in {'y', 'Y', 'j', 'J'}:
                     path = os.path.dirname(os.path.realpath(__file__)) + '/'
                     self.read_filename = path + "data/BlackForestStone.npy.gz"
