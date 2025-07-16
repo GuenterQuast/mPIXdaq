@@ -1,10 +1,10 @@
-"""miniPIXdaq: Minimalist Python Script to illustrate data acquisition and data analysis
-   for the miniPIX EDU device
+"""mPIXdaq: Minimalist Python Script to illustrate data acquisition and data analysis
+   for the miniPIX EDU device by ADVACAM
 
 Code for reading data from device taken from examples provided by the manufacturer,
 see https://wiki.advacam.cz/wiki/Python_API
 
-This example uses standard libraries
+This code uses standard libraries
 
   - numpy
   - matplotlib,
