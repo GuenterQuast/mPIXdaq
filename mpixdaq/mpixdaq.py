@@ -513,7 +513,7 @@ class runDAQ:
             Thread(target=self.daq, daemon=True).start()
 
         # start daq loop
-        print("\n" + 15 * ' ' + "\033[37m type <cntrl C> to end" + "\033[31m", end='\r')
+        print("\n" + 15 * ' ' + "\033[36m type <cntrl C> to end" + "\033[31m", end='\r')
         t_start = time.time()
         try:
             while dt_active < self.run_time and self.mpl_active:
@@ -619,7 +619,7 @@ class runDAQ:
             if self.read_filename is None:
                 self.cmdQ.put("e")
             if self.mpl_active:
-                _a = input("\033[37m\n" + 20 * ' ' + " type <ret> to close window -->\033[0m")
+                _a = input("\033[36m\n" + 20 * ' ' + " type <ret> to close window -->\033[0m")
             else:
                 print("\33[0m\n" + 20 * ' ' + " Window closed, ending ")
             if self.read_filename is None:
