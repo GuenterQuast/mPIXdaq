@@ -12,7 +12,7 @@ This example uses standard libraries
   - numpy.cov
   - numpy.linalg.eig
 
-to display the pixel energy map, to cluster pixels and to determine 
+to display the pixel energy map, to cluster pixels and to determine
 the cluster shapes energies.
 
 This example is meant as a starting point for use of the miniPIX in physics lab courses,
@@ -85,7 +85,7 @@ class miniPIXdaq:
         # import python interface to ADVACAM libraries
         try:
             import_pixet()
-        except: 
+        except:
             print("!!! failed to import pypixet library")
             return
 
@@ -507,6 +507,7 @@ class runDAQ:
         # set up daq
         dt_alive = 0.0
         dt_active = 0.0
+        dt_last_plot = 0.0
         i_frame = 0
         # start daq as a Thread
         if self.read_filename is None:
@@ -582,18 +583,11 @@ class runDAQ:
                     else:
                         x3_circ.append(cluster_energies[_i])
                         y3_circ.append(n_cpixels[_i])
-                self.gr_lin.set_xdata(x3_lin)
-                self.gr_lin.set_ydata(y3_lin)
-                self.gr_circ.set_xdata(x3_circ)
-                self.gr_circ.set_ydata(y3_circ)
                 if np_unass > 0:
                     x3_unass.append(E_unass)
                     y3_unass.append(np_unass)
-                    self.gr_unass.set_xdata(x3_unass)
-                    self.gr_unass.set_ydata(y3_unass)
 
                 # update image and status text
-                self.img.set_data(self.vmin + image)
                 dt_active = time.time() - t_start
                 dead_time_fraction = 1.0 - dt_alive / dt_active
                 status = (
@@ -602,10 +596,19 @@ class runDAQ:
                     + f"  unassigned: {o_np_unassigned:.0f} / {o_unassigned:.0f}keV"
                     + 10 * " "
                 )
-                self.im_text.set_text(status)
 
-                # redraw and show all subplots in fig
-                self.fig.canvas.start_event_loop(0.001)  # better than plt.pause(), which would steal the focus
+                # uüdate, redraw and show all subplots in fig
+                if dt_active - dt_last_plot > 0.15:  # limit number of graphics updates
+                    self.img.set_data(self.vmin + image)
+                    self.im_text.set_text(status)
+                    self.gr_lin.set_xdata(x3_lin)
+                    self.gr_lin.set_ydata(y3_lin)
+                    self.gr_circ.set_xdata(x3_circ)
+                    self.gr_circ.set_ydata(y3_circ)
+                    self.gr_unass.set_xdata(x3_unass)
+                    self.gr_unass.set_ydata(y3_unass)
+                    self.fig.canvas.start_event_loop(0.001)  # better than plt.pause(), which would steal the focus
+                    dt_last_plot = dt_active
                 # heart-beat for console
                 print(f"  #{i_frame}", end="\r")
 
