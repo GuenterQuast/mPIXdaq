@@ -314,6 +314,76 @@ class bhist:
             self.ax.set_ylim(0.9, self.maxh)
 
 
+class scatterplot:
+    """two-dimensional scatter for animation, based on numpy.histogram2d
+             plots a '.' in every non-zero bin of a 2d-histogram
+
+    Args:
+      * data: list of pairs of cordinates [ [[x], [y]], [[], []], ...]
+      * bins: 2 arrays of bin edges [[bex], [bey]]
+      * xlabel: label for x-axis
+      * ylabel: label for y axix
+      * labels: labels for classes
+      * colors: colors corresponding to labels
+    """
+
+    def __init__(self, ax=None, data=None, bins=None, xlabel="x", ylabel="y", labels=None, colors=None):
+        #  own implementation of 2d scatter plot (numpy + pyplot.plot() ###
+
+        # initialize bins
+        self.bex = bins[0]
+        self.bey = bins[1]
+        self.bcntx = (self.bex[:-1] + self.bex[1:]) / 2.0
+        self.bcnty = (self.bey[:-1] + self.bey[1:]) / 2.0
+
+        self.n_classes = len(data)
+        self.H2d = []
+        for _i in range(self.n_classes):
+            _H2d, _bex, _bey = np.histogram2d(data[_i][0], data[_i][1], bins)  # numpy 2d histogram function
+            self.H2d.append(_H2d)
+
+        if ax is None:
+            fig = plt.figure()
+            self.ax = fig.add_subplot()
+        else:
+            self.ax = ax
+        self.ax.set_xlabel(xlabel)
+        self.ax.set_ylabel(ylabel)
+
+        # create initial plot
+        if labels is None:
+            labels = [str(i) for i in range(n_classes)]
+        if colors is None:
+            colors = n_classes * [None]
+
+        self.gr = []
+        for _i in range(self.n_classes):
+            # _xy_list = np.argwhere(self.H2d[_i] > 0)
+            # _x = self.bcntx[_xy_list[:, 0]]
+            # _y = self.bcntx[_xy_list[:, 1]]
+            _x, _y = np.nonzero(H2d[_i])
+            (_gr,) = ax.plot(_x, _y, label=labels[_i], colors=colors[_i], marker='.', markersize=1, ls='', alpha=0.5)
+            self.gr.append(_gr)
+        self.ax.set_xlim(self.bex[0], self.bex[-1])
+        self.ax.set_ylim(self.bey[0], self.bey[-1])
+
+    def set(self, data):
+        for _i in range(self.nclasses):
+            _H2d, _bex, _bey = np.histogram2d(data[_i][0], data[_i][1], bins)  # numpy 2d histogram function
+            self.H2d[_i] = _H2d
+            _x, _y = np.nonzero(H2d[_i])
+            self.gr[_i].set_xdata()
+            self.gr[_i].set_ydata()
+
+    def add(self, data):
+        for _i in range(self.nclasses):
+            _H2d, _bex, _bey = np.histogram2d(data[_i][0], data[_i][1], bins)  # numpy 2d histogram function
+            self.H2d[_i] = self.H2d[_i] + _H2d
+            _x, _y = np.nonzero(H2d[_i])
+            self.gr[_i].set_xdata()
+            self.gr[_i].set_ydata()
+
+
 class runDAQ:
     """run miniPIX data acquition and analysis"""
 
