@@ -32,6 +32,8 @@ from queue import Queue
 from threading import Thread
 
 import matplotlib.pyplot as plt
+
+plt.style.use("dark_background")
 from matplotlib.colors import LogNorm
 from sklearn.cluster import DBSCAN
 
@@ -85,8 +87,8 @@ class miniPIXdaq:
         # import python interface to ADVACAM libraries
         try:
             import_pixet()
-        except:
-            print("!!! failed to import pypixet library")
+        except Exeption as e:
+            print("!!! failed to import pypixet library ", str(e))
             return
 
         # start miniPIX software
@@ -156,7 +158,7 @@ class miniPIXdaq:
             c = np.array(c)
             t = np.array(t)
             print(
-                f"   calibration parameters:"
+                "   calibration parameters:"
                 + f"  a: {a.mean():.3g} +/- {a.std():.2g}"
                 + f"  b: {b.mean():.3g} +/- {b.std():.2g}"
                 + f"  c: {c.mean():.3g} +/- {c.std():.2g}"
@@ -266,11 +268,11 @@ class bhist:
         self.bcnt = (self.be[:-1] + self.be[1:]) / 2.0
         self.w = 0.8 * (self.be[1] - self.be[0])
         if ax is None:
-            self.bars = plt.bar(self.bcnt, self.bc, align="center", width=self.w, facecolor="b", edgecolor="grey", alpha=0.5)
+            self.bars = plt.bar(self.bcnt, self.bc, align="center", width=self.w, facecolor="b", edgecolor="grey", alpha=0.75)
             self.ax = plt.gca()
         else:
             self.ax = ax
-            self.bars = ax.bar(self.bcnt, self.bc, align="center", width=self.w, facecolor="b", edgecolor="grey", alpha=0.5)
+            self.bars = ax.bar(self.bcnt, self.bc, align="center", width=self.w, facecolor="b", edgecolor="grey", alpha=0.75)
 
         self.ax.set_xlabel(xlabel)
         self.ax.set_ylabel(ylabel)
@@ -315,33 +317,40 @@ class bhist:
 
 
 class scatterplot:
-    """two-dimensional scatter for animation, based on numpy.histogram2d
-             plots a '.' in every non-zero bin of a 2d-histogram
-             supports multiple classes of data 
+    """two-dimensional scatter plot for animation, based on numpy.histogram2d
+    supports multiple classes of data, plots a '.' in the corresponding color
+    in every non-zero bin of a 2d-histogram
 
     Args:
       * data: list of pairs of cordinates [ [[x], [y]], [[], []], ...] per class to be shown
-      * bins: 2 arrays of bin edges [[bex], [bey]]
+      * binsedges: 2 arrays of bin edges [[bex], [bey]]
       * xlabel: label for x-axis
       * ylabel: label for y axix
       * labels: labels for classes
       * colors: colors corresponding to labels
     """
 
-    def __init__(self, ax=None, data=None, bins=None, xlabel="x", ylabel="y", labels=None, colors=None):
+    def __init__(self, ax=None, data=None, binedges=None, xlabel="x", ylabel="y", labels=None, colors=None):
         #  own implementation of 2d scatter plot (numpy + pyplot.plot() ###
 
+        self.n_classes = len(data)
         # initialize bins
-        self.bex = bins[0]
-        self.bey = bins[1]
+        self.binedges = binedges
+        self.bex = binedges[0]
+        self.bey = binedges[1]
         self.bcntx = (self.bex[:-1] + self.bex[1:]) / 2.0
         self.bcnty = (self.bey[:-1] + self.bey[1:]) / 2.0
-        self.bins = bins
+        # bin widths
+        self.bwx = self.bex[1] - self.bex[0]
+        self.bwy = self.bey[1] - self.bey[0]
+        # fraction of bin width as plot off-set for classes
+        self.pofx = [(_i + 1) * self.bwx / (self.n_classes + 1) - self.bwx / 2.0 for _i in range(self.n_classes)]
+        self.pofy = [(_i + 1) * self.bwy / (self.n_classes + 1) - self.bwy / 2.0 for _i in range(self.n_classes)]
 
-        self.n_classes = len(data)
         self.H2d = []
-        for _i in range(self.n_classes):
-            _H2d, _bex, _bey = np.histogram2d(data[_i][0], data[_i][1], self.bins)  # numpy 2d histogram function
+        for _ic in range(self.n_classes):
+            # use numpy histogram2d to creade histogram arrays, one per class
+            _H2d, _bex, _bey = np.histogram2d(data[_ic][0], data[_ic][1], self.binedges)
             self.H2d.append(_H2d)
 
         if ax is None:
@@ -351,42 +360,43 @@ class scatterplot:
             self.ax = ax
         self.ax.set_xlabel(xlabel)
         self.ax.set_ylabel(ylabel)
+        # self.ax.set_facecolor('k')
 
         # create initial plot
         if labels is None:
-            labels = [str(i) for i in range(n_classes)]
+            labels = [str(_ic) for _ic in range(n_classes)]
         if colors is None:
             colors = n_classes * [None]
 
         self.gr = []
-        for _i in range(self.n_classes):
-            # _xy_list = np.argwhere(self.H2d[_i] > 0)
+        for _ic in range(self.n_classes):
+            # _xy_list = np.argwhere(self.H2d[_ic] > 0)
             # _x = self.bcntx[_xy_list[:, 0]]
             # _y = self.bcntx[_xy_list[:, 1]]
-            _xidx, _yidx = np.nonzero(self.H2d[_i])
+            _xidx, _yidx = np.nonzero(self.H2d[_ic])
             _x = self.bcntx[_xidx]
             _y = self.bcnty[_yidx]
-            (_gr,) = ax.plot(_x, _y, label=labels[_i], color=colors[_i], marker='.', markersize=1, ls='', alpha=0.5)
+            (_gr,) = ax.plot(_x, _y, label=labels[_ic], color=colors[_ic], marker='.', markersize=1, ls='', alpha=0.75)
             self.gr.append(_gr)
         self.ax.set_xlim(self.bex[0], self.bex[-1])
         self.ax.set_ylim(self.bey[0], self.bey[-1])
         self.ax.legend(loc="upper right")
 
     def set(self, data):
-        for _i in range(self.n_classes):
-            _H2d, _bex, _bey = np.histogram2d(data[_i][0], data[_i][1], self.bins)  # numpy 2d histogram function
-            self.H2d[_i] = _H2d
-            _xidx, _yidx = np.nonzero(self.H2d[_i])
-            self.gr[_i].set_xdata(self.bcntx[_xidx])
-            self.gr[_i].set_ydata(self.bcnty[_yidx])
+        for _ic in range(self.n_classes):
+            _H2d, _bex, _bey = np.histogram2d(data[_ic][0], data[_ic][1], self.binedges)  # numpy 2d histogram function
+            self.H2d[_ic] = _H2d
+            _xidx, _yidx = np.nonzero(self.H2d[_ic])
+            self.gr[_ic].set_xdata(self.bcntx[_xidx])
+            self.gr[_ic].set_ydata(self.bcnty[_yidx])
 
     def add(self, data):
-        for _i in range(self.n_classes):
-            _H2d, _bex, _bey = np.histogram2d(data[_i][0], data[_i][1], self.bins)  # numpy 2d histogram function
-            self.H2d[_i] = self.H2d[_i] + _H2d
-            _xidx, _yidx = np.nonzero(self.H2d[_i])
-            self.gr[_i].set_xdata(self.bcntx[_xidx])
-            self.gr[_i].set_ydata(self.bcnty[_yidx])
+        for _ic in range(self.n_classes):
+            _H2d, _bex, _bey = np.histogram2d(data[_ic][0], data[_ic][1], self.binedges)  # numpy 2d histogram function
+            self.H2d[_ic] = self.H2d[_ic] + _H2d
+            _xidx, _yidx = np.nonzero(self.H2d[_ic])
+            self.gr[_ic].set_xdata(self.bcntx[_xidx] + self.pofx[_ic])
+            self.gr[_ic].set_ydata(self.bcnty[_yidx] + self.pofy[_ic])
 
 
 class runDAQ:
@@ -497,7 +507,7 @@ class runDAQ:
         """initialize figure with pixel image, histograms and scatter plot"""
         # - prepare a figure with subplots
         fig = plt.figure('PIX data', figsize=(11.5, 8.5))
-        fig.suptitle("miniPiX EDU Data Acquisition", size="xx-large", color="darkblue")
+        fig.suptitle("miniPiX EDU Data Acquisition", size="xx-large", color="cornsilk")
         fig.canvas.mpl_connect('close_event', self.on_mpl_close)
         self.mpl_active = True
         fig.subplots_adjust(left=0.05, bottom=0.03, right=0.97, top=0.99, wspace=0.0, hspace=0.1)
@@ -520,36 +530,40 @@ class runDAQ:
         axim.arrow(110, -5.0, -110.0, 0, length_includes_head=True, width=1.5, color="darkblue")
         axim.text(115.0, -3, "14 mm")
         axim.text(0.05, -0.055, f"integration time {int(self.integration_time)}s", transform=axim.transAxes, color="b")
-        self.im_text = axim.text(0.05, -0.09, "#", transform=axim.transAxes, color="darkred", alpha=0.7)
+        self.im_text = axim.text(0.05, -0.09, "#", transform=axim.transAxes, color="darkred", alpha=0.75)
         plt.box(False)
 
-        # plot analysis results
+        # plots of analysis results
+
         #  - histogram of pixel energies
         axh1 = fig.add_subplot(gs[1:5, -4:])
         nbins1 = 100
         max1 = 1300
         be1 = np.linspace(0, max1, nbins1 + 1, endpoint=True)
         self.bhist1 = bhist(ax=axh1, bins=be1, xlabel="pixel energies" + self.unit, ylabel="", yscale="log")
+
         # - histogram of cluster energies
         axh2 = fig.add_subplot(gs[6:10, -4:])
         nbins2 = 100
         max2 = 10000
         be2 = np.linspace(0, 10000, nbins2 + 1, endpoint=True)
         self.bhist2 = bhist(ax=axh2, bins=be2, xlabel="cluster energies" + self.unit, ylabel="", yscale="log")
-        # - scatter plot: cluster size vs. cluster energies
+
+        # - scatter plot: cluster energies & sizes
         ax3 = fig.add_subplot(gs[11:15, -4:])
         mxx = 10000
-        bex = np.linspace(0.0, mxx, 500, endpoint=True)
+        bex = np.linspace(0.0, mxx, 250, endpoint=True)
         mxy = 50
         bey = np.linspace(0.0, mxy, 50, endpoint=True)
+        # initialize for 3 classes of ([x],[y]) pairs
         self.scpl = scatterplot(
             ax=ax3,
             data=[([], []), ([], []), ([], [])],
-            bins=(bex, bey),
+            binedges=(bex, bey),
             xlabel="cluster energies (keV)",
             ylabel="pixels per cluster",
             labels=("linear", "circular", "unassigned"),
-            colors=('b', 'g', 'r'),
+            colors=('yellow', 'cyan', 'r'),
         )
 
         # show plots in interactive mode
