@@ -335,11 +335,18 @@ class scatterplot:
         self.bey = bins[1]
         self.bcntx = (self.bex[:-1] + self.bex[1:]) / 2.0
         self.bcnty = (self.bey[:-1] + self.bey[1:]) / 2.0
+        self.bins = bins
+        self.mnx  = self.bex[0]
+        self.mxx  = self.bex[-1]
+        self.mny = self.bey[0]
+        self.mxy = self.bey[-1]
+        self.n_binsx = len(self.bex)
+        self.n_binsy = len(self.bey)
 
         self.n_classes = len(data)
         self.H2d = []
         for _i in range(self.n_classes):
-            _H2d, _bex, _bey = np.histogram2d(data[_i][0], data[_i][1], bins)  # numpy 2d histogram function
+            _H2d, _bex, _bey = np.histogram2d(data[_i][0], data[_i][1], self.bins)  # numpy 2d histogram function
             self.H2d.append(_H2d)
 
         if ax is None:
@@ -361,27 +368,34 @@ class scatterplot:
             # _xy_list = np.argwhere(self.H2d[_i] > 0)
             # _x = self.bcntx[_xy_list[:, 0]]
             # _y = self.bcntx[_xy_list[:, 1]]
-            _x, _y = np.nonzero(H2d[_i])
-            (_gr,) = ax.plot(_x, _y, label=labels[_i], colors=colors[_i], marker='.', markersize=1, ls='', alpha=0.5)
+            _xidx, _yidx = np.nonzero(self.H2d[_i])
+            _x = self.mnx + (self.mxx - self.mnx)/self.n_binsx * _xidx
+            _y = self.mny + (self.mxy - self.mny)/self.n_binsy * _yidx
+            (_gr,) = ax.plot(_x, _y, label=labels[_i], color=colors[_i], marker='.', markersize=1, ls='', alpha=0.5)
             self.gr.append(_gr)
         self.ax.set_xlim(self.bex[0], self.bex[-1])
         self.ax.set_ylim(self.bey[0], self.bey[-1])
+        self.ax.legend(loc="upper right")
 
     def set(self, data):
-        for _i in range(self.nclasses):
-            _H2d, _bex, _bey = np.histogram2d(data[_i][0], data[_i][1], bins)  # numpy 2d histogram function
+        for _i in range(self.n_classes):
+            _H2d, _bex, _bey = np.histogram2d(data[_i][0], data[_i][1], self.bins)  # numpy 2d histogram function
             self.H2d[_i] = _H2d
-            _x, _y = np.nonzero(H2d[_i])
-            self.gr[_i].set_xdata()
-            self.gr[_i].set_ydata()
+            _xidx, _yidx = np.nonzero(self.H2d[_i])
+            _x = self.mnx + (self.mxx - self.mnx)/self.n_binsx * _xidx
+            _y = self.mny + (self.mxy - self.mny)/self.n_binsy * _yidx
+            self.gr[_i].set_xdata(_x)
+            self.gr[_i].set_ydata(_y)
 
     def add(self, data):
-        for _i in range(self.nclasses):
-            _H2d, _bex, _bey = np.histogram2d(data[_i][0], data[_i][1], bins)  # numpy 2d histogram function
+        for _i in range(self.n_classes):
+            _H2d, _bex, _bey = np.histogram2d(data[_i][0], data[_i][1], self.bins)  # numpy 2d histogram function
             self.H2d[_i] = self.H2d[_i] + _H2d
-            _x, _y = np.nonzero(H2d[_i])
-            self.gr[_i].set_xdata()
-            self.gr[_i].set_ydata()
+            _xidx, _yidx = np.nonzero(self.H2d[_i])
+            _x = self.mnx + (self.mxx - self.mnx)/self.n_binsx * _xidx
+            _y = self.mny + (self.mxy - self.mny)/self.n_binsy * _yidx
+            self.gr[_i].set_xdata(_x)
+            self.gr[_i].set_ydata(_y)
 
 
 class runDAQ:
@@ -533,14 +547,19 @@ class runDAQ:
         self.bhist2 = bhist(ax=axh2, bins=be2, xlabel="cluster energies" + self.unit, ylabel="", yscale="log")
         # - scatter plot: cluster size vs. cluster energies
         ax3 = fig.add_subplot(gs[11:15, -4:])
-        ax3.set_xlabel("cluster energies")
-        ax3.set_ylabel("pixels per cluster")
-        (self.gr_lin,) = ax3.plot([], [], label="linear", marker='.', markersize=1, color="b", ls='', alpha=0.5)
-        (self.gr_circ,) = ax3.plot([], [], label="circular", marker='.', markersize=1, color="g", ls='', alpha=0.5)
-        (self.gr_unass,) = ax3.plot([], [], label="unassigned", marker='.', markersize=1, color="r", ls='', alpha=0.8)
-        ax3.set_xlim(0, 10000)
-        ax3.set_ylim(0, 50)
-        ax3.legend(loc="upper right")
+        mxx = 10000
+        bex = np.linspace(0., mxx, 500, endpoint=True)
+        mxy = 50
+        bey = np.linspace(0., mxy, 50, endpoint=True)
+        self.scpl = scatterplot(
+            ax=ax3,
+            data=[([], []), ([], []), ([], [])],
+            bins=(bex, bey),
+            xlabel="cluster energies (keV)",
+            ylabel="pixels per cluster",
+            labels=("linear", "circular", "unassigned"),
+            colors=('b', 'g', 'r'),
+        )
 
         # show plots in interactive mode
         plt.ion()
@@ -562,13 +581,6 @@ class runDAQ:
         o_energy = 0.0
         o_np_unassigned = 0
         o_unassigned = 0.0
-        # cordinates for linear and circular clusters and unassigned pixels
-        x3_lin = []
-        y3_lin = []
-        x3_circ = []
-        y3_circ = []
-        x3_unass = []
-        y3_unass = []
         i_buf = 0
 
         # set-up analysis
@@ -646,16 +658,11 @@ class runDAQ:
                     self.bhist2.add(cluster_energies[:n_clusters])
 
                 # update scatter plot
-                for _i in range(n_clusters):
-                    if circularity[_i] < self.circularity_cut:
-                        x3_lin.append(cluster_energies[_i])
-                        y3_lin.append(n_cpixels[_i])
-                    else:
-                        x3_circ.append(cluster_energies[_i])
-                        y3_circ.append(n_cpixels[_i])
-                if np_unass > 0:
-                    x3_unass.append(E_unass)
-                    y3_unass.append(np_unass)
+                xlin = cluster_energies[:n_clusters][circularity[:n_clusters] <= self.circularity_cut]
+                ylin = n_cpixels[:n_clusters][circularity[:n_clusters] <= self.circularity_cut]
+                xcir = cluster_energies[:n_clusters][circularity[:n_clusters] > self.circularity_cut]
+                ycir = n_cpixels[:n_clusters][circularity[:n_clusters] > self.circularity_cut]
+                self.scpl.add([(xlin, ylin), (xcir, ycir), ([E_unass], [np_unass])])
 
                 # update image and status text
                 dt_active = time.time() - t_start
@@ -671,12 +678,6 @@ class runDAQ:
                 if dt_active - dt_last_plot > 0.15:  # limit number of graphics updates
                     self.img.set_data(self.vmin + image)
                     self.im_text.set_text(status)
-                    self.gr_lin.set_xdata(x3_lin)
-                    self.gr_lin.set_ydata(y3_lin)
-                    self.gr_circ.set_xdata(x3_circ)
-                    self.gr_circ.set_ydata(y3_circ)
-                    self.gr_unass.set_xdata(x3_unass)
-                    self.gr_unass.set_ydata(y3_unass)
                     self.fig.canvas.start_event_loop(0.001)  # better than plt.pause(), which would steal the focus
                     dt_last_plot = dt_active
                 # heart-beat for console
