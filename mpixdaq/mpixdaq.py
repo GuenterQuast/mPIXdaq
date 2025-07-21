@@ -506,7 +506,7 @@ class runDAQ:
     def init_figs(self):
         """initialize figure with pixel image, histograms and scatter plot"""
         # - prepare a figure with subplots
-        fig = plt.figure('PIX data', figsize=(11.5, 8.5))
+        fig = plt.figure('PIX data', figsize=(11.5, 8.5), facecolor="#1f1f1f")
         fig.suptitle("miniPiX EDU Data Acquisition", size="xx-large", color="cornsilk")
         fig.canvas.mpl_connect('close_event', self.on_mpl_close)
         self.mpl_active = True
@@ -526,8 +526,8 @@ class runDAQ:
         cbar = fig.colorbar(self.img, shrink=0.6, aspect=40, pad=-0.03)
         self.img.set_clim(vmin=self.vmin, vmax=vmax)
         # cbar.set_label("Energy " + unit, loc="top", labelpad=-5 )
-        axim.arrow(146, -5.0, 110.0, 0, length_includes_head=True, width=1.5, color="darkblue")
-        axim.arrow(110, -5.0, -110.0, 0, length_includes_head=True, width=1.5, color="darkblue")
+        axim.arrow(146, -5.0, 110.0, 0, length_includes_head=True, width=1.5, color="b")
+        axim.arrow(110, -5.0, -110.0, 0, length_includes_head=True, width=1.5, color="b")
         axim.text(115.0, -3, "14 mm")
         axim.text(0.05, -0.055, f"integration time {int(self.integration_time)}s", transform=axim.transAxes, color="b")
         self.im_text = axim.text(0.05, -0.09, "#", transform=axim.transAxes, color="darkred", alpha=0.75)

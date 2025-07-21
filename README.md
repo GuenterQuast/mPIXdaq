@@ -5,7 +5,7 @@
 
 The [miniPIX EDU](https://advacam.com/camera/minipix-edu) is a camera
 for radiation based on the [Timepix](https://home.cern/tags/timepix) 
-pixel read-put chip with 256x256 radiation-sensitive pixels of 5x55µm² 
+pixel read-out chip with 256x256 radiation-sensitive pixels of 5x55µm² 
 area and 300µm depth each. The chip is covered by a very thin foil to 
 permit α and β radiation to reach  the pixels. The device is enclosed 
 in a sturdy aluminum housing with a USB 2.0 interface.
@@ -22,9 +22,9 @@ The vendor provides a ready-to-use program for different computer
 platforms as well as a software-development kit for own applications. 
 
 The code provided here is a minimalist example to read out single
-frames, i.e. a set of 256x256 measurements accumulated over a given, 
-fixed time interval. Each frame is displayed as an image with a
-logarithmic color scale representing the deposited energy. 
+frames, i.e. a full set of 256x256 measurements accumulated over a 
+given, fixed time interval. Each frame is displayed as an image with
+a logarithmic color scale representing the deposited energy. 
 The analysis of the recorded signals, i.e. clustering of pixels, energy
 determination and visualization, is achieved with standard open-source
 tools for data analysis. It is therefore well-suited to give high-school
@@ -36,7 +36,7 @@ their own studies.
 
 This code has been tested on *Ubuntu*, *openSuse* and on *Raspberry Pi*
 for the 32bit 64bit versions of *OS12*. 
-Other Linux distributions, however,  should not pose any problem.
+Other Linux distributions, however, should not pose any problem.
 
 To get started, follow the steps below: 
 
@@ -67,7 +67,7 @@ is relative to the current working directory.
 *Note* that the *pypixet* initialization is set up to write log-files
 and configuration data to the directory */tmp/mPIX/*.
 
-It is also worth noting that on some systems the current directory,
+It is also worth mentioning that on some systems the current directory,
 ".", needs to be contained in the `LD_LIBRARY_PATH` so that the *Python*
 interface *pypixet* finds all its *C* libraries. This is also done in the 
 *Python* script ``run_mPIXdaq.py`` by temporarily modifying the environment 
@@ -81,8 +81,8 @@ open up a security gap!
 
 ## Running the example script
 
-Available options of the *Python* example to steer data taking 
-and data archival to disk are shown by typing 
+Available options of the *Python* example to steer data taking and 
+data archival to disk are shown by typing 
 
   ``run_mPIXdaq.py --help``, resulting in the following output:
 
@@ -124,7 +124,7 @@ parameter `circularity_cut` ranging from 0. for perfectly linear
 to 1. for perfectly circular clusters. Technically, the covariance
 matrix of the clusters is calculated, and the circularity is the 
 ratio of the smaller and the larger of the two eigenvalues of the
-covariance matrix. This simple procedure already  provides a good
+covariance matrix. This simple procedure already provides a good
 separation of α and β particles and of isolated pixels not assigned
 to clusters. The latter ones have a high probability of being produced in
 interactions of photons, while electrons from β radiation or from 
@@ -148,7 +148,7 @@ time (*acq_time*) are read from the miniPIX device and added up.
 
 The chosen readout mode is *PX_TPXMODE_TOT*, where "ToT" means 
 "time over threshold". This quantity shows good proportionality
-to the deposited energy ath high signal values, but shows a strong 
+to the deposited energy ath high signal values, but a strong 
 non-linear behavior for small signals near the detection threshold 
 of the miniPIX. Calibration constants are stored on the miniPIX
 device for each pixel, which are used to provide deposited energies
@@ -185,11 +185,11 @@ calculated from the *x* and *y* coordinates of the pixels in a cluster.
 For circular clusters, as produced by α radiation, this ratio is close
 to one, while it is almost zero for the longer traces from β radiation.  
 
-The figure below shows the graphical display of the program and the
-typical distributions of the pixel and cluster energies and the
-number of pixels per cluster. The source used was a weakly
-radioactive stone from the Black Forest containing a small amount of
-Uranium and its decay products. The pixel map shown in the figure was 
+The figure below shows the graphical display of the program with a 
+pixel mimage and the typical distributions of the pixel and cluster 
+energies and the number of pixels per cluster. The source used was a 
+weakly radioactive stone from the Black Forest containing a small amount
+of Uranium and its decay products. The pixel map shown in the figure was 
 sampled over a time of five seconds. The histogram in the lower-right
 corner shows how well the cluster types discriminate different types
 of radiation:  α rays in the green band with relatively low numbers 
