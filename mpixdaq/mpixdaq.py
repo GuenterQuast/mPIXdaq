@@ -317,9 +317,10 @@ class bhist:
 class scatterplot:
     """two-dimensional scatter for animation, based on numpy.histogram2d
              plots a '.' in every non-zero bin of a 2d-histogram
+             supports multiple classes of data 
 
     Args:
-      * data: list of pairs of cordinates [ [[x], [y]], [[], []], ...]
+      * data: list of pairs of cordinates [ [[x], [y]], [[], []], ...] per class to be shown
       * bins: 2 arrays of bin edges [[bex], [bey]]
       * xlabel: label for x-axis
       * ylabel: label for y axix
@@ -336,12 +337,6 @@ class scatterplot:
         self.bcntx = (self.bex[:-1] + self.bex[1:]) / 2.0
         self.bcnty = (self.bey[:-1] + self.bey[1:]) / 2.0
         self.bins = bins
-        self.mnx  = self.bex[0]
-        self.mxx  = self.bex[-1]
-        self.mny = self.bey[0]
-        self.mxy = self.bey[-1]
-        self.n_binsx = len(self.bex)
-        self.n_binsy = len(self.bey)
 
         self.n_classes = len(data)
         self.H2d = []
@@ -369,8 +364,8 @@ class scatterplot:
             # _x = self.bcntx[_xy_list[:, 0]]
             # _y = self.bcntx[_xy_list[:, 1]]
             _xidx, _yidx = np.nonzero(self.H2d[_i])
-            _x = self.mnx + (self.mxx - self.mnx)/self.n_binsx * _xidx
-            _y = self.mny + (self.mxy - self.mny)/self.n_binsy * _yidx
+            _x = self.bcntx[_xidx]
+            _y = self.bcnty[_yidx]
             (_gr,) = ax.plot(_x, _y, label=labels[_i], color=colors[_i], marker='.', markersize=1, ls='', alpha=0.5)
             self.gr.append(_gr)
         self.ax.set_xlim(self.bex[0], self.bex[-1])
@@ -382,20 +377,16 @@ class scatterplot:
             _H2d, _bex, _bey = np.histogram2d(data[_i][0], data[_i][1], self.bins)  # numpy 2d histogram function
             self.H2d[_i] = _H2d
             _xidx, _yidx = np.nonzero(self.H2d[_i])
-            _x = self.mnx + (self.mxx - self.mnx)/self.n_binsx * _xidx
-            _y = self.mny + (self.mxy - self.mny)/self.n_binsy * _yidx
-            self.gr[_i].set_xdata(_x)
-            self.gr[_i].set_ydata(_y)
+            self.gr[_i].set_xdata(self.bcntx[_xidx])
+            self.gr[_i].set_ydata(self.bcnty[_yidx])
 
     def add(self, data):
         for _i in range(self.n_classes):
             _H2d, _bex, _bey = np.histogram2d(data[_i][0], data[_i][1], self.bins)  # numpy 2d histogram function
             self.H2d[_i] = self.H2d[_i] + _H2d
             _xidx, _yidx = np.nonzero(self.H2d[_i])
-            _x = self.mnx + (self.mxx - self.mnx)/self.n_binsx * _xidx
-            _y = self.mny + (self.mxy - self.mny)/self.n_binsy * _yidx
-            self.gr[_i].set_xdata(_x)
-            self.gr[_i].set_ydata(_y)
+            self.gr[_i].set_xdata(self.bcntx[_xidx])
+            self.gr[_i].set_ydata(self.bcnty[_yidx])
 
 
 class runDAQ:
@@ -548,9 +539,9 @@ class runDAQ:
         # - scatter plot: cluster size vs. cluster energies
         ax3 = fig.add_subplot(gs[11:15, -4:])
         mxx = 10000
-        bex = np.linspace(0., mxx, 500, endpoint=True)
+        bex = np.linspace(0.0, mxx, 500, endpoint=True)
         mxy = 50
-        bey = np.linspace(0., mxy, 50, endpoint=True)
+        bey = np.linspace(0.0, mxy, 50, endpoint=True)
         self.scpl = scatterplot(
             ax=ax3,
             data=[([], []), ([], []), ([], [])],
