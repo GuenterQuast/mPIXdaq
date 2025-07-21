@@ -8,7 +8,7 @@
 
 major = 0
 minor = 9
-revision = 0
+revision = 1
 suffix = "rc"  # for suffixes such as 'rc' or 'beta' or 'alpha'
 
 

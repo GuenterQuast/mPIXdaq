@@ -1,7 +1,7 @@
 ## mPIXdaq: Data acquisition for *miniPIX EDU* pixel detector 
 ----------------------------------------------------------------  
 
-                                                Vers. 0.9.0, July 2025
+                                                Vers. 0.9.1, July 2025
 
 The [miniPIX EDU](https://advacam.com/camera/minipix-edu) is a camera
 for radiation based on the [Timepix](https://home.cern/tags/timepix) 
@@ -28,7 +28,8 @@ logarithmic color scale representing the deposited energy.
 The analysis of the recorded signals, i.e. clustering of pixels, energy
 determination and visualization, is achieved with standard open-source
 tools for data analysis. It is therefore well-suited to give high-school
-or university students detailed insights and to enable them to carry out their own studies.
+or university students detailed insights and to enable them to carry out
+their own studies.
 
 
 ## Getting ready for data taking
@@ -55,8 +56,10 @@ The package may also be installed in your virtual python environment:
   - `python -m pip install .`
 
 
-Now everything is set up to enjoy your miniPIX EDU. Just run the *Python* program from any working directory.  
-  ``run_mPIXdaq.py`` 
+Now everything is set up to enjoy your miniPIX EDU. Just run the *Python* 
+program from any working directory by typing   
+
+   > ``run_mPIXdaq.py``.
 
 If you plan to record data, note that the path to the output file
 is relative to the current working directory. 
@@ -66,7 +69,8 @@ and configuration data to the directory */tmp/mPIX/*.
 
 It is also worth noting that on some systems the current directory,
 ".", needs to be contained in the `LD_LIBRARY_PATH` so that the *Python*
-interface *pypixet* finds all its *C* libraries. This is also done in the Python script ``run_mPIXdaq.py`` by temporarily modifying the environment 
+interface *pypixet* finds all its *C* libraries. This is also done in the 
+*Python* script ``run_mPIXdaq.py`` by temporarily modifying the environment 
 variable `LD_LIBRARY_PATH` if necessary and then restarting to execute the
  *Python* code. Starting the *Python* code by a different mechanism may
 not work without adjusting the environment variable `LD_LIBRARY_PATH`. 
@@ -108,7 +112,8 @@ options:
 ```
 The default values are adjusted to situations with low rates, where
 frames from the *miniPIX* with an integration time of
-`acq_time = 0.2` are read. For the graphics display, `number_of_buffers=25` recent frames are overlaid, leading to an integration time of 5 s. 
+`acq_time = 0.2` are read. For the graphics display, `number_of_buffers=25` 
+recent frames are overlaid, leading to an integration time of 5 s. 
 These images represent a two-dimensional pixel map with a color code 
 indicating the energy measured in each pixel. 
 
@@ -138,11 +143,13 @@ time and may take some time on slow computers.
 
 The default data acquisition is based on the function 
 *doSimpleIntegralAcquisition()* from  the *ADVACAM* *Python* API.
-A fixed number of frames (*acq_counts*) with an adjustable accumulation time (*acq_time*) are read from the miniPIX device and added up. 
+A fixed number of frames (*acq_counts*) with an adjustable accumulation
+time (*acq_time*) are read from the miniPIX device and added up. 
 
 The chosen readout mode is *PX_TPXMODE_TOT*, where "ToT" means 
 "time over threshold". This quantity shows good proportionality
-to the deposited energy ath high signal values, but shows a strong non-linear behaviour for small signals near the detection threshold 
+to the deposited energy ath high signal values, but shows a strong 
+non-linear behavior for small signals near the detection threshold 
 of the miniPIX. Calibration constants are stored on the miniPIX
 device for each pixel, which are used to provide deposited energies
 per pixel in units of keV. 
@@ -173,7 +180,8 @@ based on standard libraries and functions. Pixels are clustered with
 *scipy.cluster.DBSCAN* (Density-Based Spatial Clustering of
 Applications with Noise) in a very simple configuration. 
 The shape of the clusters is determined from the ratio of the smaller 
-and the larger one of the two eigenvalues of the covariance matrix calculated from the *x* and *y* coordinates of the pixels in a cluster. 
+and the larger one of the two eigenvalues of the covariance matrix 
+calculated from the *x* and *y* coordinates of the pixels in a cluster. 
 For circular clusters, as produced by α radiation, this ratio is close
 to one, while it is almost zero for the longer traces from β radiation.  
 
@@ -182,7 +190,7 @@ typical distributions of the pixel and cluster energies and the
 number of pixels per cluster. The source used was a weakly
 radioactive stone from the Black Forest containing a small amount of
 Uranium and its decay products. The pixel map shown in the figure was 
-sampled over a time of two seconds. The histogram in the lower-right
+sampled over a time of five seconds. The histogram in the lower-right
 corner shows how well the cluster types discriminate different types
 of radiation:  α rays in the green band with relatively low numbers 
 of pixels pwr cluster, electrons (β) as long tracks with large numbers
@@ -198,9 +206,10 @@ in the detector material (via the Compton process).
 
 The miniPIX EDU is based on the [*Timepix*](https://home.cern/tags/timepix)
 hybrid silicon pixel device, consisting of a semiconductor detector chip
-segmented into 256 x 256 square pixels with a pitch of 55 mm that is bump-bonded to the readout chip. Each element of the pixel matrix is
+segmented into 256 x 256 square pixels with a pitch of 55 mm that is 
+bump-bonded to the readout chip. Each element of the pixel matrix is
 connected to its own preamplifier, discriminator and digital counter
- integrated on the readout chip. 
+integrated on the readout chip. 
 
 The built-in *Medipix2* variant of the chip is operated in the so-called
 "frame mode", i.e. all pixels are read out at the same time, providing
@@ -221,4 +230,5 @@ which is optionally applied to obtain pixel readings in units of keV.
 The calibration is reliable up to pixel energies of one MeV. 
 Higher pixel  energies may result when frames with short acquisition 
 time are summed up. For details, see the article by J. Jakubek, 
-*Precise energy calibration of pixel detector working in time-over-threshold mode*, NIM A 633 (2011), 5262-5265*.
+*Precise energy calibration of pixel detector working in time-over-threshold mode*, 
+NIM A 633 (2011), 5262-5265*.
