@@ -442,7 +442,8 @@ class runDAQ:
         self.circularity_cut = args.circularity_cut
         self.run_time = args.time
 
-        self.integration_time = self.acq_count * self.acq_time * self.n_overlay
+        self.tot_acq_time = self.acq_count * self.acq_time
+        self.integration_time = self.tot_acq_time * self.n_overlay
 
         print(f"\n*==* script {sys.argv[0]} executing in working directory {self.wd_path}")
 
@@ -529,7 +530,10 @@ class runDAQ:
         axim.arrow(146, -5.0, 110.0, 0, length_includes_head=True, width=1.5, color="b")
         axim.arrow(110, -5.0, -110.0, 0, length_includes_head=True, width=1.5, color="b")
         axim.text(115.0, -3, "14 mm")
-        axim.text(0.05, -0.055, f"integration time {int(self.integration_time)}s", transform=axim.transAxes, color="b")
+        if self.read_filename is None:
+            axim.text(0.05, -0.055, f"integration time {int(self.integration_time)}s", transform=axim.transAxes, color="b")
+        else:
+            axim.text(0.05, -0.055, f"accumulating {int(self.n_overlay)} frames", transform=axim.transAxes, color="b")
         self.im_text = axim.text(0.05, -0.09, "#", transform=axim.transAxes, color="darkred", alpha=0.75)
         plt.box(False)
 
