@@ -228,6 +228,9 @@ class frameAnalyzer:
                 # check if circular blob or a line
                 evals, evecs = np.linalg.eig(np.cov(pl[:, 0], pl[:, 1]))
                 self.circularity[_i] = min(evals) / max(evals)  # ratio of eigenvalues
+            #                if min(evals > 0.):
+            #                    area = _npix * _npix / (200 * evals[0] * evals[1])
+            #                    self.circularity[_i] = 0.5 * (self.circularity[_i] + area)
 
             # total energy in cluster
             #        cluster_energies[_i] = f[*pixel_list[labels == _l].T].sum()  # 2d-list as index is tricky!
@@ -280,14 +283,16 @@ class bhist:
         else:
             self.ax = ax
 
-        self.bheights = []
-        self.bars = []
-
         if labels is None:
-            labels = self.n_classes * [None]
-        if colors is None:
+            if self.n_classes == 1:
+                labels = [None]
+            else:
+                labels = ["class " + str(_ic) for _ic in range(self.n_classes)]
+            #        if colors is None:
             colors = self.n_classes * [None]
 
+        self.bheights = []
+        self.bars = []
         # plot class 1
         _bc, self.be = np.histogram(data[0], binedges)  # histogram data
         self.bheights.append(_bc)
@@ -411,7 +416,10 @@ class scatterplot:
 
         # create initial plot
         if labels is None:
-            labels = [str(_ic) for _ic in range(n_classes)]
+            if self.n_classes == 1:
+                labels = [None]
+            else:
+                labels = ["class " + str(_ic) for _ic in range(self.n_classes)]
         if colors is None:
             colors = n_classes * [None]
 
@@ -427,7 +435,8 @@ class scatterplot:
             self.gr.append(_gr)
         self.ax.set_xlim(self.bex[0], self.bex[-1])
         self.ax.set_ylim(self.bey[0], self.bey[-1])
-        self.ax.legend(loc="upper right")
+        if labels[0] is not None:
+            self.ax.legend(loc="upper right")
 
     def set(self, data):
         for _ic in range(self.n_classes):
