@@ -200,9 +200,9 @@ class frameAnalyzer:
 
         if self.n_pixels == 0:
             self.n_clusters = 0
-            self.n_cpixels = None
-            self.circularity = None
-            self.cluster_energies = None
+            self.n_cpixels = np.array([])
+            self.circularity = np.array([])
+            self.cluster_energies = np.array([])
             self.Energy_in_clusters = 0.0
             self.E_unass = self.total_Energy
             self.np_unass = self.n_pixels
@@ -679,7 +679,7 @@ class runDAQ:
                     + 10 * " "
                 )
 
-                # uüdate, redraw and show all subplots in fig
+                # update, redraw and show all subplots in fig
                 if dt_active - dt_last_plot > 0.15:  # limit number of graphics updates
                     self.img.set_data(self.vmin + image)
                     self.im_text.set_text(status)
