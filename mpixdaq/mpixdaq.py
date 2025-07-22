@@ -221,11 +221,14 @@ class frameAnalyzer:
         for _i, _l in enumerate(set(self.clabels)):
             pl = self.pixel_list[self.clabels == _l]
             # number of pixels in cluster
-            self.n_cpixels[_i] = len(pl)
+            _npix = len(pl)
+            self.n_cpixels[_i] = _npix
             # check whether cluster is linear or circular (from eigenvalues of covariance matrix)
-            if len(pl) > 2:
+            if _npix > 2:
+                # check if circular blob or a line
                 evals, evecs = np.linalg.eig(np.cov(pl[:, 0], pl[:, 1]))
-                self.circularity[_i] = min(evals) / max(evals)
+                self.circularity[_i] = min(evals) / max(evals)  # ratio of eigenvalues
+
             # total energy in cluster
             #        cluster_energies[_i] = f[*pixel_list[labels == _l].T].sum()  # 2d-list as index is tricky!
             self.cluster_energies[_i] = f[pl[:, 0], pl[:, 1]].sum()  # a more readable approach
@@ -251,35 +254,67 @@ class frameAnalyzer:
 # helper classes and functions  - - - - -
 class bhist:
     """one-dimensional histogram for animation, based on bar graph
+    supports multiple classes as stacked histogram
 
     Args:
-        * data: array containing float values to be histogrammed
-        * bins: array of bin edges
+        * data: tuple of arrays to be histogrammed
+        * bindeges: array of bin edges
         * xlabel: label for x-axis
         * ylabel: label for y axis
         * yscale: "lin" or "log" scale
+        * labels: labels for classes
+        * colors: colors corresponding to labels
     """
 
-    def __init__(self, ax=None, data=None, bins=50, xlabel="x", ylabel="freqeuency", yscale="log"):
+    def __init__(self, ax=None, data=None, binedges=None, xlabel="x", ylabel="freqeuency", yscale="log", labels=None, colors=None):
         # ### own implementation of one-dimensional histogram (numpy + pyplot bar) ###
 
-        self.bc, self.be = np.histogram(data if data is not None else [], bins)  # histogram data
-        self.bheights = self.bc
-        self.bcnt = (self.be[:-1] + self.be[1:]) / 2.0
-        self.w = 0.8 * (self.be[1] - self.be[0])
+        if type(data) != type((1,)):
+            print("! bhist requires a tuple as input", type(data))
+
+        self.n_classes = len(data)
+
         if ax is None:
-            self.bars = plt.bar(self.bcnt, self.bc, align="center", width=self.w, facecolor="b", edgecolor="grey", alpha=0.75)
-            self.ax = plt.gca()
+            fig = plt.figure()
+            self.ax = fig.add_subplot()
         else:
             self.ax = ax
-            self.bars = ax.bar(self.bcnt, self.bc, align="center", width=self.w, facecolor="b", edgecolor="grey", alpha=0.75)
+
+        self.bheights = []
+        self.bars = []
+
+        if labels is None:
+            labels = self.n_classes * [None]
+        if colors is None:
+            colors = self.n_classes * [None]
+
+        # plot class 1
+        _bc, self.be = np.histogram(data[0], binedges)  # histogram data
+        self.bheights.append(_bc)
+        self.bcnt = (self.be[:-1] + self.be[1:]) / 2.0
+        self.w = 0.8 * (self.be[1] - self.be[0])
+        self.bars.append(plt.bar(self.bcnt, _bc, align="center", width=self.w, facecolor=colors[0], label=labels[0], edgecolor="grey", alpha=0.75))
+        sum = _bc
+
+        # plot other classes
+        for _ic in range(1, self.n_classes):
+            _bc, _be = np.histogram(data[_ic], binedges)  # histogram data
+            self.bheights.append(_bc)
+            self.bars.append(
+                plt.bar(
+                    self.bcnt, _bc, align="center", width=self.w, facecolor=colors[_ic], label=labels[_ic], edgecolor="grey", alpha=0.75, bottom=sum
+                )
+            )
+            sum = sum + _bc
 
         self.ax.set_xlabel(xlabel)
         self.ax.set_ylabel(ylabel)
-        _mx = max(self.bheights)
+        _mx = max(sum)
         self.maxh = _mx if _mx > 0.0 else 1000
         self.ax.set_ylim(0.9, self.maxh)
         self.ax.set_yscale(yscale)
+        if labels[0] is not None:
+            self.ax.legend(loc="upper right")
 
     def set(self, data):
         """set new histogram data
@@ -289,10 +324,17 @@ class bhist:
 
         Action: update pyplot bar graph
         """
-        bc, be = np.histogram(data, self.be)  # histogram data
-        for _b, _h in zip(self.bars, bc):
-            _b.set_height(_h)
-        _mx = max(bc)
+
+        sum = np.zeros(len(self.bheights[0]))
+        for _i in range(self.n_classes):
+            _ic = self.n_classes - 1 - _i
+            _bc, _be = np.histogram(data[_ic], self.be)  # histogram data ...
+            self.bheights[_ic] = _bc
+            for _b, _h in zip(self.bars[_ic], self.bheights[_ic] + sum):
+                _b.set_height(_h)
+            sum = sum + self.bheights[_ic]
+
+        _mx = max(sum)
         if _mx > self.maxh:
             self.maxh = 1.2 * _mx
             self.ax.set_ylim(0.9, self.maxh)
@@ -305,12 +347,17 @@ class bhist:
 
         Action: update pyplot bar graph
         """
-        bc, be = np.histogram(data, self.be)  # histogram data ...
-        self.bheights = self.bheights + bc  # and add to existing
-        for _b, _h in zip(self.bars, self.bheights):
-            _b.set_height(_h)
 
-        _mx = max(self.bheights)
+        sum = np.zeros(len(self.bheights[0]))
+        for _i in range(self.n_classes):
+            _ic = self.n_classes - 1 - _i
+            _bc, _be = np.histogram(data[_ic], self.be)  # histogram data ...
+            self.bheights[_ic] = self.bheights[_ic] + _bc  # and add to existing
+            for _b, _h in zip(self.bars[_ic], self.bheights[_ic] + sum):
+                _b.set_height(_h)
+            sum = sum + self.bheights[_ic]
+
+        _mx = max(sum)
         if _mx > self.maxh:
             self.maxh = 1.2 * _mx
             self.ax.set_ylim(0.9, self.maxh)
@@ -322,12 +369,12 @@ class scatterplot:
     in every non-zero bin of a 2d-histogram
 
     Args:
-      * data: list of pairs of cordinates [ [[x], [y]], [[], []], ...] per class to be shown
-      * binsedges: 2 arrays of bin edges [[bex], [bey]]
-      * xlabel: label for x-axis
-      * ylabel: label for y axix
-      * labels: labels for classes
-      * colors: colors corresponding to labels
+        * data: list of pairs of cordinates [ [[x], [y]], [[], []], ...] per class to be shown
+        * binedges: 2 arrays of bin edges [[bex], [bey]]
+        * xlabel: label for x-axis
+        * ylabel: label for y axix
+        * labels: labels for classes
+        * colors: colors corresponding to labels
     """
 
     def __init__(self, ax=None, data=None, binedges=None, xlabel="x", ylabel="y", labels=None, colors=None):
@@ -544,14 +591,25 @@ class runDAQ:
         nbins1 = 100
         max1 = 1300
         be1 = np.linspace(0, max1, nbins1 + 1, endpoint=True)
-        self.bhist1 = bhist(ax=axh1, bins=be1, xlabel="pixel energies" + self.unit, ylabel="", yscale="log")
+        self.bhist1 = bhist(
+            ax=axh1, data=([],), binedges=be1, xlabel="pixel energies" + self.unit, ylabel="", yscale="log", labels=None, colors=('b',)
+        )
 
         # - histogram of cluster energies
         axh2 = fig.add_subplot(gs[6:10, -4:])
         nbins2 = 100
         max2 = 10000
         be2 = np.linspace(0, 10000, nbins2 + 1, endpoint=True)
-        self.bhist2 = bhist(ax=axh2, bins=be2, xlabel="cluster energies" + self.unit, ylabel="", yscale="log")
+        self.bhist2 = bhist(
+            ax=axh2,
+            data=([], []),
+            binedges=be2,
+            xlabel="cluster energies" + self.unit,
+            ylabel="",
+            yscale="log",
+            labels=("linear", "circular"),
+            colors=('yellow', 'cyan'),
+        )
 
         # - scatter plot: cluster energies & sizes
         ax3 = fig.add_subplot(gs[11:15, -4:])
@@ -660,11 +718,16 @@ class runDAQ:
                 o_unassigned -= unassigned_buf[i_buf]
 
                 # update histogram 1 with pixel energies
-                self.bhist1.add(frame2d[frame2d > 0])
+                self.bhist1.add((frame2d[frame2d > 0],))
 
                 # update histogram 2 with cluster energies
-                if cluster_energies is not None:
-                    self.bhist2.add(cluster_energies[:n_clusters])
+                if n_clusters > 0:
+                    self.bhist2.add(
+                        (
+                            cluster_energies[:n_clusters][circularity[:n_clusters] <= self.circularity_cut],
+                            cluster_energies[:n_clusters][circularity[:n_clusters] > self.circularity_cut],
+                        )
+                    )
 
                 # update scatter plot
                 xlin = cluster_energies[:n_clusters][circularity[:n_clusters] <= self.circularity_cut]
