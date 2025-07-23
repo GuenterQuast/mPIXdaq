@@ -599,7 +599,7 @@ class runDAQ:
         axim.set_ylabel("# y        ", loc="top")
         self.vmin = 0.5
         vmax = 500
-        self.img = axim.imshow(np.zeros((self.npx, self.npx)), cmap='hot', norm=LogNorm(vmin=self.vmin, vmax=vmax))
+        self.img = axim.imshow(np.zeros((self.npx, self.npx)), origin="lower", cmap='hot', norm=LogNorm(vmin=self.vmin, vmax=vmax))
         cbar = fig.colorbar(self.img, shrink=0.6, aspect=40, pad=-0.03)
         self.img.set_clim(vmin=self.vmin, vmax=vmax)
         # cbar.set_label("Energy " + unit, loc="top", labelpad=-5 )
