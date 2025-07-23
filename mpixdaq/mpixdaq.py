@@ -273,7 +273,7 @@ class bhist:
         # ### own implementation of one-dimensional histogram (numpy + pyplot bar) ###
 
         if type(data) != type((1,)):
-            print("! bhist requires a tuple as input", type(data))
+            print("! bhist requires a tuple as input, not ", type(data))
 
         self.n_classes = len(data)
 
@@ -288,7 +288,7 @@ class bhist:
                 labels = [None]
             else:
                 labels = ["class " + str(_ic) for _ic in range(self.n_classes)]
-            #        if colors is None:
+        if colors is None:
             colors = self.n_classes * [None]
 
         self.bheights = []
@@ -350,11 +350,12 @@ class bhist:
         Args:
             * data: heights for each bar
 
-        Action: update pyplot bar graph
+        Action: update pyplot bar objects
         """
 
         sum = np.zeros(len(self.bheights[0]))
         for _i in range(self.n_classes):
+            # plot bars in reverse order
             _ic = self.n_classes - 1 - _i
             _bc, _be = np.histogram(data[_ic], self.be)  # histogram data ...
             self.bheights[_ic] = self.bheights[_ic] + _bc  # and add to existing
@@ -384,6 +385,9 @@ class scatterplot:
 
     def __init__(self, ax=None, data=None, binedges=None, xlabel="x", ylabel="y", labels=None, colors=None):
         #  own implementation of 2d scatter plot (numpy + pyplot.plot() ###
+
+        if type(data) != type((1,)):
+            print("! scatterplot requires a tuple as input, not", type(data))
 
         self.n_classes = len(data)
         # initialize bins
@@ -443,26 +447,42 @@ class scatterplot:
             _H2d, _bex, _bey = np.histogram2d(data[_ic][0], data[_ic][1], self.binedges)  # numpy 2d histogram function
             self.H2d[_ic] = _H2d
             _xidx, _yidx = np.nonzero(self.H2d[_ic])
-            self.gr[_ic].set_xdata(self.bcntx[_xidx])
-            self.gr[_ic].set_ydata(self.bcnty[_yidx])
+            self.gr[_ic].set(data=(self.bcntx[_xidx], self.bcnty[_yidx]))
 
     def add(self, data):
+        """update scatter-plot data
+
+        Args:
+            * data: new (xy)-paris to be added
+
+        Action: update pyplot line objects
+        """
+
         for _ic in range(self.n_classes):
             _H2d, _bex, _bey = np.histogram2d(data[_ic][0], data[_ic][1], self.binedges)  # numpy 2d histogram function
             self.H2d[_ic] = self.H2d[_ic] + _H2d
             _xidx, _yidx = np.nonzero(self.H2d[_ic])
-            self.gr[_ic].set_xdata(self.bcntx[_xidx] + self.pofx[_ic])
-            self.gr[_ic].set_ydata(self.bcnty[_yidx] + self.pofy[_ic])
+            self.gr[_ic].set(data=(self.bcntx[_xidx] + self.pofx[_ic], self.bcnty[_yidx] + self.pofy[_ic]))
 
 
 class runDAQ:
-    """run miniPIX data acquition and analysis"""
+    """run miniPIX data acquition and analysis
+
+    class to handle:
+
+        - command-line arguments
+        - initialization of miniPIX device of input file
+        - real-time analysis of data frames
+        - animated figures to show a live view of incoming data
+        - event loop controlling data acquisitoin, data output to file
+          graphical display
+    """
 
     def __init__(self, wd_path):
-        """initialize
+        """initialize:
+
         - options from command line arguments
-        - miniPIX detector or
-        - optionally input from file
+        - miniPIX detector or optionally input from file
         - graphics display
         """
 
@@ -587,9 +607,9 @@ class runDAQ:
         axim.arrow(110, -5.0, -110.0, 0, length_includes_head=True, width=1.5, color="b")
         axim.text(115.0, -3, "14 mm")
         if self.read_filename is None:
-            axim.text(0.05, -0.055, f"integration time {int(self.integration_time)}s", transform=axim.transAxes, color="b")
+            axim.text(0.05, -0.055, f"integration time {int(self.integration_time)}s", transform=axim.transAxes, color="royalblue")
         else:
-            axim.text(0.05, -0.055, f"accumulating {int(self.n_overlay)} frames", transform=axim.transAxes, color="b")
+            axim.text(0.05, -0.055, f"sum of {int(self.n_overlay)} frames", transform=axim.transAxes, color="royalblue")
         self.im_text = axim.text(0.05, -0.09, "#", transform=axim.transAxes, color="darkred", alpha=0.75)
         plt.box(False)
 
@@ -601,7 +621,7 @@ class runDAQ:
         max1 = 1300
         be1 = np.linspace(0, max1, nbins1 + 1, endpoint=True)
         self.bhist1 = bhist(
-            ax=axh1, data=([],), binedges=be1, xlabel="pixel energies" + self.unit, ylabel="", yscale="log", labels=None, colors=('b',)
+            ax=axh1, data=([],), binedges=be1, xlabel="pixel energies" + self.unit, ylabel="", yscale="log", labels=None, colors=('r',)
         )
 
         # - histogram of cluster energies
@@ -629,7 +649,7 @@ class runDAQ:
         # initialize for 3 classes of ([x],[y]) pairs
         self.scpl = scatterplot(
             ax=ax3,
-            data=[([], []), ([], []), ([], [])],
+            data=(([], []), ([], []), ([], [])),
             binedges=(bex, bey),
             xlabel="cluster energies (keV)",
             ylabel="pixels per cluster",
