@@ -727,42 +727,41 @@ class runDAQ:
                     np_unass = n_pixels
 
                 # add actual data to cumulated values
-                image = image + frame2d
+                image += frame2d
                 o_n_clusters += n_clusters
                 o_energy += Energy
                 o_np_unassigned += np_unass
                 o_unassigned += E_unass
                 # store in ring-buffers to subtract later
-                framebuf[i_buf] = frame2d
+                framebuf[i_buf, :, :] = frame2d[:, :]
                 n_clusters_buf[i_buf] = n_clusters
                 energy_buf[i_buf] = Energy
                 np_unassigned_buf[i_buf] = np_unass
                 unassigned_buf[i_buf] = E_unass
                 i_buf = i_buf + 1 if i_buf < self.n_overlay - 1 else 0
                 # subtract oldest frame
-                image = image - framebuf[i_buf]
+                image -= framebuf[i_buf]
                 o_n_clusters -= n_clusters_buf[i_buf]
                 o_energy -= energy_buf[i_buf]
                 o_np_unassigned -= np_unassigned_buf[i_buf]
                 o_unassigned -= unassigned_buf[i_buf]
+
+                # boolean indices for linear and circular objects
+                is_lin = circularity[:n_clusters] <= self.circularity_cut
+                is_cir = circularity[:n_clusters] > self.circularity_cut
 
                 # update histogram 1 with pixel energies
                 self.bhist1.add((frame2d[frame2d > 0],))
 
                 # update histogram 2 with cluster energies
                 if n_clusters > 0:
-                    self.bhist2.add(
-                        (
-                            cluster_energies[:n_clusters][circularity[:n_clusters] <= self.circularity_cut],
-                            cluster_energies[:n_clusters][circularity[:n_clusters] > self.circularity_cut],
-                        )
-                    )
+                    self.bhist2.add((cluster_energies[:n_clusters][is_lin], cluster_energies[:n_clusters][is_cir]))
 
                 # update scatter plot
-                xlin = cluster_energies[:n_clusters][circularity[:n_clusters] <= self.circularity_cut]
-                ylin = n_cpixels[:n_clusters][circularity[:n_clusters] <= self.circularity_cut]
-                xcir = cluster_energies[:n_clusters][circularity[:n_clusters] > self.circularity_cut]
-                ycir = n_cpixels[:n_clusters][circularity[:n_clusters] > self.circularity_cut]
+                xlin = cluster_energies[:n_clusters][is_lin]
+                ylin = n_cpixels[:n_clusters][is_lin]
+                xcir = cluster_energies[:n_clusters][is_cir]
+                ycir = n_cpixels[:n_clusters][is_cir]
                 self.scpl.add([(xlin, ylin), (xcir, ycir), ([E_unass], [np_unass])])
 
                 # update image and status text
@@ -777,7 +776,7 @@ class runDAQ:
 
                 # update, redraw and show all subplots in fig
                 if dt_active - dt_last_plot > 0.15:  # limit number of graphics updates
-                    self.img.set_data(self.vmin + image)
+                    self.img.set(data=image)
                     self.im_text.set_text(status)
                     self.fig.canvas.start_event_loop(0.001)  # better than plt.pause(), which would steal the focus
                     dt_last_plot = dt_active
