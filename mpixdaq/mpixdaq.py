@@ -120,8 +120,8 @@ class miniPIXdaq:
         # parameters controlling data acquisition
         #  -  ac_count, ac_time, fileType, fileName
         #     if ac_count>1: frame data is available only from last frame
-        self.count = ac_count
-        self.time = ac_time
+        self.ac_count = ac_count
+        self.ac_time = ac_time
         # Queues for communication
         self.dataQ = dataQ
         self.cmdQ = cmdQ
@@ -166,11 +166,11 @@ class miniPIXdaq:
             )
 
     def __call__(self):
-        """Read *count* frames with *ac_time* accumulation time each and add all up
+        """Read *ac_count* frames with *ac_time* accumulation time each and add all up
         return data via Queue
         """
         while self.cmdQ.empty():
-            rc = self.dev.doSimpleIntegralAcquisition(self.count, self.time, self.pixet.PX_FTYPE_AUTODETECT, "")
+            rc = self.dev.doSimpleIntegralAcquisition(self.ac_count, self.ac_time, self.pixet.PX_FTYPE_AUTODETECT, "")
             self.dataQ.put(self.dev.lastAcqFrameRefInc().data() if rc == 0 else None)
 
     def __del__(self):
@@ -621,7 +621,7 @@ class runDAQ:
         max1 = 1300
         be1 = np.linspace(0, max1, nbins1 + 1, endpoint=True)
         self.bhist1 = bhist(
-            ax=axh1, data=([],), binedges=be1, xlabel="pixel energies" + self.unit, ylabel="", yscale="log", labels=None, colors=('r',)
+            ax=axh1, data=([],), binedges=be1, xlabel="pixel energies " + self.unit, ylabel="", yscale="log", labels=None, colors=('r',)
         )
 
         # - histogram of cluster energies
@@ -633,7 +633,7 @@ class runDAQ:
             ax=axh2,
             data=([], []),
             binedges=be2,
-            xlabel="cluster energies" + self.unit,
+            xlabel="cluster energies " + self.unit,
             ylabel="",
             yscale="log",
             labels=("linear", "circular"),
@@ -794,9 +794,10 @@ class runDAQ:
             if self.read_filename is None:
                 self.cmdQ.put("e")
             if self.mpl_active:
-                _a = input("\033[36m\n" + 20 * ' ' + " type <ret> to close window -->\033[0m")
+                _a = input("\033[36m\n" + 20 * ' ' + " type <ret> to close window --> ")
+                print("\033[0m")
             else:
-                print("\33[0m\n" + 20 * ' ' + " Window closed, ending ")
+                print("\33[0m\n" + 20 * ' ' + " Window closed, ending \n")
             if self.read_filename is None:
                 pypixet.exit()
 
