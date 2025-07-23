@@ -610,7 +610,7 @@ class runDAQ:
             axim.text(0.05, -0.055, f"integration time {int(self.integration_time)}s", transform=axim.transAxes, color="royalblue")
         else:
             axim.text(0.05, -0.055, f"sum of {int(self.n_overlay)} frames", transform=axim.transAxes, color="royalblue")
-        self.im_text = axim.text(0.05, -0.09, "#", transform=axim.transAxes, color="darkred", alpha=0.75)
+        self.im_text = axim.text(0.05, -0.09, "#", transform=axim.transAxes, color="r", alpha=0.75)
         plt.box(False)
 
         # plots of analysis results
