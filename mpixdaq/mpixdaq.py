@@ -74,7 +74,7 @@ class miniPIXdaq:
     Args:
       - ac_count: number of frames to overlay
       - ac_time: acquisition time
-      - dataQ:  Queue to receive data
+      - dataQ:  Queue to transfer data
       - cmsQ: command Queue
     """
 
@@ -466,7 +466,7 @@ class scatterplot:
 
 
 class runDAQ:
-    """run miniPIX data acquition and analysis
+    """run miniPIX data acquisition and analysis
 
     class to handle:
 
@@ -474,7 +474,7 @@ class runDAQ:
         - initialization of miniPIX device of input file
         - real-time analysis of data frames
         - animated figures to show a live view of incoming data
-        - event loop controlling data acquisitoin, data output to file
+        - event loop controlling data acquisition, data output to file
           graphical display
     """
 

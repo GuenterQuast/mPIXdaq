@@ -232,3 +232,153 @@ Higher pixel  energies may result when frames with short acquisition
 time are summed up. For details, see the article by J. Jakubek, 
 *Precise energy calibration of pixel detector working in time-over-threshold mode*, 
 NIM A 633 (2011), 5262-5265*.
+
+
+## Package Structure
+
+This package consists of one *Python* file with several classes providing the
+base functionality. As mentioned above, it relies on 
+[ADVACAM libraries](https://wiki.advacam.cz/wiki/Python_API)
+for setting-up and reading the sensor. 
+Other dependencies are well-known libraries
+from the "Python" eco-system for data analysis:
+
+  - `numpy`
+  - `matplotlib`,
+  - `scipy.cluster.DBSCAN`
+  - `numpy.cov`
+  - `numpy.linalg.eig`
+
+The classes and scripts of the package are
+
+  - class `miniPIXdaq`
+  - class `frameAnalyzer`
+  - class `runDAQ`
+  - class `bhist`
+  - class `scatterplot`
+  - package script `run_mPIXdaq.py`
+
+
+Details on the interfaces are given below.
+
+```
+class miniPIXdaq:
+    """Initialize and readout miniPIX EDU device
+
+    Args:
+      - ac_count: number of frames to overlay
+      - ac_time: acquisition time
+      - dataQ:  Queue to transfer data
+      - cmsQ: command Queue
+"""
+```
+
+```
+class frameAnalyzer:
+    """Analyze frame data
+      - find clusters
+      - compute cluster energies
+      Args: a 2d-frame from the miniPIX
+      Returns:
+      - n_pixels: number of pixels with energy > 0
+      - n_clusters: number of clusters
+      - n_cpixels: number of pixels per cluster
+      - circularity: circularity per cluster (0. for linear, 1. for circular)
+      - cluster_energies: energy per cluster
+    """
+```
+These classes are used by the class `runDAQ`, which initializes all 
+components including the graphical output for monitoring if the on-going 
+data acquisition in real-time. It accepts command-line arguments to 
+set various options, as already described above. 
+
+```
+  class runDAQ:
+    """run miniPIX data acquisition and analysis
+
+    class to handle:
+
+        - command-line arguments
+        - initialization of miniPIX device of input file
+        - real-time analysis of data frames
+        - animated figures to show a live view of incoming data
+        - event loop controlling data acquisition, data output to file
+          graphical display
+    """
+```
+
+Tow helper classes implement 1d and 2d histogramming functionality for
+efficient and fast animation using methods from `matplotlib.pyplot`.
+
+```
+class bhist:
+    """one-dimensional histogram for animation, based on bar graph
+    supports multiple classes as stacked histogram
+
+    Args:
+        * data: tuple of arrays to be histogrammed
+        * bindeges: array of bin edges
+        * xlabel: label for x-axis
+        * ylabel: label for y axis
+        * yscale: "lin" or "log" scale
+        * labels: labels for classes
+        * colors: colors corresponding to labels
+    """
+```
+
+```
+class scatterplot:
+    """two-dimensional scatter plot for animation, based on numpy.histogram2d
+    supports multiple classes of data, plots a '.' in the corresponding color
+    in every non-zero bin of a 2d-histogram
+
+    Args:
+        * data: list of pairs of cordinates [ [[x], [y]], [[], []], ...] per class to be shown
+        * binedges: 2 arrays of bin edges [[bex], [bey]]
+        * xlabel: label for x-axis
+        * ylabel: label for y axix
+        * labels: labels for classes
+        * colors: colors corresponding to labels
+    """
+```
+
+A package script `run_mPIXdaq` is provided as an example to tie 
+everything together in a running Program. 
+Because the ADVACAM *Python* interface (`pypixet.so`) expects 
+C-libraries and configuration files in the very same directory 
+as *pypixet.so* itself, some tricky manipulation of the environment 
+variable `LD_LIBRAREY_PATH` is needed to ensure that all libraries
+are loaded and the *miniPIX* is correctly initialized. 
+
+```
+#!/usr/bin/env python3
+import os, sys
+
+# pypixet requires '.' in LD_LIBRARY_PATH so that al neccessary C-libratreis are found
+#  - add current directory to LD-LIBRARY_PATH
+#  - and restart python script for changes to take effect
+
+path_modified = False
+
+if 'LD_LIBRARY_PATH' not in os.environ:
+    os.environ['LD_LIBRARY_PATH'] = '.'
+    path_modified = True
+elif not '.' in os.environ['LD_LIBRARY_PATH']:
+    os.environ['LD_LIBRARY_PATH'] += ':.'
+    path_modified = True
+
+if path_modified:
+    print(" ! added '.' to LD_LIBRARY_PATH")
+    try:
+        os.execv(sys.argv[0], sys.argv)
+    except Exception as e:
+        sys.exit('EXCEPTION: Failed to Execute under modified environment, ' + e)
+else:  # restart python script for setting to take effect
+    # get current working directory before importing minipix libraries
+    wd = os.getcwd()
+    from mpixdaq import mpixdaq  # this changes the working directory!
+
+    rD = mpixdaq.runDAQ(wd)  # start daq in working directory
+    rD()
+```
+
