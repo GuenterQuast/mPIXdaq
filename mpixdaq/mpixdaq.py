@@ -114,9 +114,12 @@ class miniPIXdaq:
         # OPMs = ["PX_TPXMODE_MEDIPIX", "PX_TPXMODE_TOT", "PX_TPXMODE_1HIT", "PX_TPXMODE_TIMEPIX"]
         # device initialization
         pixcfg = self.dev.pixCfg()  # Create the pixels configuration object
+        # enable output of pixel energies 
         pixcfg.setModeAll(self.pixet.PX_TPXMODE_TOT)
-        self.dev.useCalibration(1)  # pixel values in keV
-
+        if self.dev.useCalibration(1):  # pixel values in keV
+            print("!!! Could not enable device calibration")
+        else:
+            print("*==* running in ToT mode converted to keV")
         # parameters controlling data acquisition
         #  -  ac_count, ac_time, fileType, fileName
         #     if ac_count>1: frame data is available only from last frame
@@ -171,7 +174,11 @@ class miniPIXdaq:
         """
         while self.cmdQ.empty():
             rc = self.dev.doSimpleIntegralAcquisition(self.ac_count, self.ac_time, self.pixet.PX_FTYPE_AUTODETECT, "")
-            self.dataQ.put(self.dev.lastAcqFrameRefInc().data() if rc == 0 else None)
+            if rc!=0: 
+                print("!!! miniPIX device readout error: ", dev.lastError())
+                self.dataQ.put(None)
+            self.dataQ.put(self.dev.lastAcqFrameRefInc().data())
+
 
     def __del__(self):
         pypixet.exit()
