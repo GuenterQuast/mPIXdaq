@@ -31,6 +31,7 @@ import numpy as np
 from queue import Queue
 from threading import Thread
 
+import matplotlib as mpl
 import matplotlib.pyplot as plt
 
 plt.style.use("dark_background")
@@ -603,16 +604,18 @@ class runDAQ:
         axim = fig.add_subplot(gs[:, :-4])
         axim.set_title(self.title, y=0.97, size="x-large")
         axim.set_xlabel("# x        ", loc="right")
-        axim.set_ylabel("# y        ", loc="top")
+        axim.set_ylabel("# y             ", loc="top")
+        _rect = mpl.patches.Rectangle((0, 0), 255, 255, linewidth=1, edgecolor='cornsilk', facecolor='none')
+        axim.add_patch(_rect)
         self.vmin = 0.5
         vmax = 500
         self.img = axim.imshow(np.zeros((self.npx, self.npx)), origin="lower", cmap='hot', norm=LogNorm(vmin=self.vmin, vmax=vmax))
         cbar = fig.colorbar(self.img, shrink=0.6, aspect=40, pad=-0.03)
         self.img.set_clim(vmin=self.vmin, vmax=vmax)
         # cbar.set_label("Energy " + unit, loc="top", labelpad=-5 )
-        axim.arrow(146, -5.0, 110.0, 0, length_includes_head=True, width=1.5, color="b")
-        axim.arrow(110, -5.0, -110.0, 0, length_includes_head=True, width=1.5, color="b")
-        axim.text(115.0, -3, "14 mm")
+        axim.arrow(146, 261.0, 110.0, 0, length_includes_head=True, width=1.5, color="b")
+        axim.arrow(110, 261.0, -110.0, 0, length_includes_head=True, width=1.5, color="b")
+        axim.text(115.0, 259, "14 mm")
         if self.read_filename is None:
             axim.text(0.05, -0.055, f"integration time {int(self.integration_time)}s", transform=axim.transAxes, color="royalblue")
         else:
