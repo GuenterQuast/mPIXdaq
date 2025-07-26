@@ -202,6 +202,19 @@ in the detector material (via the Compton process).
 
 ![The graphical display of miniPIXdaq](miniPIXdaq.png)
 
+The analysis shown here is suitable for low-rate scenarios, e.g.
+the analysis of natural radiation as emitted by minerals like
+Pitchblend (=Uraninit).  Columbit, Thorianit and others. Radon
+accumulated from the air in the basement rooms on the surface
+of an electrostatically charged ballon also work fine. Therefore,
+the frame collection is chosen to be on the order of seconds, 
+so that analysis results can be displayed in real-time on 
+a sufficiently fast computer including the Raspberry Pi 5.
+
+For applications at higher rate, the analysis may have to
+be done off-line by reading data from recorded files,
+or multiple cores must be used for the analysis task.  
+
 
 ## Sensor Details
 

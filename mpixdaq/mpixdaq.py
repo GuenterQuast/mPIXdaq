@@ -64,7 +64,7 @@ def import_npy_append_array():
 
 
 #
-#  functions and classes - - - - -
+#  main functions and classes - - - - -
 #
 
 # - handling the miniPIX EDU device
@@ -695,26 +695,57 @@ class runDAQ:
         plt.ion()
         plt.show()
 
+    def anaviz(self, frame2d):
+        """analyze and visualize data
+        """
+        n_pixels, n_clusters, n_cpixels, circularity, cluster_energies = self.frameAna(frame2d)
+
+        if n_clusters > 0:
+            self.Energy = cluster_energies.sum()
+            self.Energy_in_clusters = cluster_energies[:n_clusters].sum()
+            self.np_unass = n_cpixels[n_clusters]  # last entry is for unassigned
+            self.E_unass = cluster_energies[n_clusters]
+        else:
+            self.Energy = frame2d[frame2d > 0].sum()  # raw pixel energy
+            self.Energy_in_clusters = 0.0
+            self.np_unass = n_pixels
+            self.E_unass = self.Energy
+        self.n_clusters = n_clusters    
+
+        # boolean indices for linear and circular objects
+        is_lin = circularity[:n_clusters] <= self.circularity_cut
+        is_cir = circularity[:n_clusters] > self.circularity_cut
+
+        # update histogram 1 with pixel energies
+        self.bhist1.add((frame2d[frame2d > 0],))
+
+        # update histogram 2 with cluster energies
+        if n_clusters > 0:
+            self.bhist2.add((cluster_energies[:n_clusters][is_lin], cluster_energies[:n_clusters][is_cir]))
+
+        # update scatter plot
+        xlin = cluster_energies[:n_clusters][is_lin]
+        ylin = n_cpixels[:n_clusters][is_lin]
+        xcir = cluster_energies[:n_clusters][is_cir]
+        ycir = n_cpixels[:n_clusters][is_cir]
+        self.scpl.add([(xlin, ylin), (xcir, ycir), ([self.E_unass], [self.np_unass])])
+
+
     def __call__(self):
         """run daq loop"""
         # - data structure to store miniPIX frames and analysis results per frame
         frame2d = np.zeros((self.npx, self.npx), dtype=np.float32)
         framebuf = np.zeros((self.n_overlay, self.npx, self.npx), dtype=np.float32)
+        i_buf = 0
         # accumulative image
         image = np.zeros((self.npx, self.npx), dtype=np.float32)
-        # arrays for cluster statistics
-        n_clusters_buf = np.zeros(self.n_overlay, dtype=np.float32)
-        np_unassigned_buf = np.zeros(self.n_overlay, dtype=np.float32)
-        energy_buf = np.zeros(self.n_overlay, dtype=np.float32)
-        unassigned_buf = np.zeros(self.n_overlay, dtype=np.float32)
-        o_n_clusters = 0
-        o_energy = 0.0
-        o_np_unassigned = 0
-        o_unassigned = 0.0
-        i_buf = 0
+        self.n_clusters = 0
+        self.Energy = 0.
+        self.np_unass = 0
+        self.E_unass = 0.
 
         # set-up analysis
-        frameAna = frameAnalyzer()
+        self.frameAna = frameAnalyzer()
 
         # set up daq
         dt_alive = 0.0
@@ -751,69 +782,30 @@ class runDAQ:
                     with NpyAppendArray(out_filename) as npa:
                         npa.append(np.array([frame2d]))
 
-                # analyze data
-                n_pixels, n_clusters, n_cpixels, circularity, cluster_energies = frameAna(frame2d)
-                if n_clusters > 0:
-                    Energy = cluster_energies.sum()
-                    Energy_in_clusters = cluster_energies[:n_clusters].sum()
-                    np_unass = n_cpixels[n_clusters]  # last entry is for unassigned
-                    E_unass = cluster_energies[n_clusters]
-                else:
-                    Energy = frame2d[frame2d > 0].sum()  # raw pixel energy
-                    Energy_in_clusters = 0.0
-                    E_unass = Energy
-                    np_unass = n_pixels
-
-                # add actual data to cumulated values
-                image += frame2d
-                o_n_clusters += n_clusters
-                o_energy += Energy
-                o_np_unassigned += np_unass
-                o_unassigned += E_unass
-                # store in ring-buffers to subtract later
-                framebuf[i_buf, :, :] = frame2d[:, :]
-                n_clusters_buf[i_buf] = n_clusters
-                energy_buf[i_buf] = Energy
-                np_unassigned_buf[i_buf] = np_unass
-                unassigned_buf[i_buf] = E_unass
-                i_buf = i_buf + 1 if i_buf < self.n_overlay - 1 else 0
-                # subtract oldest frame
+                # subtract oldest frame ...
                 image -= framebuf[i_buf]
-                o_n_clusters -= n_clusters_buf[i_buf]
-                o_energy -= energy_buf[i_buf]
-                o_np_unassigned -= np_unassigned_buf[i_buf]
-                o_unassigned -= unassigned_buf[i_buf]
+                # ... and store new one in ring-buffer
+                framebuf[i_buf, :, :] = frame2d[:, :]
+                # and add actual data to cumulated values
+                image += frame2d
+                if i_buf < self.n_overlay - 1:
+                    i_buf = i_buf + 1 
+                else: 
+                    # buffer filled, analyze data
+                    self.anaviz(image)
+                    # reset buffer index
+                    i_buf = 0
 
-                # boolean indices for linear and circular objects
-                is_lin = circularity[:n_clusters] <= self.circularity_cut
-                is_cir = circularity[:n_clusters] > self.circularity_cut
-
-                # update histogram 1 with pixel energies
-                self.bhist1.add((frame2d[frame2d > 0],))
-
-                # update histogram 2 with cluster energies
-                if n_clusters > 0:
-                    self.bhist2.add((cluster_energies[:n_clusters][is_lin], cluster_energies[:n_clusters][is_cir]))
-
-                # update scatter plot
-                xlin = cluster_energies[:n_clusters][is_lin]
-                ylin = n_cpixels[:n_clusters][is_lin]
-                xcir = cluster_energies[:n_clusters][is_cir]
-                ycir = n_cpixels[:n_clusters][is_cir]
-                self.scpl.add([(xlin, ylin), (xcir, ycir), ([E_unass], [np_unass])])
-
-                # update image and status text
                 dt_active = time.time() - t_start
-                dead_time_fraction = 1.0 - dt_alive / dt_active
-                status = (
-                    f"#{i_frame}   active {dt_active:.0f}s   alive {dt_alive:.0f}s "
-                    + f"  clusters = {o_n_clusters:.0f} / {o_energy:.0f}keV "
-                    + f"  unassigned: {o_np_unassigned:.0f} / {o_unassigned:.0f}keV"
-                    + 10 * " "
-                )
-
                 # update, redraw and show all subplots in figure
                 if dt_active - dt_last_plot > 0.15:  # limit number of graphics updates
+                    dead_time_fraction = 1.0 - dt_alive / dt_active
+                    status = (
+                        f"#{i_frame}   active {dt_active:.0f}s   alive {dt_alive:.0f}s "
+                        + f"  clusters = {self.n_clusters:.0f} / {self.Energy:.0f}keV "
+                        + f"  unassigned: {self.np_unass:.0f} / {self.E_unass:.0f}keV"
+                        + 10 * " "
+                    )
                     self.img.set(data=image)
                     self.im_text.set_text(status)
                     self.fig.canvas.start_event_loop(0.001)  # better than plt.pause(), which would steal the focus
