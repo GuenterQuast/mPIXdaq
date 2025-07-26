@@ -66,20 +66,35 @@ def import_npy_append_array():
 #
 #  functions and classes - - - - -
 #
+
 # - handling the miniPIX EDU device
 
 
 class miniPIXdaq:
-    """Initialize and readout miniPIX EDU device
+    """Initialize, readout miniPIX EDU device and store data
+
+    After initialization, data from the device is stored in a
+    ring buffer and the current buffer index is sent to the
+    calling process via a Queue in an infinite loop, which
+    ends when data is entered in a command Queue.
 
     Args:
+
       - ac_count: number of frames to overlay
       - ac_time: acquisition time
+
+    Queues for communication and synchronization
+
       - dataQ:  Queue to transfer data
       - cmsQ: command Queue
+
+    Data structure:
+
+       - fBuffer: ring buffer with recent frame data
+
     """
 
-    def __init__(self, ac_count=10, ac_time=0.1, dataQ=None, cmdQ=None):
+    def __init__(self, ac_count=10, ac_time=0.1):
         """initialize miniPIX device and set up data acquisition"""
 
         # no device yet
@@ -88,7 +103,7 @@ class miniPIXdaq:
         # import python interface to ADVACAM libraries
         try:
             import_pixet()
-        except Exeption as e:
+        except Exception as e:
             print("!!! failed to import pypixet library ", str(e))
             return
 
@@ -115,7 +130,7 @@ class miniPIXdaq:
         # OPMs = ["PX_TPXMODE_MEDIPIX", "PX_TPXMODE_TOT", "PX_TPXMODE_1HIT", "PX_TPXMODE_TIMEPIX"]
         # device initialization
         pixcfg = self.dev.pixCfg()  # Create the pixels configuration object
-        # enable output of pixel energies 
+        # enable output of pixel energies
         pixcfg.setModeAll(self.pixet.PX_TPXMODE_TOT)
         if self.dev.useCalibration(1):  # pixel values in keV
             print("!!! Could not enable device calibration")
@@ -126,9 +141,15 @@ class miniPIXdaq:
         #     if ac_count>1: frame data is available only from last frame
         self.ac_count = ac_count
         self.ac_time = ac_time
-        # Queues for communication
-        self.dataQ = dataQ
-        self.cmdQ = cmdQ
+
+        # ring buffer for data collection
+        self.Nbuf = 8
+        self.fBuffer = np.zeros((self.Nbuf, self.npx * self.npx), dtype=np.float32)
+        self.widx = 0
+
+        # Queues for communication and synchronization
+        self.dataQ = Queue(self.Nbuf)
+        self.cmdQ = Queue(1)
 
     def device_info(self):
         pars = self.dev.parameters()
@@ -175,11 +196,13 @@ class miniPIXdaq:
         """
         while self.cmdQ.empty():
             rc = self.dev.doSimpleIntegralAcquisition(self.ac_count, self.ac_time, self.pixet.PX_FTYPE_AUTODETECT, "")
-            if rc!=0: 
+            if rc != 0:
                 print("!!! miniPIX device readout error: ", dev.lastError())
                 self.dataQ.put(None)
-            self.dataQ.put(self.dev.lastAcqFrameRefInc().data())
-
+            # get frame and store in ring buffer
+            self.fBuffer[self.widx, :] = self.dev.lastAcqFrameRefInc().data()
+            self.dataQ.put(self.widx)
+            self.widx = self.widx + 1 if self.widx < self.Nbuf - 1 else 0
 
     def __del__(self):
         pypixet.exit()
@@ -383,10 +406,11 @@ class scatterplot:
     in every non-zero bin of a 2d-histogram
 
     Args:
-        * data: list of pairs of cordinates [ [[x], [y]], [[], []], ...] per class to be shown
+        * data: tuple of pairs of cordinates (([x], [y]), ([], []), ...)
+          per class to be shown
         * binedges: 2 arrays of bin edges [[bex], [bey]]
         * xlabel: label for x-axis
-        * ylabel: label for y axix
+        * ylabel: label for y axis
         * labels: labels for classes
         * colors: colors corresponding to labels
     """
@@ -506,9 +530,9 @@ class runDAQ:
         # parse command line arguments
         parser = argparse.ArgumentParser(description="read, analyze and display data from miniPIX EDU device")
         parser.add_argument('-v', '--verbosity', type=int, default=1, help='verbosity level (1)')
-        parser.add_argument('-o', '--overlay', type=int, default=25, help='number of frames to overlay in graph (25)')
-        parser.add_argument('-a', '--acq_time', type=float, default=0.2, help='acquisition time/frame (0.2)')
-        parser.add_argument('-c', '--acq_count', type=int, default=1, help='number of frames to add (1)')
+        parser.add_argument('-o', '--overlay', type=int, default=10, help='number of frames to overlay in graph (10)')
+        parser.add_argument('-a', '--acq_time', type=float, default=0.1, help='acquisition time/frame (0.1)')
+        parser.add_argument('-c', '--acq_count', type=int, default=5, help='number of frames to add (5)')
         parser.add_argument('-f', '--file', type=str, default='', help='file to store frame data')
         parser.add_argument('-t', '--time', type=int, default=36000, help='run time in seconds')
         parser.add_argument('--circularity_cut', type=float, default=0.5, help='cicrularity cut')
@@ -537,11 +561,10 @@ class runDAQ:
 
         # try to load pypixet library and connect to miniPIX
         if self.read_filename is None:
-            maxsize = 16
-            self.dataQ = Queue(maxsize)
-            self.cmdQ = Queue(1)
+            print(f"     * overlaying {self.n_overlay} frames with {self.tot_acq_time} s")
+            print(f"     * readout {self.acq_count} x {self.acq_time} s")
             # initialize data acquisition object
-            self.daq = miniPIXdaq(self.acq_count, self.acq_time, self.dataQ, self.cmdQ)
+            self.daq = miniPIXdaq(self.acq_count, self.acq_time)
             if self.daq.dev is None:
                 _a = input("  Problem with miniPIX device - read data from file ? (y/n) > ")
                 if _a in {'y', 'Y', 'j', 'J'}:
@@ -605,12 +628,14 @@ class runDAQ:
         axim.set_title(self.title, y=0.97, size="x-large")
         axim.set_xlabel("# x        ", loc="right")
         axim.set_ylabel("# y             ", loc="top")
-        _rect = mpl.patches.Rectangle((0, 0), 255, 255, linewidth=1, edgecolor='cornsilk', facecolor='none')
+        # no default frame around graph
+        axim.set_frame_on(False)
+        _rect = mpl.patches.Rectangle((0, 0), 255, 255, linewidth=1, edgecolor='grey', facecolor='none')
         axim.add_patch(_rect)
         self.vmin = 0.5
         vmax = 500
         self.img = axim.imshow(np.zeros((self.npx, self.npx)), origin="lower", cmap='hot', norm=LogNorm(vmin=self.vmin, vmax=vmax))
-        cbar = fig.colorbar(self.img, shrink=0.6, aspect=40, pad=-0.03)
+        cbar = fig.colorbar(self.img, shrink=0.6, aspect=40, pad=-0.045)
         self.img.set_clim(vmin=self.vmin, vmax=vmax)
         # cbar.set_label("Energy " + unit, loc="top", labelpad=-5 )
         axim.arrow(146, 261.0, 110.0, 0, length_includes_head=True, width=1.5, color="b")
@@ -621,13 +646,12 @@ class runDAQ:
         else:
             axim.text(0.05, -0.055, f"sum of {int(self.n_overlay)} frames", transform=axim.transAxes, color="royalblue")
         self.im_text = axim.text(0.05, -0.09, "#", transform=axim.transAxes, color="r", alpha=0.75)
-        plt.box(False)
 
         # plots of analysis results
 
         #  - histogram of pixel energies
         axh1 = fig.add_subplot(gs[1:5, -4:])
-        nbins1 = 100
+        nbins1 = 65
         max1 = 1300
         be1 = np.linspace(0, max1, nbins1 + 1, endpoint=True)
         self.bhist1 = bhist(
@@ -707,7 +731,11 @@ class runDAQ:
         try:
             while dt_active < self.run_time and self.mpl_active:
                 if self.read_filename is None:
-                    frame2d[:, :] = np.array(self.dataQ.get()).reshape((self.npx, self.npx))
+                    #                    frame2d[:, :] = np.array(self.daq.dataQ.get()).reshape((self.npx, self.npx))
+                    _idx = self.daq.dataQ.get()
+                    # print(self.daq.dataQ.qsize())
+                    # data as 2d pixel array
+                    frame2d[:, :] = self.daq.fBuffer[_idx].reshape(self.npx, self.npx)
                     dt_alive += self.acq_count * self.acq_time
                     i_frame += 1
                 else:  # from file
@@ -784,7 +812,7 @@ class runDAQ:
                     + 10 * " "
                 )
 
-                # update, redraw and show all subplots in fig
+                # update, redraw and show all subplots in figure
                 if dt_active - dt_last_plot > 0.15:  # limit number of graphics updates
                     self.img.set(data=image)
                     self.im_text.set_text(status)
@@ -801,7 +829,7 @@ class runDAQ:
         finally:
             # end daq loop
             if self.read_filename is None:
-                self.cmdQ.put("e")
+                self.daq.cmdQ.put("e")
             if self.mpl_active:
                 _a = input("\033[36m\n" + 20 * ' ' + " type <ret> to close window --> ")
                 print("\033[0m")

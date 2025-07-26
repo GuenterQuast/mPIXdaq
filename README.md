@@ -75,8 +75,8 @@ variable `LD_LIBRARY_PATH` if necessary and then restarting to execute the
  *Python* code. Starting the *Python* code by a different mechanism may
 not work without adjusting the environment variable `LD_LIBRARY_PATH`. 
 In the *bash* shell, this is achieved by `export LD_LIBRARY_PATH='.'` on
-the command line. Note, however, that such a permanent change could 
-open up a security gap!
+the command line. Note, however, that such a permanent change opens up
+a security gap on your computer!
  
 
 ## Running the example script
@@ -112,7 +112,7 @@ options:
 ```
 The default values are adjusted to situations with low rates, where
 frames from the *miniPIX* with an integration time of
-`acq_time = 0.2` are read. For the graphics display, `number_of_buffers=25` 
+`acq_time = 0.2` are read. For the graphics display, `overlay = 25` 
 recent frames are overlaid, leading to an integration time of 5 s. 
 These images represent a two-dimensional pixel map with a color code 
 indicating the energy measured in each pixel. 
@@ -170,7 +170,8 @@ Macintosh arm64 architectures. The contents of a typical directory is:
 Note that the copyright of these libraries belongs to ADVACAM. 
 The libraries may be downloaded from their web page, 
 [ADVACAM DWONLOADS](https://advacam.com/downloads/). 
-They are provided here as a *Python* package for convenience. 
+They are provided here as as *Python* packages for some platforms
+for convenience. 
 
 
 ## Data Analysis
@@ -186,17 +187,17 @@ For circular clusters, as produced by α radiation, this ratio is close
 to one, while it is almost zero for the longer traces from β radiation.  
 
 The figure below shows the graphical display of the program with a 
-pixel mimage and the typical distributions of the pixel and cluster 
+pixel image and the typical distributions of the pixel and cluster 
 energies and the number of pixels per cluster. The source used was a 
 weakly radioactive stone from the Black Forest containing a small amount
 of Uranium and its decay products. The pixel map shown in the figure was 
 sampled over a time of five seconds. The histogram in the lower-right
 corner shows how well the cluster types discriminate different types
-of radiation:  α rays in the green band with relatively low numbers 
-of pixels pwr cluster, electrons (β) as long tracks with large numbers
-of pixels per cluster and rather low energies, and 𝛾 rays as single
-pixels not associated to clusters. Some of the electron tracks 
-with typically low energies also stem from photon interactions 
+of radiation: α rays in the green band with relatively low numbers 
+of pixels per cluster, electrons (β) as long tracks with large numbers
+of pixels per cluster and rather low energies. Single pixels not 
+associated to clusters originate from 𝛾 rays. Some of the electron 
+tracks  with typically low energies also stem from photon interactions 
 in the detector material (via the Compton process).
 
 ![The graphical display of miniPIXdaq](miniPIXdaq.png)
@@ -236,12 +237,12 @@ NIM A 633 (2011), 5262-5265*.
 
 ## Package Structure
 
-This package consists of one *Python* file with several classes providing the
-base functionality. As mentioned above, it relies on 
+This package consists of one *Python* file with several classes providing 
+the base functionality. As mentioned above, it relies on 
 [ADVACAM libraries](https://wiki.advacam.cz/wiki/Python_API)
 for setting-up and reading the sensor. 
-Other dependencies are well-known libraries
-from the "Python" eco-system for data analysis:
+Other dependencies are well-known libraries from the "Python" eco-system 
+for data analysis:
 
   - `numpy`
   - `matplotlib`,
@@ -263,14 +264,28 @@ Details on the interfaces are given below.
 
 ```
 class miniPIXdaq:
-    """Initialize and readout miniPIX EDU device
+    """Initialize, readout miniPIX EDU device and store data
+
+    After initialization, data from the device is stored in a
+    ring buffer and the current buffer index is sent to the
+    calling process via a Queue in an infinite loop, which
+    ends when data is entered in a command Queue.
 
     Args:
+
       - ac_count: number of frames to overlay
       - ac_time: acquisition time
+
+    Queues for communication and synchronization
+
       - dataQ:  Queue to transfer data
       - cmsQ: command Queue
-"""
+
+    Data structure:
+
+       - fBuffer: ring buffer with recent frame data
+
+    """
 ```
 
 ```
@@ -333,10 +348,11 @@ class scatterplot:
     in every non-zero bin of a 2d-histogram
 
     Args:
-        * data: list of pairs of cordinates [ [[x], [y]], [[], []], ...] per class to be shown
-        * binedges: 2 arrays of bin edges [[bex], [bey]]
+        * data: tuple of pairs of cordinates  (([x], [y]), ([], []), ...)
+          per class to be shown
+        * binedges: 2 arrays of bin edges ([bex], [bey])
         * xlabel: label for x-axis
-        * ylabel: label for y axix
+        * ylabel: label for y axis
         * labels: labels for classes
         * colors: colors corresponding to labels
     """
