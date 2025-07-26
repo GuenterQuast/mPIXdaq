@@ -197,7 +197,7 @@ class miniPIXdaq:
         while self.cmdQ.empty():
             rc = self.dev.doSimpleIntegralAcquisition(self.ac_count, self.ac_time, self.pixet.PX_FTYPE_AUTODETECT, "")
             if rc != 0:
-                print("!!! miniPIX device readout error: ", dev.lastError())
+                print("!!! miniPIX device readout error: ", self.dev.lastError())
                 self.dataQ.put(None)
             # get frame and store in ring buffer
             self.fBuffer[self.widx, :] = self.dev.lastAcqFrameRefInc().data()
@@ -283,6 +283,190 @@ class frameAnalyzer:
             E_from_clusters = cluster_energies.sum()
             if E_from_clusters != self.total_Energy:
                 print(f"!!! warning: Energy {E_from_clusters} ne.  energy from pixels {self.total_Energy}")
+
+
+class miniPIXana:
+    """Analysis of miniPIX frames for low-rate scenarios,
+    where on-line analysis is possible and animated graphs are meaningful
+
+    Animated graph of (overlayed) pixel images and cluster properties
+    """
+
+    def on_mpl_close(self, event):
+        """call-back for matplotlib 'close_event'"""
+        self.mpl_active = False
+
+    def __init__(self, title, npx, n_overlay, circularity_cut, txt_overlay, unit):
+        """initialize figure with pixel image, two histograms and a scatter plot"""
+        self.title = title
+        self.npx = npx
+        self.n_overlay = n_overlay
+        self.circularity_cut = circularity_cut
+        self.txt_overlay = txt_overlay
+        self.unit = unit
+
+        # - data structure to store miniPIX frames and analysis results per frame
+        self.framebuf = np.zeros((self.n_overlay, self.npx, self.npx), dtype=np.float32)
+        self.i_buf = 0
+        self.i_frame = 0
+        # cumulative image
+        self.cimage = np.zeros((self.npx, self.npx), dtype=np.float32)
+        # frame summary statistics
+        self.n_clusters = 0
+        self.Energy = 0.0
+        self.np_unass = 0
+        self.E_unass = 0.0
+
+        # set-up frame analyzer
+        self.frameAna = frameAnalyzer()
+
+        # - prepare a figure with subplots
+        self.fig = plt.figure('PIX data', figsize=(11.5, 8.5), facecolor="#1f1f1f")
+        self.fig.suptitle("miniPiX EDU Data Acquisition", size="xx-large", color="cornsilk")
+        self.fig.canvas.mpl_connect('close_event', self.on_mpl_close)
+        self.mpl_active = True
+        self.fig.subplots_adjust(left=0.05, bottom=0.03, right=0.97, top=0.99, wspace=0.0, hspace=0.1)
+        plt.tight_layout()
+        gs = self.fig.add_gridspec(nrows=16, ncols=16)
+
+        # - - 2d-display for pixel map
+        self.axim = self.fig.add_subplot(gs[:, :-4])
+        self.axim.set_title(self.title, y=0.97, size="x-large")
+        self.axim.set_xlabel("# x        ", loc="right")
+        self.axim.set_ylabel("# y             ", loc="top")
+        # no default frame around graph
+        self.axim.set_frame_on(False)
+        _rect = mpl.patches.Rectangle((0, 0), 255, 255, linewidth=1, edgecolor='grey', facecolor='none')
+        self.axim.add_patch(_rect)
+        self.vmin = 0.5
+        vmax = 500
+        self.img = self.axim.imshow(np.zeros((self.npx, self.npx)), origin="lower", cmap='hot', norm=LogNorm(vmin=self.vmin, vmax=vmax))
+        cbar = self.fig.colorbar(self.img, shrink=0.6, aspect=40, pad=-0.045)
+        self.img.set_clim(vmin=self.vmin, vmax=vmax)
+        # cbar.set_label("Energy " + unit, loc="top", labelpad=-5 )
+        self.axim.arrow(146, 261.0, 110.0, 0, length_includes_head=True, width=1.5, color="b")
+        self.axim.arrow(110, 261.0, -110.0, 0, length_includes_head=True, width=1.5, color="b")
+        self.axim.text(115.0, 259, "14 mm")
+        self.axim.text(0.05, -0.055, self.txt_overlay, transform=self.axim.transAxes, color="royalblue")
+        self.im_text = self.axim.text(0.075, -0.08, "#", transform=self.axim.transAxes, color="r", alpha=0.75)
+
+        #  - histogram of pixel energies
+        self.axh1 = self.fig.add_subplot(gs[1:5, -4:])
+        nbins1 = 65
+        max1 = 1300
+        be1 = np.linspace(0, max1, nbins1 + 1, endpoint=True)
+        self.bhist1 = bhist(
+            ax=self.axh1, data=([],), binedges=be1, xlabel="pixel energies " + self.unit, ylabel="", yscale="log", labels=None, colors=('r',)
+        )
+
+        # - histogram of cluster energies
+        self.axh2 = self.fig.add_subplot(gs[6:10, -4:])
+        nbins2 = 100
+        max2 = 10000
+        be2 = np.linspace(0, 10000, nbins2 + 1, endpoint=True)
+        self.bhist2 = bhist(
+            ax=self.axh2,
+            data=([], []),
+            binedges=be2,
+            xlabel="cluster energies " + self.unit,
+            ylabel="",
+            yscale="log",
+            labels=("linear", "circular"),
+            colors=('yellow', 'cyan'),
+        )
+
+        # - scatter plot: cluster energies & sizes
+        self.ax3 = self.fig.add_subplot(gs[11:15, -4:])
+        mxx = 10000
+        bex = np.linspace(0.0, mxx, 250, endpoint=True)
+        mxy = 50
+        bey = np.linspace(0.0, mxy, 50, endpoint=True)
+        # initialize for 3 classes of ([x],[y]) pairs
+        self.scpl = scatterplot(
+            ax=self.ax3,
+            data=(([], []), ([], []), ([], [])),
+            binedges=(bex, bey),
+            xlabel="cluster energies (keV)",
+            ylabel="pixels per cluster",
+            labels=("linear", "circular", "unassigned"),
+            colors=('yellow', 'cyan', 'r'),
+        )
+
+        # show plots in interactive mode
+        plt.ion()
+        plt.show()
+
+        self.dt_last_plot = 0.0
+        self.t_start = time.time()
+
+    def anaviz(self, frame2d):
+        """analyze frame data and update image and plots"""
+        n_pixels, n_clusters, n_cpixels, circularity, cluster_energies = self.frameAna(frame2d)
+
+        if n_clusters > 0:
+            self.Energy = cluster_energies.sum()
+            self.Energy_in_clusters = cluster_energies[:n_clusters].sum()
+            self.np_unass = n_cpixels[n_clusters]  # last entry is for unassigned
+            self.E_unass = cluster_energies[n_clusters]
+        else:
+            self.Energy = frame2d[frame2d > 0].sum()  # raw pixel energy
+            self.Energy_in_clusters = 0.0
+            self.np_unass = n_pixels
+            self.E_unass = self.Energy
+        self.n_clusters = n_clusters
+
+        # boolean indices for linear and circular objects
+        is_lin = circularity[:n_clusters] <= self.circularity_cut
+        is_cir = circularity[:n_clusters] > self.circularity_cut
+
+        # update histogram 1 with pixel energies
+        self.bhist1.add((frame2d[frame2d > 0],))
+
+        # update histogram 2 with cluster energies
+        if n_clusters > 0:
+            self.bhist2.add((cluster_energies[:n_clusters][is_lin], cluster_energies[:n_clusters][is_cir]))
+
+        # update scatter plot
+        xlin = cluster_energies[:n_clusters][is_lin]
+        ylin = n_cpixels[:n_clusters][is_lin]
+        xcir = cluster_energies[:n_clusters][is_cir]
+        ycir = n_cpixels[:n_clusters][is_cir]
+        self.scpl.add([(xlin, ylin), (xcir, ycir), ([self.E_unass], [self.np_unass])])
+
+    def __call__(self, frame2d, dt_alive):
+        """update cumulative pixel image, analyze data and
+        update histograms, scatter plot and status text
+        """
+        self.dt_alive = dt_alive
+        self.i_frame += 1
+        # subtract oldest frame ...
+        self.cimage -= self.framebuf[self.i_buf]
+        # ... and store new one in ring-buffer
+        self.framebuf[self.i_buf, :, :] = frame2d[:, :]
+        # and add actual data to cumulated values
+        self.cimage += frame2d
+        if self.i_buf < self.n_overlay - 1:
+            self.i_buf = self.i_buf + 1
+        else:
+            # buffer filled, analyze data
+            self.anaviz(self.cimage)
+            # reset buffer index
+            self.i_buf = 0
+
+        dt_active = time.time() - self.t_start
+        # update, redraw and show all subplots in figure
+        if dt_active - self.dt_last_plot > 0.15:  # limit number of graphics updates
+            dead_time_fraction = 1.0 - dt_alive / dt_active
+            status = (
+                f"#{self.i_frame}   active {dt_active:.0f}s   alive {dt_alive:.0f}s "
+                + f"  clusters = {self.n_clusters:.0f} / {self.Energy:.0f}keV "
+                + f"  unassigned: {self.np_unass:.0f} / {self.E_unass:.0f}keV"
+                + 10 * " "
+            )
+            self.img.set(data=self.cimage)
+            self.im_text.set_text(status)
+            self.fig.canvas.start_event_loop(0.001)  # better than plt.pause(), which would steal the focus
+            self.dt_last_plot = dt_active
 
 
 # helper classes and functions  - - - - -
@@ -498,7 +682,7 @@ class scatterplot:
 
 
 class runDAQ:
-    """run miniPIX data acquisition and analysis
+    """run miniPIX data acquisition, analysis and real-time graphics
 
     class to handle:
 
@@ -523,9 +707,6 @@ class runDAQ:
             wd_path = os.getenv("HOME")
         os.chdir(wd_path)
         self.wd_path = wd_path
-
-        # not running yet
-        self.mpl_active = False
 
         # parse command line arguments
         parser = argparse.ArgumentParser(description="read, analyze and display data from miniPIX EDU device")
@@ -604,163 +785,28 @@ class runDAQ:
             self.title = "pixel energy map from file (keV)"
             print(f" found {self.n_frames_in_file} pixel frames in file")
 
-        # finally, initialize figures
-        self.init_figs()
-
-    def on_mpl_close(self, event):
-        """call-back for matplotlib for 'close_event'"""
-        self.mpl_active = False
-
-    def init_figs(self):
-        """initialize figure with pixel image, histograms and scatter plot"""
-        # - prepare a figure with subplots
-        fig = plt.figure('PIX data', figsize=(11.5, 8.5), facecolor="#1f1f1f")
-        fig.suptitle("miniPiX EDU Data Acquisition", size="xx-large", color="cornsilk")
-        fig.canvas.mpl_connect('close_event', self.on_mpl_close)
-        self.mpl_active = True
-        fig.subplots_adjust(left=0.05, bottom=0.03, right=0.97, top=0.99, wspace=0.0, hspace=0.1)
-        plt.tight_layout()
-        gs = fig.add_gridspec(nrows=16, ncols=16)
-        self.fig = fig
-
-        # - - 2d-display for pixel map
-        axim = fig.add_subplot(gs[:, :-4])
-        axim.set_title(self.title, y=0.97, size="x-large")
-        axim.set_xlabel("# x        ", loc="right")
-        axim.set_ylabel("# y             ", loc="top")
-        # no default frame around graph
-        axim.set_frame_on(False)
-        _rect = mpl.patches.Rectangle((0, 0), 255, 255, linewidth=1, edgecolor='grey', facecolor='none')
-        axim.add_patch(_rect)
-        self.vmin = 0.5
-        vmax = 500
-        self.img = axim.imshow(np.zeros((self.npx, self.npx)), origin="lower", cmap='hot', norm=LogNorm(vmin=self.vmin, vmax=vmax))
-        cbar = fig.colorbar(self.img, shrink=0.6, aspect=40, pad=-0.045)
-        self.img.set_clim(vmin=self.vmin, vmax=vmax)
-        # cbar.set_label("Energy " + unit, loc="top", labelpad=-5 )
-        axim.arrow(146, 261.0, 110.0, 0, length_includes_head=True, width=1.5, color="b")
-        axim.arrow(110, 261.0, -110.0, 0, length_includes_head=True, width=1.5, color="b")
-        axim.text(115.0, 259, "14 mm")
+        # finally, initialize analyis and figures
         if self.read_filename is None:
-            axim.text(0.05, -0.055, f"integration time {int(self.integration_time)}s", transform=axim.transAxes, color="royalblue")
+            txt_overlay = f"integration time {int(self.integration_time)}s"
         else:
-            axim.text(0.05, -0.055, f"sum of {int(self.n_overlay)} frames", transform=axim.transAxes, color="royalblue")
-        self.im_text = axim.text(0.05, -0.09, "#", transform=axim.transAxes, color="r", alpha=0.75)
-
-        # plots of analysis results
-
-        #  - histogram of pixel energies
-        axh1 = fig.add_subplot(gs[1:5, -4:])
-        nbins1 = 65
-        max1 = 1300
-        be1 = np.linspace(0, max1, nbins1 + 1, endpoint=True)
-        self.bhist1 = bhist(
-            ax=axh1, data=([],), binedges=be1, xlabel="pixel energies " + self.unit, ylabel="", yscale="log", labels=None, colors=('r',)
-        )
-
-        # - histogram of cluster energies
-        axh2 = fig.add_subplot(gs[6:10, -4:])
-        nbins2 = 100
-        max2 = 10000
-        be2 = np.linspace(0, 10000, nbins2 + 1, endpoint=True)
-        self.bhist2 = bhist(
-            ax=axh2,
-            data=([], []),
-            binedges=be2,
-            xlabel="cluster energies " + self.unit,
-            ylabel="",
-            yscale="log",
-            labels=("linear", "circular"),
-            colors=('yellow', 'cyan'),
-        )
-
-        # - scatter plot: cluster energies & sizes
-        ax3 = fig.add_subplot(gs[11:15, -4:])
-        mxx = 10000
-        bex = np.linspace(0.0, mxx, 250, endpoint=True)
-        mxy = 50
-        bey = np.linspace(0.0, mxy, 50, endpoint=True)
-        # initialize for 3 classes of ([x],[y]) pairs
-        self.scpl = scatterplot(
-            ax=ax3,
-            data=(([], []), ([], []), ([], [])),
-            binedges=(bex, bey),
-            xlabel="cluster energies (keV)",
-            ylabel="pixels per cluster",
-            labels=("linear", "circular", "unassigned"),
-            colors=('yellow', 'cyan', 'r'),
-        )
-
-        # show plots in interactive mode
-        plt.ion()
-        plt.show()
-
-    def anaviz(self, frame2d):
-        """analyze and visualize data
-        """
-        n_pixels, n_clusters, n_cpixels, circularity, cluster_energies = self.frameAna(frame2d)
-
-        if n_clusters > 0:
-            self.Energy = cluster_energies.sum()
-            self.Energy_in_clusters = cluster_energies[:n_clusters].sum()
-            self.np_unass = n_cpixels[n_clusters]  # last entry is for unassigned
-            self.E_unass = cluster_energies[n_clusters]
-        else:
-            self.Energy = frame2d[frame2d > 0].sum()  # raw pixel energy
-            self.Energy_in_clusters = 0.0
-            self.np_unass = n_pixels
-            self.E_unass = self.Energy
-        self.n_clusters = n_clusters    
-
-        # boolean indices for linear and circular objects
-        is_lin = circularity[:n_clusters] <= self.circularity_cut
-        is_cir = circularity[:n_clusters] > self.circularity_cut
-
-        # update histogram 1 with pixel energies
-        self.bhist1.add((frame2d[frame2d > 0],))
-
-        # update histogram 2 with cluster energies
-        if n_clusters > 0:
-            self.bhist2.add((cluster_energies[:n_clusters][is_lin], cluster_energies[:n_clusters][is_cir]))
-
-        # update scatter plot
-        xlin = cluster_energies[:n_clusters][is_lin]
-        ylin = n_cpixels[:n_clusters][is_lin]
-        xcir = cluster_energies[:n_clusters][is_cir]
-        ycir = n_cpixels[:n_clusters][is_cir]
-        self.scpl.add([(xlin, ylin), (xcir, ycir), ([self.E_unass], [self.np_unass])])
-
+            txt_overlay = f"sum of {int(self.n_overlay)} frames"
+        self.mpixana = miniPIXana(self.title, self.npx, self.n_overlay, self.circularity_cut, txt_overlay, self.unit)
 
     def __call__(self):
         """run daq loop"""
-        # - data structure to store miniPIX frames and analysis results per frame
-        frame2d = np.zeros((self.npx, self.npx), dtype=np.float32)
-        framebuf = np.zeros((self.n_overlay, self.npx, self.npx), dtype=np.float32)
-        i_buf = 0
-        # accumulative image
-        image = np.zeros((self.npx, self.npx), dtype=np.float32)
-        self.n_clusters = 0
-        self.Energy = 0.
-        self.np_unass = 0
-        self.E_unass = 0.
-
-        # set-up analysis
-        self.frameAna = frameAnalyzer()
 
         # set up daq
         dt_alive = 0.0
         dt_active = 0.0
-        dt_last_plot = 0.0
+        frame2d = np.zeros((self.npx, self.npx), dtype=np.float32)
         i_frame = 0
         # start daq as a Thread
         if self.read_filename is None:
             Thread(target=self.daq, daemon=True).start()
-
         # start daq loop
         print("\n" + 15 * ' ' + "\033[36m type <cntrl C> to end" + "\033[31m", end='\r')
-        t_start = time.time()
         try:
-            while dt_active < self.run_time and self.mpl_active:
+            while dt_active < self.run_time and self.mpixana.mpl_active:
                 if self.read_filename is None:
                     #                    frame2d[:, :] = np.array(self.daq.dataQ.get()).reshape((self.npx, self.npx))
                     _idx = self.daq.dataQ.get()
@@ -782,34 +828,9 @@ class runDAQ:
                     with NpyAppendArray(out_filename) as npa:
                         npa.append(np.array([frame2d]))
 
-                # subtract oldest frame ...
-                image -= framebuf[i_buf]
-                # ... and store new one in ring-buffer
-                framebuf[i_buf, :, :] = frame2d[:, :]
-                # and add actual data to cumulated values
-                image += frame2d
-                if i_buf < self.n_overlay - 1:
-                    i_buf = i_buf + 1 
-                else: 
-                    # buffer filled, analyze data
-                    self.anaviz(image)
-                    # reset buffer index
-                    i_buf = 0
+                # real-time analysis and animated visualization
+                self.mpixana(frame2d, dt_alive)
 
-                dt_active = time.time() - t_start
-                # update, redraw and show all subplots in figure
-                if dt_active - dt_last_plot > 0.15:  # limit number of graphics updates
-                    dead_time_fraction = 1.0 - dt_alive / dt_active
-                    status = (
-                        f"#{i_frame}   active {dt_active:.0f}s   alive {dt_alive:.0f}s "
-                        + f"  clusters = {self.n_clusters:.0f} / {self.Energy:.0f}keV "
-                        + f"  unassigned: {self.np_unass:.0f} / {self.E_unass:.0f}keV"
-                        + 10 * " "
-                    )
-                    self.img.set(data=image)
-                    self.im_text.set_text(status)
-                    self.fig.canvas.start_event_loop(0.001)  # better than plt.pause(), which would steal the focus
-                    dt_last_plot = dt_active
                 # heart-beat for console
                 print(f"  #{i_frame}", end="\r")
 
@@ -822,7 +843,7 @@ class runDAQ:
             # end daq loop
             if self.read_filename is None:
                 self.daq.cmdQ.put("e")
-            if self.mpl_active:
+            if self.mpixana.mpl_active:
                 _a = input("\033[36m\n" + 20 * ' ' + " type <ret> to close window --> ")
                 print("\033[0m")
             else:
