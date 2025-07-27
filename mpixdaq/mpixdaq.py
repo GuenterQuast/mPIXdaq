@@ -214,15 +214,26 @@ class frameAnalyzer:
         """Analyze frame data
           - find clusters
           - compute cluster energies
+          - compute position and covariance matrix of x- and y-coordinates
+          - analyze cluster shape (using eigenvalues of covariance matrix)
+          - construct a tuple with cluster properties
+
+        Note: this algorithm only works if clusters do not overlap!
 
         Args: a 2d-frame from the miniPIX
 
         Returns:
+
           - n_pixels: number of pixels with energy > 0
           - n_clusters: number of clusters
           - n_cpixels: number of pixels per cluster
           - circularity: circularity per cluster (0. for linear, 1. for circular)
           - cluster_energies: energy per cluster
+
+          - self.clusters is a tuple with properties per cluster with mean of x and y coordinates,
+            number of pixels, energy, and eigenvalues of covariance matrix and orientation:
+            format  ( (x,y), n_pix, energy, (var_mx, var_mn), angle )
+
         """
 
         self.total_Energy = f[f > 0].sum()  # raw pixel energy
@@ -234,40 +245,64 @@ class frameAnalyzer:
             self.n_cpixels = np.array([])
             self.circularity = np.array([])
             self.cluster_energies = np.array([])
-            self.Energy_in_clusters = 0.0
-            self.E_unass = self.total_Energy
-            self.np_unass = self.n_pixels
             return self.n_pixels, self.n_clusters, self.n_cpixels, self.circularity, self.cluster_energies
 
-        # find clusters (lines,  blobs and unassigned)
-        #   find clusters with points separated by an euclidian distance less than 1.5 and
+        # find clusters (lines,  circular  and unassigned)
+        #   find clusters with points separated by an Euclidian distance less than 1.5 and
         #     min. of 3 points (i.e. tow neighbours) for central points
         self.clabels = np.array(DBSCAN(eps=1.5, min_samples=2).fit(self.pixel_list).labels_)
         self.n_clusters = len(set(self.clabels)) - (1 if -1 in self.clabels else 0)
 
-        # sum up cluster energies
+        # analyze clusters found
+
+        # cluster properties
         self.n_cpixels = np.zeros(self.n_clusters + 1, dtype=np.int32)
         self.cluster_energies = np.zeros(self.n_clusters + 1, dtype=np.float32)
         self.circularity = np.zeros(self.n_clusters + 1, dtype=np.float32)
+        # - tuple with properties per cluster, format ( (x,y), n_pix, energy, (var_mx, var_mn), angle)
+        self.clusters = ()
         for _i, _l in enumerate(set(self.clabels)):
             pl = self.pixel_list[self.clabels == _l]
+
             # number of pixels in cluster
             _npix = len(pl)
             self.n_cpixels[_i] = _npix
+
+            # energy in cluster
+            #        cluster_energies[_i] = f[*pixel_list[labels == _l].T].sum()  # 2d-list as index is tricky!
+            _energy = f[pl[:, 0], pl[:, 1]].sum()  # a more readable approach
+            self.cluster_energies[_i] = _energy
+
             # check whether cluster is linear or circular (from eigenvalues of covariance matrix)
             if _npix > 2:
                 # check if circular blob or a line
-                evals, evecs = np.linalg.eig(np.cov(pl[:, 0], pl[:, 1]))
-                self.circularity[_i] = min(evals) / max(evals)  # ratio of eigenvalues
-            #                if min(evals > 0.):
-            #                    area = _npix * _npix / (200 * evals[0] * evals[1])
-            #                    self.circularity[_i] = 0.5 * (self.circularity[_i] + area)
+                evals, evecs = np.linalg.eig(np.cov(pl[:, 0], pl[:, 1], dtype=np.float32))
+                _idmx = 0 if evals[0] > evals[1] else 1
+                _varmx = evals[_idmx]
+                _varmn = evals[1 - _idmx]
+                _angle = np.arctan2(evecs[_idmx, 0], evecs[_idmx, 1])
+                _circ = _varmn / _varmx  # ratio of eigenvalues
+                #                if _varmn > 0.):
+                #                    area = _npix * _npix / (200 * _varmn * _varmx)
+                #                    self.circularity[_i] = 0.5 * (self.circularity[_i] + area)
+                self.circularity[_i] = _circ
+            else:
+                _varmx = 0.0
+                _varmn = 0.0
+                _angle = 0.0
+                _circ = 0.0
 
-            # total energy in cluster
-            #        cluster_energies[_i] = f[*pixel_list[labels == _l].T].sum()  # 2d-list as index is tricky!
-            self.cluster_energies[_i] = f[pl[:, 0], pl[:, 1]].sum()  # a more readable approach
+            # construct a tuple with object properties
+            if _l != -1:  # clustered pixels
+                _xm = pl[:, 0].mean(dtype=np.float32)
+                _ym = pl[:, 1].mean(dtype=np.float32)
+                self.clusters = self.clusters + (((_xm, _ym), _npix, _energy, (_varmx, _varmn), _angle),)
+            else:  # individual pixels, stored  separately
+                for _j in range(_npix):
+                    self.clusters = self.clusters + (((pl[_j, 0], pl[_j, 1]), 1, f[pl[_j, 0], pl[_j, 1]], (0, 0), 0),)
 
-        self.Energy_in_clusters = self.cluster_energies[: self.n_clusters].sum()
+        # total energy in clusters and unassigned pixels and energy
+        # self.Energy_in_clusters = self.cluster_energies[: self.n_clusters].sum()
         # self.np_unass = self.n_cpixels[self.n_clusters]
         # self.E_unass = self.cluster_energies[self.n_clusters]
 
@@ -330,7 +365,7 @@ class miniPIXana:
 
         # - prepare a figure with subplots
         self.fig = plt.figure('PIX data', figsize=(11.5, 8.5), facecolor="#1f1f1f")
-        self.fig.suptitle("miniPiX EDU Data Acquisition", size="xx-large", color="cornsilk")
+        self.fig.suptitle("miniPiX EDU Data Acquisition and Analysis", size="xx-large", color="cornsilk")
         self.fig.canvas.mpl_connect('close_event', self.on_mpl_close)
         self.mpl_active = True
         self.fig.subplots_adjust(left=0.05, bottom=0.03, right=0.97, top=0.99, wspace=0.0, hspace=0.1)
@@ -339,7 +374,7 @@ class miniPIXana:
 
         # - - 2d-display for pixel map
         self.axim = self.fig.add_subplot(gs[:, :-4])
-        self.axim.set_title("Pixel Energy Map " + self.unit, y=0.97, size="x-large")
+        self.axim.set_title("Pixel Energy Map " + self.unit, y=0.96, size="x-large")
         self.axim.set_xlabel("# x        ", loc="right")
         self.axim.set_ylabel("# y             ", loc="top")
         # no default frame around graph
@@ -400,7 +435,7 @@ class miniPIXana:
             binedges=(bex, bey),
             xlabel="cluster energies (keV)",
             ylabel="pixels per cluster",
-            labels=("linear", "circular", "unassigned"),
+            labels=("linear", "circular", "single pixels"),
             colors=('yellow', 'cyan', 'r'),
         )
 
@@ -472,7 +507,7 @@ class miniPIXana:
             status = (
                 f"#{self.i_frame}   active {dt_active:.0f}s   alive {dt_alive:.0f}s "
                 + f"  clusters = {self.n_clusters:.0f} / {self.Energy:.0f}keV "
-                + f"  unassigned: {self.np_unass:.0f} / {self.E_unass:.0f}keV"
+                + f"  single pixels: {self.np_unass:.0f} / {self.E_unass:.0f}keV"
                 + 10 * " "
             )
             self.img.set(data=self.cimage)
