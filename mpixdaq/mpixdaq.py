@@ -513,7 +513,7 @@ class miniPIXana:
             self.img.set(data=self.cimage)
             self.im_text.set_text(status)
             # self.fig.canvas.start_event_loop(0.001)  # better than plt.pause(), which would steal the focus
-            self.fig.canvas.draw()
+            self.fig.canvas.draw_idle()
             self.fig.canvas.flush_events()
             self.dt_last_plot = dt_active
 
