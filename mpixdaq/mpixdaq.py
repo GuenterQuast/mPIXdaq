@@ -296,14 +296,22 @@ class miniPIXana:
         """call-back for matplotlib 'close_event'"""
         self.mpl_active = False
 
-    def __init__(self, title, npx, n_overlay, circularity_cut, txt_overlay, unit):
-        """initialize figure with pixel image, two histograms and a scatter plot"""
-        self.title = title
-        self.npx = npx
-        self.n_overlay = n_overlay
-        self.circularity_cut = circularity_cut
-        self.txt_overlay = txt_overlay
+    def __init__(self, npix=256, nover=10, unit='keV', circ=0.5, acq_time=1.0):
+        """initialize figure with pixel image, two histograms and a scatter plot
+
+        Args:
+           - npix: number of pixels per axis (256)
+           - nover: number of frames to overlay
+           - unit: unit of energy measurement ("keV" or "µs ToT")
+           - circ: circularity of "round" clusters (0. - 1.)
+           - acq_time: accumulation time per read-out frame
+        """
+
+        self.npx = npix
+        self.n_overlay = nover
+        self.circularity_cut = circ
         self.unit = unit
+        self.acq_time = acq_time
 
         # - data structure to store miniPIX frames and analysis results per frame
         self.framebuf = np.zeros((self.n_overlay, self.npx, self.npx), dtype=np.float32)
@@ -331,7 +339,7 @@ class miniPIXana:
 
         # - - 2d-display for pixel map
         self.axim = self.fig.add_subplot(gs[:, :-4])
-        self.axim.set_title(self.title, y=0.97, size="x-large")
+        self.axim.set_title("Pixel Energy Map " + self.unit, y=0.97, size="x-large")
         self.axim.set_xlabel("# x        ", loc="right")
         self.axim.set_ylabel("# y             ", loc="top")
         # no default frame around graph
@@ -347,7 +355,11 @@ class miniPIXana:
         self.axim.arrow(146, 261.0, 110.0, 0, length_includes_head=True, width=1.5, color="b")
         self.axim.arrow(110, 261.0, -110.0, 0, length_includes_head=True, width=1.5, color="b")
         self.axim.text(115.0, 259, "14 mm")
-        self.axim.text(0.05, -0.055, self.txt_overlay, transform=self.axim.transAxes, color="royalblue")
+        if self.acq_time is not None and self.acq_time > 0.0:
+            txt_overlay = f"integration time {acq_time * nover:.1f} s"
+        else:
+            txt_overlay = f"sum of {int(self.n_overlay)} frames"
+        self.axim.text(0.05, -0.055, txt_overlay, transform=self.axim.transAxes, color="royalblue")
         self.im_text = self.axim.text(0.075, -0.08, "#", transform=self.axim.transAxes, color="r", alpha=0.75)
 
         #  - histogram of pixel energies
@@ -731,9 +743,6 @@ class runDAQ:
         self.circularity_cut = args.circularity_cut
         self.run_time = args.time
 
-        self.tot_acq_time = self.acq_count * self.acq_time
-        self.integration_time = self.tot_acq_time * self.n_overlay
-
         print(f"\n*==* script {sys.argv[0]} executing in working directory {self.wd_path}")
 
         if self.out_filename is not None:
@@ -742,6 +751,7 @@ class runDAQ:
 
         # try to load pypixet library and connect to miniPIX
         if self.read_filename is None:
+            self.tot_acq_time = self.acq_count * self.acq_time
             print(f"     * overlaying {self.n_overlay} frames with {self.tot_acq_time} s")
             print(f"     * readout {self.acq_count} x {self.acq_time} s")
             # initialize data acquisition object
@@ -759,12 +769,11 @@ class runDAQ:
                     self.daq.device_info()
                 self.npx = self.daq.npx
                 self.unit = "(keV)" if self.daq.dev.isUsingCalibration() else "ToT (µs)"
-                self.title = "pixel energy map " + self.unit
         #  end device initialization ---
 
         if self.read_filename is not None:
             # read from file if requested
-            print("data from file " + self.read_filename)
+            print("*==* data from file " + self.read_filename)
             suffix = pathlib.Path(self.read_filename).suffix
             if suffix == ".gz":
                 f = gzip.GzipFile(self.read_filename)
@@ -782,15 +791,13 @@ class runDAQ:
             self.n_frames_in_file = shape[0]
             self.npx = shape[1]
             self.unit = "(keV)"
-            self.title = "pixel energy map from file (keV)"
+            self.acq_time = 0.0  # acquitition time unknown, as not stored in file
+            self.tot_acq_time = self.acq_count * self.acq_time
+
             print(f" found {self.n_frames_in_file} pixel frames in file")
 
         # finally, initialize analyis and figures
-        if self.read_filename is None:
-            txt_overlay = f"integration time {int(self.integration_time)}s"
-        else:
-            txt_overlay = f"sum of {int(self.n_overlay)} frames"
-        self.mpixana = miniPIXana(self.title, self.npx, self.n_overlay, self.circularity_cut, txt_overlay, self.unit)
+        self.mpixana = miniPIXana(npix=self.npx, nover=self.n_overlay, unit=self.unit, circ=self.circularity_cut, acq_time=self.tot_acq_time)
 
     def __call__(self):
         """run daq loop"""
