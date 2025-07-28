@@ -492,11 +492,14 @@ class miniPIXana:
         self.framebuf[self.i_buf, :, :] = frame2d[:, :]
         # and add actual data to cumulated values
         self.cimage += frame2d
+
+        self.clusters = None
         if self.i_buf < self.n_overlay - 1:
             self.i_buf = self.i_buf + 1
         else:
             # buffer filled, analyze data
             self.anaviz(self.cimage)
+            self.clusters = self.frameAna.clusters
             # reset buffer index
             self.i_buf = 0
 
@@ -764,6 +767,7 @@ class runDAQ:
         parser.add_argument('-a', '--acq_time', type=float, default=0.1, help='acquisition time/frame (0.1)')
         parser.add_argument('-c', '--acq_count', type=int, default=5, help='number of frames to add (5)')
         parser.add_argument('-f', '--file', type=str, default='', help='file to store frame data')
+        parser.add_argument('-w', '--writefile', type=str, default='', help='csv file to write cluster data')
         parser.add_argument('-t', '--time', type=int, default=36000, help='run time in seconds')
         parser.add_argument('--circularity_cut', type=float, default=0.5, help='cicrularity cut')
         parser.add_argument('-r', '--readfile', type=str, default='', help='file to read frame data')
@@ -774,6 +778,7 @@ class runDAQ:
         self.verbosity = args.verbosity
         self.out_filename = args.file + '_' + timestamp + '.npy' if args.file != '' else None
         self.read_filename = args.readfile if args.readfile != '' else None
+        self.csv_filename = args.writefile if args.writefile != '' else None
         self.acq_time = args.acq_time
         self.acq_count = args.acq_count
         self.n_overlay = args.overlay
@@ -785,6 +790,12 @@ class runDAQ:
         if self.out_filename is not None:
             # data recording with npy_append_array()
             import_npy_append_array()
+
+        self.csvfile = None
+        if self.csv_filename is not None:
+            fn = self.csv_filename + ".csv"
+            self.csvfile = open(fn, "w")
+            self.csvfile.write("x_mean,y_mean,n_pix,energy,var_mx,var_mn,angle\n")
 
         # try to load pypixet library and connect to miniPIX
         if self.read_filename is None:
@@ -874,6 +885,11 @@ class runDAQ:
 
                 # real-time analysis and animated visualization
                 self.mpixana(frame2d, dt_alive)
+                if self.csvfile is not None and self.mpixana.clusters is not None:
+                    for _xym, _npix, _energy, _var, _angle in self.mpixana.clusters:
+                        print(f"{_xym[0]},{_xym[1]},{_npix},{_energy},{_var[0]},{_var[1]},{_angle}", file=self.csvfile)
+                    if i_frame % 10:
+                        self.csvfile.flush()
 
                 # heart-beat for console
                 print(f"  #{i_frame}", end="\r")
@@ -885,6 +901,8 @@ class runDAQ:
 
         finally:
             # end daq loop
+            if self.csvfile is not None:
+                self.csvfile.close()
             if self.read_filename is None:
                 self.daq.cmdQ.put("e")
             if self.mpixana.mpl_active:
