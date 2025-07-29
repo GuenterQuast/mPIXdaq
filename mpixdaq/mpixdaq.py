@@ -231,7 +231,7 @@ class frameAnalyzer:
           - cluster_energies: energy per cluster
 
           - self.clusters is a tuple with properties per cluster with mean of x and y coordinates,
-            number of pixels, energy, and eigenvalues of covariance matrix and orientation:
+            number of pixels, energy, eigenvalues of covariance matrix and orientation ([-pi/2, pi/2]):
             format  ( (x,y), n_pix, energy, (var_mx, var_mn), angle )
 
         """
@@ -281,6 +281,10 @@ class frameAnalyzer:
                 _varmx = evals[_idmx]
                 _varmn = evals[1 - _idmx]
                 _angle = np.arctan2(evecs[_idmx, 0], evecs[_idmx, 1])
+                if _angle > np.pi/2.:
+                    _angle -= np.pi
+                elif _angle < -np.pi/2.:
+                    _angle += np.pi
                 _circ = _varmn / _varmx  # ratio of eigenvalues
                 #                if _varmn > 0.):
                 #                    area = _npix * _npix / (200 * _varmn * _varmx)
@@ -785,23 +789,16 @@ class runDAQ:
         self.circularity_cut = args.circularity_cut
         self.run_time = args.time
 
-        print(f"\n*==* script {sys.argv[0]} executing in working directory {self.wd_path}")
+        if self.verbosity > 0:
+            print(f"\n*==* script {sys.argv[0]} executing in working directory {self.wd_path}")
 
         if self.out_filename is not None:
             # data recording with npy_append_array()
             import_npy_append_array()
 
-        self.csvfile = None
-        if self.csv_filename is not None:
-            fn = self.csv_filename + ".csv"
-            self.csvfile = open(fn, "w")
-            self.csvfile.write("x_mean,y_mean,n_pix,energy,var_mx,var_mn,angle\n")
-
         # try to load pypixet library and connect to miniPIX
         if self.read_filename is None:
             self.tot_acq_time = self.acq_count * self.acq_time
-            print(f"     * overlaying {self.n_overlay} frames with {self.tot_acq_time} s")
-            print(f"     * readout {self.acq_count} x {self.acq_time} s")
             # initialize data acquisition object
             self.daq = miniPIXdaq(self.acq_count, self.acq_time)
             if self.daq.dev is None:
@@ -812,6 +809,9 @@ class runDAQ:
                 else:
                     exit("Exiting")
             else:  # library and device are ok
+                if self.verbosity > 0:
+                    print(f"     * overlaying {self.n_overlay} frames with {self.tot_acq_time} s")
+                    print(f"     * readout {self.acq_count} x {self.acq_time} s")
                 if self.verbosity > 1:
                     self.show_DeviceInfo = True
                     self.daq.device_info()
@@ -821,7 +821,8 @@ class runDAQ:
 
         if self.read_filename is not None:
             # read from file if requested
-            print("*==* data from file " + self.read_filename)
+            if self.verbosity > 0:
+                print("*==* data from file " + self.read_filename)
             suffix = pathlib.Path(self.read_filename).suffix
             if suffix == ".gz":
                 f = gzip.GzipFile(self.read_filename)
@@ -842,7 +843,16 @@ class runDAQ:
             self.acq_time = 0.0  # acquitition time unknown, as not stored in file
             self.tot_acq_time = self.acq_count * self.acq_time
 
-            print(f" found {self.n_frames_in_file} pixel frames in file")
+            if self.verbosity > 0:
+                print(f" found {self.n_frames_in_file} pixel frames in file")
+
+        self.csvfile = None
+        if self.csv_filename is not None:
+            fn = self.csv_filename + ".csv"
+            self.csvfile = open(fn, "w")
+            self.csvfile.write("x_mean,y_mean,n_pix,energy,var_mx,var_mn,angle\n")
+            if self.verbosity > 0:
+                print("*==* writing clusters to file " + fn)
 
         # finally, initialize analyis and figures
         self.mpixana = miniPIXana(npix=self.npx, nover=self.n_overlay, unit=self.unit, circ=self.circularity_cut, acq_time=self.tot_acq_time)
@@ -887,7 +897,7 @@ class runDAQ:
                 self.mpixana(frame2d, dt_alive)
                 if self.csvfile is not None and self.mpixana.clusters is not None:
                     for _xym, _npix, _energy, _var, _angle in self.mpixana.clusters:
-                        print(f"{_xym[0]},{_xym[1]},{_npix},{_energy},{_var[0]},{_var[1]},{_angle}", file=self.csvfile)
+                        print(f"{_xym[0]:.2f},{_xym[1]:.2f},{_npix},{_energy:.1f},{_var[0]:.2f},{_var[1]:.2f},{_angle:.2f}", file=self.csvfile)
                     if i_frame % 10:
                         self.csvfile.flush()
 
