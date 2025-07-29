@@ -87,9 +87,8 @@ data archival to disk are shown by typing
   ``run_mPIXdaq.py --help``, resulting in the following output:
 
 ```
-usage: run_mPIXdaq.py [-h] [-v VERBOSITY] [-o OVERLAY] [-a ACQ_TIME]  
-         [-c ACQ_COUNT] [-f FILE] [-t TIME]   
-         [--circularity_cut CIRCULARITY_CUT] [-r READFILE]
+usage: run_mPIXdaq.py [-h] [-v VERBOSITY] [-o OVERLAY] [-a ACQ_TIME] [-c ACQ_COUNT] [-f FILE] [-w WRITEFILE] [-t TIME]
+                      [--circularity_cut CIRCULARITY_CUT] [-r READFILE]
 
 read, analyze and display data from miniPIX EDU device
 
@@ -98,32 +97,35 @@ options:
   -v VERBOSITY, --verbosity VERBOSITY
                         verbosity level (1)
   -o OVERLAY, --overlay OVERLAY
-                        number of frames to overlay in graph (25)
+                        number of frames to overlay in graph (10)
   -a ACQ_TIME, --acq_time ACQ_TIME
-                        acquisition time/frame (0.2)
+                        acquisition time/frame (0.1)
   -c ACQ_COUNT, --acq_count ACQ_COUNT
-                        number of frames to add (1)
+                        number of frames to add (5)
   -f FILE, --file FILE  file to store frame data
+  -w WRITEFILE, --writefile WRITEFILE
+                        csv file to write cluster data
   -t TIME, --time TIME  run time in seconds
   --circularity_cut CIRCULARITY_CUT
                         cicrularity cut
   -r READFILE, --readfile READFILE
                         file to read frame data
 ```
+
 The default values are adjusted to situations with low rates, where
-frames from the *miniPIX* with an integration time of
-`acq_time = 0.2` are read. For the graphics display, `overlay = 25` 
-recent frames are overlaid, leading to an integration time of 5 s. 
+frames from the *miniPIX* with an integration time of `acq_time = 0.5` s
+are read. For the graphics display, `overlay = 10` recent frames are 
+overlaid, leading to a total integration time of 5 s. 
 These images represent a two-dimensional pixel map with a color code 
 indicating the energy measured in each pixel. 
 
-Data analysis consists of clustering of pixels in each frame and
+Data analysis consists of clustering of pixels in each overlay-frame and
 determination of cluster parameters, like the number of pixels, energy
 and circularity. The threshold on circularity is controlled by the
 parameter `circularity_cut` ranging from 0. for perfectly linear 
 to 1. for perfectly circular clusters. Technically, the covariance
-matrix of the clusters is calculated, and the circularity is the 
-ratio of the smaller and the larger of the two eigenvalues of the
+matrix of the clusters is calculated, and the circularity is defined 
+as the ratio of the smaller and the larger of the two eigenvalues of the
 covariance matrix. This simple procedure already provides a good
 separation of α and β particles and of isolated pixels not assigned
 to clusters. The latter ones have a high probability of being produced in
@@ -205,13 +207,13 @@ in the detector material (via the Compton process).
 The analysis shown here is suitable for low-rate scenarios, e.g.
 the analysis of natural radiation as emitted by minerals like
 Pitchblend (=Uraninit).  Columbit, Thorianit and others. Radon
-accumulated from the air in the basement rooms on the surface
+accumulated from the air in basement rooms on the surface
 of an electrostatically charged ballon also work fine. Therefore,
 the frame collection is chosen to be on the order of seconds, 
 so that analysis results can be displayed in real-time on 
 a sufficiently fast computer including the Raspberry Pi 5.
 
-For applications at higher rate, the analysis may have to
+For applications at higher rates, the analysis may have to
 be done off-line by reading data from recorded files,
 or multiple cores must be used for the analysis task.  
 
@@ -267,6 +269,7 @@ The classes and scripts of the package are
 
   - class `miniPIXdaq`
   - class `frameAnalyzer`
+  - class `miniPIXana` 
   - class `runDAQ`
   - class `bhist`
   - class `scatterplot`
@@ -303,22 +306,52 @@ class miniPIXdaq:
 
 ```
 class frameAnalyzer:
-    """Analyze frame data
-      - find clusters
-      - compute cluster energies
-      Args: a 2d-frame from the miniPIX
-      Returns:
-      - n_pixels: number of pixels with energy > 0
-      - n_clusters: number of clusters
-      - n_cpixels: number of pixels per cluster
-      - circularity: circularity per cluster (0. for linear, 1. for circular)
-      - cluster_energies: energy per cluster
-    """
+  """Analyze frame data
+    - find clusters
+    - compute cluster energies
+    - compute position and covariance matrix of x- and y-coordinates
+    - analyze cluster shape (using eigenvalues of covariance matrix)
+    - construct a tuple with cluster properties
+
+    Note: this algorithm only works if clusters do not overlap!
+
+    Args: a 2d-frame from the miniPIX
+
+    Returns:
+
+    - n_pixels: number of pixels with energy > 0
+    - n_clusters: number of clusters
+    - n_cpixels: number of pixels per cluster
+    - circularity: circularity per cluster (0. for linear, 1. for circular)
+    - cluster_energies: energy per cluster
+
+     - self.clusters is a tuple with properties per cluster with mean of x and y coordinates,
+       number of pixels, energy, eigenvalues of covariance matrix and orientation ([-pi/2, pi/2]):
+        format  ( (x,y), n_pix, energy, (var_mx, var_mn), angle )
+
+  """
 ```
-These classes are used by the class `runDAQ`, which initializes all 
-components including the graphical output for monitoring if the on-going 
-data acquisition in real-time. It accepts command-line arguments to 
-set various options, as already described above. 
+
+``` 
+class miniPIXana:
+  """Analysis of miniPIX frames for low-rate scenarios,
+  where on-line analysis is possible and animated graphs are meaningful
+
+    Animated graph of (overlayed) pixel images and cluster properties
+    """
+    Args:
+    - npix: number of pixels per axis (256)
+    - nover: number of frames to overlay
+    - unit: unit of energy measurement ("keV" or "µs ToT")
+    - circ: circularity of "round" clusters (0. - 1.)
+    - acq_time: accumulation time per read-out frame
+  """
+
+``` 
+
+These classes are used by the class `runDAQ`. It accepts the command-line 
+arguments to set various options, as already described above. 
+
 
 ```
   class runDAQ:
@@ -327,15 +360,15 @@ set various options, as already described above.
     class to handle:
 
         - command-line arguments
-        - initialization of miniPIX device of input file
-        - real-time analysis of data frames
-        - animated figures to show a live view of incoming data
-        - event loop controlling data acquisition, data output to file
-          graphical display
+        - event loop controlling data acquisition and data output to file
+        - instantiates classes and calls corresponding methods for
+          - initialization of miniPIX device
+          - real-time analysis of data frames
+          - animated figures to show a live view of incoming data
     """
 ```
 
-Tow helper classes implement 1d and 2d histogramming functionality for
+Two helper classes implement 1d and 2d histogramming functionality for
 efficient and fast animation using methods from `matplotlib.pyplot`.
 
 ```
@@ -379,6 +412,7 @@ as *pypixet.so* itself, some tricky manipulation of the environment
 variable `LD_LIBRAREY_PATH` is needed to ensure that all libraries
 are loaded and the *miniPIX* is correctly initialized. 
 
+
 ```
 #!/usr/bin/env python3
 import os, sys
@@ -410,4 +444,3 @@ else:  # restart python script for setting to take effect
     rD = mpixdaq.runDAQ(wd)  # start daq in working directory
     rD()
 ```
-
