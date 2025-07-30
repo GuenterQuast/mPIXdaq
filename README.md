@@ -326,9 +326,11 @@ class frameAnalyzer:
     - cluster_energies: energy per cluster
 
      - self.clusters is a tuple with properties per cluster with mean of x and y coordinates,
-       number of pixels, energy, eigenvalues of covariance matrix and orientation ([-pi/2, pi/2]):
-        format  ( (x,y), n_pix, energy, (var_mx, var_mn), angle )
+       number of pixels, energy, eigenvalues of covariance matrix and orientation of the
+       eigenvector corresponding to the largest eigenvalue in the range [-pi/2, pi/2]:
 
+        format of the tuple:
+            ( (x,y), n_pix, energy, (var_mx, var_mn), angle )
   """
 ```
 
