@@ -210,6 +210,13 @@ class miniPIXdaq:
 
 # - class and functions for data analysis
 class frameAnalyzer:
+    def __init__(self, DBSCAN_algorithm='ball_tree'):
+        """ Analyzer frame data
+
+        Args: algorithm: 'auto', "ball_tree", "kd_tree", "brute"
+        """
+        self.algorithm = DBSCAN_algorithm
+        
     def __call__(self, f):
         """Analyze frame data
           - find clusters
@@ -248,14 +255,12 @@ class frameAnalyzer:
             return self.n_pixels, self.n_clusters, self.n_cpixels, self.circularity, self.cluster_energies
 
         # find clusters (lines,  circular  and unassigned)
-        #   find clusters with points separated by an Euclidian distance less than 1.5 and
-        #     min. of 3 points (i.e. tow neighbours) for central points
-        self.clabels = np.array(DBSCAN(eps=1.5, min_samples=2).fit(self.pixel_list).labels_)
+        #   find clusters with points separated by an Euclidian distance less than 1.5 and min. of 2 points        
+        self.cluster_result = DBSCAN(eps=1.5, min_samples=2, algorithm=self.algorithm).fit(self.pixel_list)
+        self.clabels = self.cluster_result.labels_
         self.n_clusters = len(set(self.clabels)) - (1 if -1 in self.clabels else 0)
 
-        # analyze clusters found
-
-        # cluster properties
+        # analyze the clusters we just found
         self.n_cpixels = np.zeros(self.n_clusters + 1, dtype=np.int32)
         self.cluster_energies = np.zeros(self.n_clusters + 1, dtype=np.float32)
         self.circularity = np.zeros(self.n_clusters + 1, dtype=np.float32)
@@ -505,11 +510,11 @@ class miniPIXana:
             self.anaviz(self.cimage)
             self.clusters = self.frameAna.clusters
             # reset buffer index
-            self.i_buf = 0
+            self.i_buf = 0    
 
         dt_active = time.time() - self.t_start
         # update, redraw and show all subplots in figure
-        if dt_active - self.dt_last_plot > 0.15:  # limit number of graphics updates
+        if dt_active - self.dt_last_plot > 0.08:  # limit number of graphics updates
             dead_time_fraction = 1.0 - dt_alive / dt_active
             status = (
                 f"#{self.i_frame}   active {dt_active:.0f}s   alive {dt_alive:.0f}s "

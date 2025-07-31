@@ -15,7 +15,7 @@ elif not '.' in os.environ['LD_LIBRARY_PATH']:
     path_modified = True
 
 if path_modified:
-    print(" ! added '.' to LD_LIBRARY_PATH")
+    print(" ! temporarily added '.' to LD_LIBRARY_PATH !")
     try:
         os.execv(sys.argv[0], sys.argv)
     except Exception as e:
