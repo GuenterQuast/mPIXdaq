@@ -240,6 +240,9 @@ class frameAnalyzer:
             number of pixels, energy, eigenvalues of covariance matrix and orientation ([-pi/2, pi/2]):
             format  ( (x,y), n_pix, energy, (var_mx, var_mn), angle )
 
+          - self.pixel_list is a list of dimension n_clusters + 1 and contains the pixels coordinates
+            contrbuting to each of the clustrers. self.pixel_list[-1] contains the list of single pixels  
+
         """
 
         # find clusters (lines,  circular  and unassigned = single pixels)
@@ -258,32 +261,30 @@ class frameAnalyzer:
         # find connected areas in pixel image using skimage.measure.label
         f_labels, n_labels = label(f_isgt0, return_num=True)
 
-        # separate clusters fom single hits
+        # separating clusters fom single hits
         self.n_single = 0
-        self.e_single = 0.0
         self.clabels = []
         self.pixel_list = []
-        # - tuple with properties per cluster, format ( (x,y), n_pix, energy, (var_mx, var_mn), angle)
-        self.clusters = ()
+        single_pixel_list = None
         for _l in range(1, 1 + n_labels):
             pl = np.argwhere(f_labels == _l)
             if len(pl) == 1:
                 self.n_single += 1
-                self.e_single += f[f_labels == _l]
-                self.clusters = self.clusters + (((pl[0, 0], pl[0, 1]), 1, f[pl[0, 0], pl[0, 1]], (0, 0), 0),)
+                # collect single pixels in one pixel list
+                single_pixel_list = pl if single_pixel_list is None else np.concatenate([single_pixel_list, pl])
             else:
                 self.clabels.append(_l)
                 self.pixel_list.append(pl)
-        self.n_clusters = len(self.clabels)
 
-        # analyze the clusters we just found
+        # store results        
+        self.pixel_list.append(single_pixel_list)   
+        self.n_clusters = len(self.clabels)
+        # initialize objects filled below
         self.n_cpixels = np.zeros(self.n_clusters + 1, dtype=np.int32)
         self.cluster_energies = np.zeros(self.n_clusters + 1, dtype=np.float32)
-        self.circularity = np.zeros(self.n_clusters + 1, dtype=np.float32)
-        # store single pixels
-        self.n_cpixels[-1] = self.n_single
-        self.cluster_energies[-1] = self.e_single
-
+        self.circularity = np.zeros(self.n_clusters + 1, dtype=np.float32) 
+         # - tuple with properties per cluster, format ( (x,y), n_pix, energy, (var_mx, var_mn), angle)
+        self.clusters = ()
         # loop over clusters
         for _i in range(self.n_clusters):
             # number of pixels in cluster
@@ -315,7 +316,14 @@ class frameAnalyzer:
             _ym = pl[:, 1].mean(dtype=np.float32)
             self.clusters = self.clusters + (((_xm, _ym), _npix, _energy, (_varmx, _varmn), _angle),)
 
-        # alternative using sclearn.cluster.DBSCAN (is a bit slower)
+        # finally, store single-pixel objects
+        self.n_cpixels[-1] = self.n_single
+        if self.n_single > 0:
+            self.cluster_energies[-1] = f[single_pixel_list[:,0], single_pixel_list[:,1]].sum()
+            for pl in single_pixel_list:
+                self.clusters = self.clusters + (((pl[0], pl[1]), 1, f[pl[0], pl[1]], (0, 0), 0),)
+
+        # alternative clustering  using sclearn.cluster.DBSCAN (is a bit slower)
         # _t0 = time.time()
         # pixel_list = np.argwhere(f > 0)
         # cluster_result = DBSCAN(eps=1.5, min_samples=2, algorithm="ball_tree").fit(self.pixel_list)
@@ -326,7 +334,7 @@ class frameAnalyzer:
 
         # timing
         #_dtsk = 1000 * (time.time() - _t0)
-        #print(f"skimage: found {self.n_clusters} clusters, , {self.n_single} single   time: {_dtsk:.0f}ms")
+        #print(f"skimage: found {self.n_clusters} clusters, , {self.n_single} single   time: {_dtsk:.1f}ms")
 
         # total energy in clusters and unassigned pixels and energy
         # self.Energy_in_clusters = self.cluster_energies[: self.n_clusters].sum()
@@ -909,7 +917,7 @@ class runDAQ:
                         break
                     frame2d = self.fdata[i_frame - 1]
                     ##!time.sleep(1.0)
-                    time.sleep(0.1)
+                    time.sleep(0.05)
 
                 # write frame to file ?
                 if self.out_filename is not None:
