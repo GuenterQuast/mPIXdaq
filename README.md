@@ -1,11 +1,11 @@
 ## mPIXdaq: Data acquisition for *miniPIX EDU* pixel detector 
 ----------------------------------------------------------------  
 
-                                                Vers. 0.9.1, July 2025
+                                            Vers. 0.9.2, August 2025
 
 The [miniPIX EDU](https://advacam.com/camera/minipix-edu) is a camera
 for radiation based on the [Timepix](https://home.cern/tags/timepix) 
-pixel read-out chip with 256x256 radiation-sensitive pixels of 5x55µm² 
+pixel read-out chip with 256x256 radiation-sensitive pixels of 55x55µm² 
 area and 300µm depth each. The chip is covered by a very thin foil to 
 permit α and β radiation to reach  the pixels. The device is enclosed 
 in a sturdy aluminum housing with a USB 2.0 interface.
@@ -180,7 +180,7 @@ for convenience.
 
 The analysis shown in this example is intentionally very simple and based 
 on standard libraries and functions. Pixels clustering is performed by
-finding connected regions in the pixel image with *skimage.measure.label*.
+finding connected regions in the pixel image with *scipy.ndimage.label*.
 The shape of the clusters is determined from the ratio of the smaller 
 and the larger one of the two eigenvalues of the covariance matrix 
 calculated from the *x* and *y* coordinates of the pixels in a cluster. 
@@ -213,8 +213,8 @@ so that analysis results can be displayed in real-time on
 a sufficiently fast computer including the Raspberry Pi 5.
 
 For applications at higher rates, the analysis may have to
-be done off-line by reading data from recorded files,
-or multiple cores must be used for the analysis task.  
+be done off-line by reading data from recorded files, or 
+multiple cores must be used for the analysis task.  
 
 
 ## Sensor Details

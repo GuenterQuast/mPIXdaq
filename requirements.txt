@@ -13,6 +13,4 @@ pathlib
 npy_append_array
 numpy
 matplotlib
-scikit-image
-
 

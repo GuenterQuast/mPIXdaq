@@ -36,9 +36,7 @@ import matplotlib.pyplot as plt
 
 plt.style.use("dark_background")
 from matplotlib.colors import LogNorm
-from skimage.measure import label
-
-# from sklearn.cluster import DBSCAN
+from scipy.ndimage import label
 
 
 # function for conditional import of ADVACAM libraries
@@ -214,7 +212,9 @@ class miniPIXdaq:
 class frameAnalyzer:
     def __init__(self):
         """Analyzer frame data"""
-        pass
+
+        # structure for connecting pixels in scipy.ndimage.label
+        self.label_structure = [[1, 1, 1], [1, 1, 1], [1, 1, 1]]
 
     def __call__(self, f):
         """Analyze frame data
@@ -258,15 +258,15 @@ class frameAnalyzer:
         # timing
         # _t0 = time.time()
 
-        # find connected areas in pixel image using skimage.measure.label
-        f_labels, n_labels = label(f_isgt0, return_num=True)
+        # find connected areas in pixel image using label() from scipy.ndimage
+        f_labeled, n_labels = label(f_isgt0, structure=self.label_structure)
 
         # separating clusters fom single hits
         self.clabels = []
         self.pixel_list = []
         single_pixel_list = None
         for _l in range(1, 1 + n_labels):
-            pl = np.argwhere(f_labels == _l)
+            pl = np.argwhere(f_labeled == _l)
             if len(pl) == 1:
                 # collect single pixels in one pixel list
                 single_pixel_list = pl if single_pixel_list is None else np.concatenate([single_pixel_list, pl])
