@@ -178,10 +178,9 @@ for convenience.
 
 ## Data Analysis
 
-The analysis shown in this example is intentionally very simple and
-based on standard libraries and functions. Pixels are clustered with
-*scipy.cluster.DBSCAN* (Density-Based Spatial Clustering of
-Applications with Noise) in a very simple configuration. 
+The analysis shown in this example is intentionally very simple and based 
+on standard libraries and functions. Pixels clustering is performed by
+finding connected regions in the pixel image with *skimage.measure.label*.
 The shape of the clusters is determined from the ratio of the smaller 
 and the larger one of the two eigenvalues of the covariance matrix 
 calculated from the *x* and *y* coordinates of the pixels in a cluster. 
@@ -261,7 +260,7 @@ for data analysis:
 
   - `numpy`
   - `matplotlib`,
-  - `scipy.cluster.DBSCAN`
+  - `skimage.measure.label`
   - `numpy.cov`
   - `numpy.linalg.eig`
 
@@ -274,7 +273,6 @@ The classes and scripts of the package are
   - class `bhist`
   - class `scatterplot`
   - package script `run_mPIXdaq.py`
-
 
 Details on the interfaces are given below.
 

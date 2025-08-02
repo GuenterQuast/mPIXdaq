@@ -38,7 +38,7 @@ plt.style.use("dark_background")
 from matplotlib.colors import LogNorm
 from skimage.measure import label
 
-#from sklearn.cluster import DBSCAN
+# from sklearn.cluster import DBSCAN
 
 
 # function for conditional import of ADVACAM libraries
@@ -241,7 +241,7 @@ class frameAnalyzer:
             format  ( (x,y), n_pix, energy, (var_mx, var_mn), angle )
 
           - self.pixel_list is a list of dimension n_clusters + 1 and contains the pixels coordinates
-            contrbuting to each of the clustrers. self.pixel_list[-1] contains the list of single pixels  
+            contrbuting to each of the clusters. self.pixel_list[-1] contains the list of single pixels
 
         """
 
@@ -256,34 +256,32 @@ class frameAnalyzer:
             return self.n_pixels, self.n_clusters, self.n_cpixels, self.circularity, self.cluster_energies
 
         # timing
-        #_t0 = time.time()
+        # _t0 = time.time()
 
         # find connected areas in pixel image using skimage.measure.label
         f_labels, n_labels = label(f_isgt0, return_num=True)
 
         # separating clusters fom single hits
-        self.n_single = 0
         self.clabels = []
         self.pixel_list = []
         single_pixel_list = None
         for _l in range(1, 1 + n_labels):
             pl = np.argwhere(f_labels == _l)
             if len(pl) == 1:
-                self.n_single += 1
                 # collect single pixels in one pixel list
                 single_pixel_list = pl if single_pixel_list is None else np.concatenate([single_pixel_list, pl])
             else:
                 self.clabels.append(_l)
                 self.pixel_list.append(pl)
 
-        # store results        
-        self.pixel_list.append(single_pixel_list)   
+        # store results
+        self.pixel_list.append(single_pixel_list)
         self.n_clusters = len(self.clabels)
         # initialize objects filled below
         self.n_cpixels = np.zeros(self.n_clusters + 1, dtype=np.int32)
         self.cluster_energies = np.zeros(self.n_clusters + 1, dtype=np.float32)
-        self.circularity = np.zeros(self.n_clusters + 1, dtype=np.float32) 
-         # - tuple with properties per cluster, format ( (x,y), n_pix, energy, (var_mx, var_mn), angle)
+        self.circularity = np.zeros(self.n_clusters + 1, dtype=np.float32)
+        # - tuple with properties per cluster, format ( (x,y), n_pix, energy, (var_mx, var_mn), angle)
         self.clusters = ()
         # loop over clusters
         for _i in range(self.n_clusters):
@@ -317,11 +315,12 @@ class frameAnalyzer:
             self.clusters = self.clusters + (((_xm, _ym), _npix, _energy, (_varmx, _varmn), _angle),)
 
         # finally, store single-pixel objects
-        self.n_cpixels[-1] = self.n_single
-        if self.n_single > 0:
-            self.cluster_energies[-1] = f[single_pixel_list[:,0], single_pixel_list[:,1]].sum()
-            for pl in single_pixel_list:
-                self.clusters = self.clusters + (((pl[0], pl[1]), 1, f[pl[0], pl[1]], (0, 0), 0),)
+        single_pix_list = self.pixel_list[self.n_clusters]
+        if single_pix_list is not None:
+            self.n_cpixels[self.n_clusters] = len(single_pix_list)
+            self.cluster_energies[self.n_clusters] = f[single_pix_list[:, 0], single_pix_list[:, 1]].sum()
+            for spx in single_pix_list:
+                self.clusters = self.clusters + (((spx[0], spx[1]), 1, f[spx[0], spx[1]], (0, 0), 0),)
 
         # alternative clustering  using sclearn.cluster.DBSCAN (is a bit slower)
         # _t0 = time.time()
@@ -333,8 +332,8 @@ class frameAnalyzer:
         # _dt = 1000*(time.time() - _t0)
 
         # timing
-        #_dtsk = 1000 * (time.time() - _t0)
-        #print(f"skimage: found {self.n_clusters} clusters, , {self.n_single} single   time: {_dtsk:.1f}ms")
+        # _dtsk = 1000 * (time.time() - _t0)
+        # print(f"skimage: found {self.n_clusters} clusters, time: {_dtsk:.1f}ms")
 
         # total energy in clusters and unassigned pixels and energy
         # self.Energy_in_clusters = self.cluster_energies[: self.n_clusters].sum()
