@@ -36,7 +36,9 @@ import matplotlib.pyplot as plt
 
 plt.style.use("dark_background")
 from matplotlib.colors import LogNorm
-from sklearn.cluster import DBSCAN
+from skimage.measure import label
+
+#from sklearn.cluster import DBSCAN
 
 
 # function for conditional import of ADVACAM libraries
@@ -210,13 +212,10 @@ class miniPIXdaq:
 
 # - class and functions for data analysis
 class frameAnalyzer:
-    def __init__(self, DBSCAN_algorithm='ball_tree'):
-        """ Analyzer frame data
+    def __init__(self):
+        """Analyzer frame data"""
+        pass
 
-        Args: algorithm: 'auto', "ball_tree", "kd_tree", "brute"
-        """
-        self.algorithm = DBSCAN_algorithm
-        
     def __call__(self, f):
         """Analyze frame data
           - find clusters
@@ -243,10 +242,9 @@ class frameAnalyzer:
 
         """
 
-        self.total_Energy = f[f > 0].sum()  # raw pixel energy
-        self.pixel_list = np.argwhere(f > 0)
-        self.n_pixels = len(self.pixel_list)
-
+        # find clusters (lines,  circular  and unassigned = single pixels)
+        f_isgt0 = f > 0
+        self.n_pixels = f_isgt0.sum()
         if self.n_pixels == 0:
             self.n_clusters = 0
             self.n_cpixels = np.array([])
@@ -254,61 +252,81 @@ class frameAnalyzer:
             self.cluster_energies = np.array([])
             return self.n_pixels, self.n_clusters, self.n_cpixels, self.circularity, self.cluster_energies
 
-        # find clusters (lines,  circular  and unassigned)
-        #   find clusters with points separated by an Euclidian distance less than 1.5 and min. of 2 points        
-        self.cluster_result = DBSCAN(eps=1.5, min_samples=2, algorithm=self.algorithm).fit(self.pixel_list)
-        self.clabels = self.cluster_result.labels_
-        self.n_clusters = len(set(self.clabels)) - (1 if -1 in self.clabels else 0)
+        # timing
+        #_t0 = time.time()
+
+        # find connected areas in pixel image using skimage.measure.label
+        f_labels, n_labels = label(f_isgt0, return_num=True)
+
+        # separate clusters fom single hits
+        self.n_single = 0
+        self.e_single = 0.0
+        self.clabels = []
+        self.pixel_list = []
+        # - tuple with properties per cluster, format ( (x,y), n_pix, energy, (var_mx, var_mn), angle)
+        self.clusters = ()
+        for _l in range(1, 1 + n_labels):
+            pl = np.argwhere(f_labels == _l)
+            if len(pl) == 1:
+                self.n_single += 1
+                self.e_single += f[f_labels == _l]
+                self.clusters = self.clusters + (((pl[0, 0], pl[0, 1]), 1, f[pl[0, 0], pl[0, 1]], (0, 0), 0),)
+            else:
+                self.clabels.append(_l)
+                self.pixel_list.append(pl)
+        self.n_clusters = len(self.clabels)
 
         # analyze the clusters we just found
         self.n_cpixels = np.zeros(self.n_clusters + 1, dtype=np.int32)
         self.cluster_energies = np.zeros(self.n_clusters + 1, dtype=np.float32)
         self.circularity = np.zeros(self.n_clusters + 1, dtype=np.float32)
-        # - tuple with properties per cluster, format ( (x,y), n_pix, energy, (var_mx, var_mn), angle)
-        self.clusters = ()
-        for _i, _l in enumerate(set(self.clabels)):
-            pl = self.pixel_list[self.clabels == _l]
+        # store single pixels
+        self.n_cpixels[-1] = self.n_single
+        self.cluster_energies[-1] = self.e_single
 
+        # loop over clusters
+        for _i in range(self.n_clusters):
             # number of pixels in cluster
+            pl = self.pixel_list[_i]
             _npix = len(pl)
             self.n_cpixels[_i] = _npix
-
             # energy in cluster
             #        cluster_energies[_i] = f[*pixel_list[labels == _l].T].sum()  # 2d-list as index is tricky!
             _energy = f[pl[:, 0], pl[:, 1]].sum()  # a more readable approach
             self.cluster_energies[_i] = _energy
 
             # check whether cluster is linear or circular (from eigenvalues of covariance matrix)
-            if _npix > 2:
-                # check if circular blob or a line
-                evals, evecs = np.linalg.eig(np.cov(pl[:, 0], pl[:, 1], dtype=np.float32))
-                _idmx = 0 if evals[0] > evals[1] else 1
-                _varmx = evals[_idmx]
-                _varmn = evals[1 - _idmx]
-                _angle = np.arctan2(evecs[_idmx, 0], evecs[_idmx, 1])
-                if _angle > np.pi/2.:
-                    _angle -= np.pi
-                elif _angle < -np.pi/2.:
-                    _angle += np.pi
-                _circ = _varmn / _varmx  # ratio of eigenvalues
-                #                if _varmn > 0.):
-                #                    area = _npix * _npix / (200 * _varmn * _varmx)
-                #                    self.circularity[_i] = 0.5 * (self.circularity[_i] + area)
-                self.circularity[_i] = _circ
-            else:
-                _varmx = 0.0
-                _varmn = 0.0
-                _angle = 0.0
-                _circ = 0.0
+            evals, evecs = np.linalg.eig(np.cov(pl[:, 0], pl[:, 1], dtype=np.float32))
+            _idmx = 0 if evals[0] > evals[1] else 1
+            _varmx = evals[_idmx]
+            _varmn = evals[1 - _idmx]
+            _angle = np.arctan2(evecs[_idmx, 0], evecs[_idmx, 1])
+            if _angle > np.pi / 2.0:
+                _angle -= np.pi
+            elif _angle < -np.pi / 2.0:
+                _angle += np.pi
+            _circ = _varmn / _varmx  # ratio of eigenvalues
+            #                if _varmn > 0.):
+            #                    area = _npix * _npix / (200 * _varmn * _varmx)
+            #                    self.circularity[_i] = 0.5 * (self.circularity[_i] + area)
+            self.circularity[_i] = _circ
+            # add to tuple with object properties
+            _xm = pl[:, 0].mean(dtype=np.float32)
+            _ym = pl[:, 1].mean(dtype=np.float32)
+            self.clusters = self.clusters + (((_xm, _ym), _npix, _energy, (_varmx, _varmn), _angle),)
 
-            # construct a tuple with object properties
-            if _l != -1:  # clustered pixels
-                _xm = pl[:, 0].mean(dtype=np.float32)
-                _ym = pl[:, 1].mean(dtype=np.float32)
-                self.clusters = self.clusters + (((_xm, _ym), _npix, _energy, (_varmx, _varmn), _angle),)
-            else:  # individual pixels, stored  separately
-                for _j in range(_npix):
-                    self.clusters = self.clusters + (((pl[_j, 0], pl[_j, 1]), 1, f[pl[_j, 0], pl[_j, 1]], (0, 0), 0),)
+        # alternative using sclearn.cluster.DBSCAN (is a bit slower)
+        # _t0 = time.time()
+        # pixel_list = np.argwhere(f > 0)
+        # cluster_result = DBSCAN(eps=1.5, min_samples=2, algorithm="ball_tree").fit(self.pixel_list)
+        # clabels = self.cluster_result.labels_
+        # n_clusters = len(set(self.clabels)) - (1 if -1 in self.clabels else 0)
+        # n_single = len(pixel_list[clabels==-1])
+        # _dt = 1000*(time.time() - _t0)
+
+        # timing
+        #_dtsk = 1000 * (time.time() - _t0)
+        #print(f"skimage: found {self.n_clusters} clusters, , {self.n_single} single   time: {_dtsk:.0f}ms")
 
         # total energy in clusters and unassigned pixels and energy
         # self.Energy_in_clusters = self.cluster_energies[: self.n_clusters].sum()
@@ -510,7 +528,7 @@ class miniPIXana:
             self.anaviz(self.cimage)
             self.clusters = self.frameAna.clusters
             # reset buffer index
-            self.i_buf = 0    
+            self.i_buf = 0
 
         dt_active = time.time() - self.t_start
         # update, redraw and show all subplots in figure

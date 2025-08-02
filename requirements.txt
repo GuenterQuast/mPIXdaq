@@ -12,7 +12,7 @@ argparse
 pathlib
 npy_append_array
 numpy
-scikit-learn
 matplotlib
+scikit-image
 
 
