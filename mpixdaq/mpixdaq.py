@@ -30,13 +30,13 @@ import time
 import numpy as np
 from queue import Queue
 from threading import Thread
+from scipy.ndimage import label
 
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 
 plt.style.use("dark_background")
 from matplotlib.colors import LogNorm
-from scipy.ndimage import label
 
 
 # function for conditional import of ADVACAM libraries
@@ -251,9 +251,11 @@ class frameAnalyzer:
 
     def __call__(self, f):
         """Analyze frame data
-          - find clusters
+
+          - find clusters using scipy.ndimage.label()
           - compute cluster energies
           - compute position and covariance matrix of x- and y-coordinates
+          - compute covariance matrix of the energy distribution
           - analyze cluster shape (using eigenvalues of covariance matrix)
           - construct a tuple with cluster properties
 
@@ -270,10 +272,11 @@ class frameAnalyzer:
           - cluster_energies: energy per cluster
 
           - self.clusters is a tuple with properties per cluster with mean of x and y coordinates,
-            number of pixels, energy, eigenvalues of covariance matrix and orientation ([-pi/2, pi/2]):
-            format  ( (x,y), n_pix, energy, (var_mx, var_mn), angle )
+            number of pixels, energy, eigenvalues of covariance matrix and orientation ([-pi/2, pi/2])
+            and the minimal and maximal eigenvalues of the corariance matrix of the energy distribution:
+            format  ( (x,y), n_pix, energy, (var_mx, var_mn), angle, (varE_mx, varE_mn) )
 
-          - self.pixel_list is a list of dimension n_clusters + 1 and contains the pixels coordinates
+          - self.pixel_list is a list of dimension n_clusters + 1 and contains the pixel indices
             contributing to each of the clusters. self.pixel_list[-1] contains the list of single pixels
 
         """
@@ -328,42 +331,43 @@ class frameAnalyzer:
             self.cluster_energies[_i] = energy
 
             # analyze shape of clusters
-            #  - covariance matrix of pixel area
-            _evals, _evecs = np.linalg.eig(np.cov(pl[:, 0], pl[:, 1], dtype=np.float32))
+            #  - mean values of x and y and covariance matrix of pixel area
+            x_mean = pl[:, 0].mean(dtype=np.float32)
+            y_mean = pl[:, 1].mean(dtype=np.float32)
+            _evals, _evecs = np.linalg.eigh(np.cov(pl[:, 0], pl[:, 1], dtype=np.float32))
             _idmx = 0 if _evals[0] > _evals[1] else 1
-            _varmx, _varmn = _evals[_idmx], _evals[1 - _idmx]
-            # linearity: variance of uniform distribution on lenght npix is npix**2/12
-            _lin = min(12 * _varmx / (npix * npix), 1.0)
-            _circ = _varmn / _varmx
-            #    _xm = pl[:, 0].mean(dtype=np.float32)
-            #    _ym = pl[:, 1].mean(dtype=np.float32)
-
-            # - covariance matrix of energy distribution
-            (xm, ym), covmat = self.covmat_2d(pl[:, 0], pl[:, 1], f)
-            # calculate eigenvalues and orientation
-            evals, evecs = np.linalg.eig(covmat)
-            _idmx = 0 if evals[0] > evals[1] else 1
-            vare_mx, vare_mn = evals[_idmx], evals[1 - _idmx]
-            angle = np.arctan2(evecs[_idmx, 0], evecs[_idmx, 1])
+            var_mx, var_mn = _evals[_idmx], _evals[1 - _idmx]
+            angle = np.arctan2(_evecs[_idmx, 0], _evecs[_idmx, 1])
             if angle > np.pi / 2.0:
                 angle -= np.pi
             elif angle < -np.pi / 2.0:
                 angle += np.pi
-            circ = vare_mn / vare_mx  # ratio of eigenvalues
+            # linearity: variance of uniform distribution on lenght npix is npix**2/12
+            linearity = min(12 * var_mx / (npix * npix), 1.0)
+            # circularity as the ratio of the two eigenvalues of the covariance matrix
+            circularity = var_mn / var_mx
+
+            # - covariance matrix of energy distribution
+            (_xm, _ym), covmat = self.covmat_2d(pl[:, 0], pl[:, 1], f)
+            # calculate eigenvalues and orientation
+            _evals, _evecs = np.linalg.eigh(covmat)
+            _idmx = 0 if _evals[0] > _evals[1] else 1
+            varE_mx, varE_mn = _evals[_idmx], _evals[1 - _idmx]
+            # circE = vare_mn / vare_mx  # ratio of eigenvalues
 
             #            if npix > 10 and energy < 500.0:
             if energy > 2500.0:
-                print(f"n: {npix}, e: {energy:.0f}, l: {_lin:.2f},  c: {circ:.2f} vx: {vare_mx:.3f} ve/v: {vare_mx / _varmx:.3f}")
+                print(f"n: {npix}, e: {energy:.0f}, l: {linearity:.2f},  c: {circularity:.2f} vx: {var_mx:.3f} vE/v: {varE_mx / var_mx:.3f}")
 
             # try to improve circularity by using covered area
             #                if _varmn > 0.):
             #                    area = npix * npix / (200 * _varmn * _varmx)
             #                    self.circularity[_i] = 0.5 * (self.circularity[_i] + area)
 
-            self.circularity[_i] = circ
+            self.circularity[_i] = circularity
 
             # add results to tuple with object properties
-            self.clusters = self.clusters + (((xm, ym), npix, energy, (vare_mx, vare_mn), angle),)
+            self.clusters = self.clusters + (((x_mean, y_mean), npix, energy, (var_mx, var_mn), angle, (varE_mx, varE_mn)),)
 
         # finally, store properties of all single-pixel objects
         single_pix_list = self.pixel_list[self.n_clusters]
@@ -371,7 +375,7 @@ class frameAnalyzer:
             self.n_cpixels[self.n_clusters] = len(single_pix_list)
             self.cluster_energies[self.n_clusters] = f[single_pix_list[:, 0], single_pix_list[:, 1]].sum()
             for spx in single_pix_list:
-                self.clusters = self.clusters + (((spx[0], spx[1]), 1, f[spx[0], spx[1]], (0, 0), 0),)
+                self.clusters = self.clusters + (((spx[0], spx[1]), 1, f[spx[0], spx[1]], (0, 0), 0, (0, 0)),)
 
         # alternative clustering  using sclearn.cluster.DBSCAN (is a bit slower)
         # _t0 = time.time()
@@ -931,7 +935,7 @@ class runDAQ:
         if self.csv_filename is not None:
             fn = self.csv_filename + ".csv"
             self.csvfile = open(fn, "w")
-            self.csvfile.write("x_mean,y_mean,n_pix,energy,var_mx,var_mn,angle\n")
+            self.csvfile.write("x_mean,y_mean,n_pix,energy,var_mx,var_mn,angle,varE_mx,varE_mn\n")
             if self.verbosity > 0:
                 print("*==* writing clusters to file " + fn)
 
@@ -977,8 +981,12 @@ class runDAQ:
                 # real-time analysis and animated visualization
                 self.mpixana(frame2d, dt_alive)
                 if self.csvfile is not None and self.mpixana.clusters is not None:
-                    for _xym, _npix, _energy, _var, _angle in self.mpixana.clusters:
-                        print(f"{_xym[0]:.2f},{_xym[1]:.2f},{_npix},{_energy:.1f},{_var[0]:.2f},{_var[1]:.2f},{_angle:.2f}", file=self.csvfile)
+                    for _xym, _npix, _energy, _var, _angle, _varE in self.mpixana.clusters:
+                        print(
+                            f"{_xym[0]:.2f}, {_xym[1]:.2f}, {_npix}, {_energy:.1f}, "
+                            + f"{_var[0]:.2f}, {_var[1]:.2f}, {_angle:.2f}, {_varE[0]:.3f}, {_varE[1]:.3f}",
+                            file=self.csvfile,
+                        )
                     if i_frame % 10:
                         self.csvfile.flush()
 
