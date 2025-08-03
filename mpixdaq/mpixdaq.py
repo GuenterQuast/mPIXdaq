@@ -216,6 +216,39 @@ class frameAnalyzer:
         # structure for connecting pixels in scipy.ndimage.label
         self.label_structure = [[1, 1, 1], [1, 1, 1], [1, 1, 1]]
 
+    def covmat_2d(self, x, y, vals):
+        """Covariance matrix of sampled 2d distribution
+
+        Args:
+          - x:  x-index _ix of array vals
+          - y:  y-index _iy of array vals
+          - vals: 2d array vals[_ix, _iy]
+
+        Returns:
+          mean: mean_x and mean_y of distribution
+          covmat: covariance matrix of distribution
+
+        (this is probably not the most efficient implementation ...)
+        """
+
+        xy_x, xy_y = np.meshgrid(x, y)
+        _sum = vals[xy_x, xy_y].sum()
+        _sumx = np.matmul(vals[xy_x, xy_y], x).sum()
+        _sumx2 = np.matmul(vals[xy_x, xy_y], x * x).sum()
+        _sumy = np.matmul(y, vals[xy_x, xy_y]).sum()
+        _sumy2 = np.matmul(y * y, vals[xy_x, xy_y]).sum()
+        _sumxy = np.matmul(y, np.matmul(vals[xy_x, xy_y], x))
+
+        meanx = _sumx / _sum
+        varx = _sumx2 / _sum - meanx * meanx
+        meany = _sumy / _sum
+        vary = _sumy2 / _sum - meany * meany
+        cov = _sumxy / _sum - meanx * meany
+        #
+        mean = np.array([meanx, meany])
+        covmat = np.array([[varx, cov], [cov, vary]])
+        return (mean, covmat)
+
     def __call__(self, f):
         """Analyze frame data
           - find clusters
@@ -241,7 +274,7 @@ class frameAnalyzer:
             format  ( (x,y), n_pix, energy, (var_mx, var_mn), angle )
 
           - self.pixel_list is a list of dimension n_clusters + 1 and contains the pixels coordinates
-            contrbuting to each of the clusters. self.pixel_list[-1] contains the list of single pixels
+            contributing to each of the clusters. self.pixel_list[-1] contains the list of single pixels
 
         """
 
@@ -287,34 +320,52 @@ class frameAnalyzer:
         for _i in range(self.n_clusters):
             # number of pixels in cluster
             pl = self.pixel_list[_i]
-            _npix = len(pl)
-            self.n_cpixels[_i] = _npix
+            npix = len(pl)
+            self.n_cpixels[_i] = npix
             # energy in cluster
             #        cluster_energies[_i] = f[*pixel_list[labels == _l].T].sum()  # 2d-list as index is tricky!
-            _energy = f[pl[:, 0], pl[:, 1]].sum()  # a more readable approach
-            self.cluster_energies[_i] = _energy
+            energy = f[pl[:, 0], pl[:, 1]].sum()  # a more readable approach
+            self.cluster_energies[_i] = energy
 
-            # check whether cluster is linear or circular (from eigenvalues of covariance matrix)
-            evals, evecs = np.linalg.eig(np.cov(pl[:, 0], pl[:, 1], dtype=np.float32))
+            # analyze shape of clusters
+            #  - covariance matrix of pixel area
+            _evals, _evecs = np.linalg.eig(np.cov(pl[:, 0], pl[:, 1], dtype=np.float32))
+            _idmx = 0 if _evals[0] > _evals[1] else 1
+            _varmx, _varmn = _evals[_idmx], _evals[1 - _idmx]
+            # linearity: variance of uniform distribution on lenght npix is npix**2/12
+            _lin = min(12 * _varmx / (npix * npix), 1.0)
+            _circ = _varmn / _varmx
+            #    _xm = pl[:, 0].mean(dtype=np.float32)
+            #    _ym = pl[:, 1].mean(dtype=np.float32)
+
+            # - covariance matrix of energy distribution
+            (xm, ym), covmat = self.covmat_2d(pl[:, 0], pl[:, 1], f)
+            # calculate eigenvalues and orientation
+            evals, evecs = np.linalg.eig(covmat)
             _idmx = 0 if evals[0] > evals[1] else 1
-            _varmx = evals[_idmx]
-            _varmn = evals[1 - _idmx]
-            _angle = np.arctan2(evecs[_idmx, 0], evecs[_idmx, 1])
-            if _angle > np.pi / 2.0:
-                _angle -= np.pi
-            elif _angle < -np.pi / 2.0:
-                _angle += np.pi
-            _circ = _varmn / _varmx  # ratio of eigenvalues
-            #                if _varmn > 0.):
-            #                    area = _npix * _npix / (200 * _varmn * _varmx)
-            #                    self.circularity[_i] = 0.5 * (self.circularity[_i] + area)
-            self.circularity[_i] = _circ
-            # add to tuple with object properties
-            _xm = pl[:, 0].mean(dtype=np.float32)
-            _ym = pl[:, 1].mean(dtype=np.float32)
-            self.clusters = self.clusters + (((_xm, _ym), _npix, _energy, (_varmx, _varmn), _angle),)
+            vare_mx, vare_mn = evals[_idmx], evals[1 - _idmx]
+            angle = np.arctan2(evecs[_idmx, 0], evecs[_idmx, 1])
+            if angle > np.pi / 2.0:
+                angle -= np.pi
+            elif angle < -np.pi / 2.0:
+                angle += np.pi
+            circ = vare_mn / vare_mx  # ratio of eigenvalues
 
-        # finally, store single-pixel objects
+            #            if npix > 10 and energy < 500.0:
+            if energy > 2500.0:
+                print(f"n: {npix}, e: {energy:.0f}, l: {_lin:.2f},  c: {circ:.2f} vx: {vare_mx:.3f} ve/v: {vare_mx / _varmx:.3f}")
+
+            # try to improve circularity by using covered area
+            #                if _varmn > 0.):
+            #                    area = npix * npix / (200 * _varmn * _varmx)
+            #                    self.circularity[_i] = 0.5 * (self.circularity[_i] + area)
+
+            self.circularity[_i] = circ
+
+            # add results to tuple with object properties
+            self.clusters = self.clusters + (((xm, ym), npix, energy, (vare_mx, vare_mn), angle),)
+
+        # finally, store properties of all single-pixel objects
         single_pix_list = self.pixel_list[self.n_clusters]
         if single_pix_list is not None:
             self.n_cpixels[self.n_clusters] = len(single_pix_list)
@@ -460,8 +511,8 @@ class miniPIXana:
         self.ax3 = self.fig.add_subplot(gs[11:15, -4:])
         mxx = 10000
         bex = np.linspace(0.0, mxx, 250, endpoint=True)
-        mxy = 50
-        bey = np.linspace(0.0, mxy, 50, endpoint=True)
+        mxy = 55
+        bey = np.linspace(0.0, mxy, mxy, endpoint=True)
         # initialize for 3 classes of ([x],[y]) pairs
         self.scpl = scatterplot(
             ax=self.ax3,
