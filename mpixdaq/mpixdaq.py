@@ -215,6 +215,7 @@ class frameAnalyzer:
 
         # structure for connecting pixels in scipy.ndimage.label
         self.label_structure = [[1, 1, 1], [1, 1, 1], [1, 1, 1]]
+        self.csvHeader = "x_mean,y_mean,n_pix,energy,var_mx,var_mn,angle,xE_mean,yE_mean,varE_mx,varE_mn"
 
     def covmat_2d(self, x, y, vals):
         """Covariance matrix of sampled 2d distribution
@@ -273,8 +274,8 @@ class frameAnalyzer:
 
           - self.clusters is a tuple with properties per cluster with mean of x and y coordinates,
             number of pixels, energy, eigenvalues of covariance matrix and orientation ([-pi/2, pi/2])
-            and the minimal and maximal eigenvalues of the corariance matrix of the energy distribution:
-            format  ( (x,y), n_pix, energy, (var_mx, var_mn), angle, (varE_mx, varE_mn) )
+            and the minimal and maximal eigenvalues of the covariance matrix of the energy distribution:
+            format  ( (x, y), n_pix, energy, (var_mx, var_mn), angle, (xEm, yEm), (varE_mx, varE_mn) )
 
           - self.pixel_list is a list of dimension n_clusters + 1 and contains the pixel indices
             contributing to each of the clusters. self.pixel_list[-1] contains the list of single pixels
@@ -313,7 +314,8 @@ class frameAnalyzer:
         # store results
         self.pixel_list.append(single_pixel_list)
         self.n_clusters = len(self.clabels)
-        # initialize objects filled below
+        
+        # initialize objects for each cluster
         self.n_cpixels = np.zeros(self.n_clusters + 1, dtype=np.int32)
         self.cluster_energies = np.zeros(self.n_clusters + 1, dtype=np.float32)
         self.circularity = np.zeros(self.n_clusters + 1, dtype=np.float32)
@@ -348,7 +350,7 @@ class frameAnalyzer:
             circularity = var_mn / var_mx
 
             # - covariance matrix of energy distribution
-            (_xm, _ym), covmat = self.covmat_2d(pl[:, 0], pl[:, 1], f)
+            (xEm, yEm), covmat = self.covmat_2d(pl[:, 0], pl[:, 1], f)
             # calculate eigenvalues and orientation
             _evals, _evecs = np.linalg.eigh(covmat)
             _idmx = 0 if _evals[0] > _evals[1] else 1
@@ -367,7 +369,7 @@ class frameAnalyzer:
             self.circularity[_i] = circularity
 
             # add results to tuple with object properties
-            self.clusters = self.clusters + (((x_mean, y_mean), npix, energy, (var_mx, var_mn), angle, (varE_mx, varE_mn)),)
+            self.clusters = self.clusters + (((x_mean, y_mean), npix, energy, (var_mx, var_mn), angle, (xEm, yEm), (varE_mx, varE_mn)),)
 
         # finally, store properties of all single-pixel objects
         single_pix_list = self.pixel_list[self.n_clusters]
@@ -375,7 +377,7 @@ class frameAnalyzer:
             self.n_cpixels[self.n_clusters] = len(single_pix_list)
             self.cluster_energies[self.n_clusters] = f[single_pix_list[:, 0], single_pix_list[:, 1]].sum()
             for spx in single_pix_list:
-                self.clusters = self.clusters + (((spx[0], spx[1]), 1, f[spx[0], spx[1]], (0, 0), 0, (0, 0)),)
+                self.clusters = self.clusters + (((spx[0], spx[1]), 1, f[spx[0], spx[1]], (0, 0), 0, (0, 0), (0, 0)),)
 
         # alternative clustering  using sclearn.cluster.DBSCAN (is a bit slower)
         # _t0 = time.time()
@@ -451,6 +453,7 @@ class miniPIXana:
 
         # set-up frame analyzer
         self.frameAna = frameAnalyzer()
+        self.csvHeader = self.frameAna.csvHeader
 
         # - prepare a figure with subplots
         self.fig = plt.figure('PIX data', figsize=(11.5, 8.5), facecolor="#1f1f1f")
@@ -930,17 +933,19 @@ class runDAQ:
 
             if self.verbosity > 0:
                 print(f" found {self.n_frames_in_file} pixel frames in file")
+       
+        # finally, initialize analyis and figures
+        self.mpixana = miniPIXana(npix=self.npx, nover=self.n_overlay, unit=self.unit, circ=self.circularity_cut, acq_time=self.tot_acq_time)
 
         self.csvfile = None
         if self.csv_filename is not None:
             fn = self.csv_filename + ".csv"
             self.csvfile = open(fn, "w")
-            self.csvfile.write("x_mean,y_mean,n_pix,energy,var_mx,var_mn,angle,varE_mx,varE_mn\n")
+#            self.csvfile.write("x_mean,y_mean,n_pix,energy,var_mx,var_mn,angle,xE_mean,yE_mean,varE_mx,varE_mn\n")
+            self.csvfile.write(self.mpixana.csvHeader + '\n')
             if self.verbosity > 0:
                 print("*==* writing clusters to file " + fn)
 
-        # finally, initialize analyis and figures
-        self.mpixana = miniPIXana(npix=self.npx, nover=self.n_overlay, unit=self.unit, circ=self.circularity_cut, acq_time=self.tot_acq_time)
 
     def __call__(self):
         """run daq loop"""
@@ -981,10 +986,11 @@ class runDAQ:
                 # real-time analysis and animated visualization
                 self.mpixana(frame2d, dt_alive)
                 if self.csvfile is not None and self.mpixana.clusters is not None:
-                    for _xym, _npix, _energy, _var, _angle, _varE in self.mpixana.clusters:
+                    for _xym, _npix, _energy, _var, _angle, _xyEm, _varE in self.mpixana.clusters:
                         print(
                             f"{_xym[0]:.2f}, {_xym[1]:.2f}, {_npix}, {_energy:.1f}, "
-                            + f"{_var[0]:.2f}, {_var[1]:.2f}, {_angle:.2f}, {_varE[0]:.3f}, {_varE[1]:.3f}",
+                            + f"{_var[0]:.2f}, {_var[1]:.2f}, {_angle:.2f}, "
+                            + f"{_xyEm[0]:.2f}, {_xyEm[1]:.2f}, {_varE[0]:.3f}, {_varE[1]:.3f}",
                             file=self.csvfile,
                         )
                     if i_frame % 10:
