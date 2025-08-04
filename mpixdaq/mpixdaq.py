@@ -209,13 +209,24 @@ class miniPIXdaq:
 
 
 # - class and functions for data analysis
+
+
 class frameAnalyzer:
-    def __init__(self):
-        """Analyzer frame data"""
+    def __init__(self, csv=None):
+        """Analyzer frame data
+
+        Args:
+            csv: file handle of an open txt file to store results
+        """
+
+        self.csvfile = csv
 
         # structure for connecting pixels in scipy.ndimage.label
         self.label_structure = [[1, 1, 1], [1, 1, 1], [1, 1, 1]]
-        self.csvHeader = "x_mean,y_mean,n_pix,energy,var_mx,var_mn,angle,xE_mean,yE_mean,varE_mx,varE_mn"
+
+        csvHeader = "x_mean,y_mean,n_pix,energy,var_mx,var_mn,angle,xE_mean,yE_mean,varE_mx,varE_mn"
+        if self.csvfile is not None:
+            self.csvfile.write(csvHeader + '\n')
 
     def covmat_2d(self, x, y, vals):
         """Covariance matrix of sampled 2d distribution
@@ -281,7 +292,6 @@ class frameAnalyzer:
             contributing to each of the clusters. self.pixel_list[-1] contains the list of single pixels
 
         """
-
         # find clusters (lines,  circular  and unassigned = single pixels)
         f_isgt0 = f > 0
         self.n_pixels = f_isgt0.sum()
@@ -314,7 +324,7 @@ class frameAnalyzer:
         # store results
         self.pixel_list.append(single_pixel_list)
         self.n_clusters = len(self.clabels)
-        
+
         # initialize objects for each cluster
         self.n_cpixels = np.zeros(self.n_clusters + 1, dtype=np.int32)
         self.cluster_energies = np.zeros(self.n_clusters + 1, dtype=np.float32)
@@ -357,15 +367,6 @@ class frameAnalyzer:
             varE_mx, varE_mn = _evals[_idmx], _evals[1 - _idmx]
             # circE = vare_mn / vare_mx  # ratio of eigenvalues
 
-            #            if npix > 10 and energy < 500.0:
-            if energy > 2500.0:
-                print(f"n: {npix}, e: {energy:.0f}, l: {linearity:.2f},  c: {circularity:.2f} vx: {var_mx:.3f} vE/v: {varE_mx / var_mx:.3f}")
-
-            # try to improve circularity by using covered area
-            #                if _varmn > 0.):
-            #                    area = npix * npix / (200 * _varmn * _varmx)
-            #                    self.circularity[_i] = 0.5 * (self.circularity[_i] + area)
-
             self.circularity[_i] = circularity
 
             # add results to tuple with object properties
@@ -379,7 +380,16 @@ class frameAnalyzer:
             for spx in single_pix_list:
                 self.clusters = self.clusters + (((spx[0], spx[1]), 1, f[spx[0], spx[1]], (0, 0), 0, (0, 0), (0, 0)),)
 
-        # alternative clustering  using sclearn.cluster.DBSCAN (is a bit slower)
+        if self.csvfile is not None:
+            for _xym, _npix, _energy, _var, _angle, _xyEm, _varE in self.clusters:
+                print(
+                    f"{_xym[0]:.2f}, {_xym[1]:.2f}, {_npix}, {_energy:.1f}, "
+                    + f"{_var[0]:.2f}, {_var[1]:.2f}, {_angle:.2f}, "
+                    + f"{_xyEm[0]:.2f}, {_xyEm[1]:.2f}, {_varE[0]:.3f}, {_varE[1]:.3f}",
+                    file=self.csvfile,
+                )
+
+        # alternative clustering using sclearn.cluster.DBSCAN (is a bit slower)
         # _t0 = time.time()
         # pixel_list = np.argwhere(f > 0)
         # cluster_result = DBSCAN(eps=1.5, min_samples=2, algorithm="ball_tree").fit(self.pixel_list)
@@ -422,7 +432,7 @@ class miniPIXana:
         """call-back for matplotlib 'close_event'"""
         self.mpl_active = False
 
-    def __init__(self, npix=256, nover=10, unit='keV', circ=0.5, acq_time=1.0):
+    def __init__(self, npix=256, nover=10, unit='keV', circ=0.5, acq_time=1.0, csv=None):
         """initialize figure with pixel image, two histograms and a scatter plot
 
         Args:
@@ -431,6 +441,7 @@ class miniPIXana:
            - unit: unit of energy measurement ("keV" or "µs ToT")
            - circ: circularity of "round" clusters (0. - 1.)
            - acq_time: accumulation time per read-out frame
+           - csv: an open csv file (passed to frameAnalyser)
         """
 
         self.npx = npix
@@ -452,8 +463,7 @@ class miniPIXana:
         self.E_unass = 0.0
 
         # set-up frame analyzer
-        self.frameAna = frameAnalyzer()
-        self.csvHeader = self.frameAna.csvHeader
+        self.frameAna = frameAnalyzer(csv=csv)
 
         # - prepare a figure with subplots
         self.fig = plt.figure('PIX data', figsize=(11.5, 8.5), facecolor="#1f1f1f")
@@ -933,19 +943,18 @@ class runDAQ:
 
             if self.verbosity > 0:
                 print(f" found {self.n_frames_in_file} pixel frames in file")
-       
-        # finally, initialize analyis and figures
-        self.mpixana = miniPIXana(npix=self.npx, nover=self.n_overlay, unit=self.unit, circ=self.circularity_cut, acq_time=self.tot_acq_time)
 
         self.csvfile = None
         if self.csv_filename is not None:
             fn = self.csv_filename + ".csv"
-            self.csvfile = open(fn, "w")
-#            self.csvfile.write("x_mean,y_mean,n_pix,energy,var_mx,var_mn,angle,xE_mean,yE_mean,varE_mx,varE_mn\n")
-            self.csvfile.write(self.mpixana.csvHeader + '\n')
+            self.csvfile = open(fn, "w", buffering=100)
             if self.verbosity > 0:
                 print("*==* writing clusters to file " + fn)
 
+        # finally, initialize analyis and figures
+        self.mpixana = miniPIXana(
+            npix=self.npx, nover=self.n_overlay, unit=self.unit, circ=self.circularity_cut, acq_time=self.tot_acq_time, csv=self.csvfile
+        )
 
     def __call__(self):
         """run daq loop"""
@@ -985,16 +994,6 @@ class runDAQ:
 
                 # real-time analysis and animated visualization
                 self.mpixana(frame2d, dt_alive)
-                if self.csvfile is not None and self.mpixana.clusters is not None:
-                    for _xym, _npix, _energy, _var, _angle, _xyEm, _varE in self.mpixana.clusters:
-                        print(
-                            f"{_xym[0]:.2f}, {_xym[1]:.2f}, {_npix}, {_energy:.1f}, "
-                            + f"{_var[0]:.2f}, {_var[1]:.2f}, {_angle:.2f}, "
-                            + f"{_xyEm[0]:.2f}, {_xyEm[1]:.2f}, {_varE[0]:.3f}, {_varE[1]:.3f}",
-                            file=self.csvfile,
-                        )
-                    if i_frame % 10:
-                        self.csvfile.flush()
 
                 # heart-beat for console
                 print(f"  #{i_frame}", end="\r")
