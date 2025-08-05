@@ -272,6 +272,7 @@ class frameAnalyzer:
           - compute covariance matrix of the energy distribution
           - analyze cluster shape (using eigenvalues of covariance matrix)
           - construct a tuple with cluster properties
+          - optionally write cluster data to a file in csv format
 
         Note: this algorithm only works if clusters do not overlap!
 
@@ -306,7 +307,7 @@ class frameAnalyzer:
 
         # timing
         if self.t_start is None:
-           self.t_start = time.time()
+            self.t_start = time.time()
         t_frame = time.time() - self.t_start
 
         # find connected areas in pixel image using label() from scipy.ndimage

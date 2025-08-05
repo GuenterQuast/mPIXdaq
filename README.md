@@ -310,10 +310,11 @@ class frameAnalyzer:
     - compute position and covariance matrix of x- and y-coordinates
     - analyze cluster shape (using eigenvalues of covariance matrix)
     - construct a tuple with cluster properties
+    - optionally write cluster data to a file in csv format 
 
     Note: this algorithm only works if clusters do not overlap!
 
-    Args: a 2d-frame from the miniPIX
+    Args of __call__() method:  a 2d-frame from the miniPIX
 
     Returns:
 
@@ -405,13 +406,12 @@ class scatterplot:
 ```
 
 A package script `run_mPIXdaq` is provided as an example to tie 
-everything together in a running Program. 
+everything together in a running program. 
 Because the ADVACAM *Python* interface (`pypixet.so`) expects 
 C-libraries and configuration files in the very same directory 
 as *pypixet.so* itself, some tricky manipulation of the environment 
 variable `LD_LIBRAREY_PATH` is needed to ensure that all libraries
 are loaded and the *miniPIX* is correctly initialized. 
-
 
 ```
 #!/usr/bin/env python3
