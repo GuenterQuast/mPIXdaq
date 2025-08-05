@@ -224,9 +224,11 @@ class frameAnalyzer:
         # structure for connecting pixels in scipy.ndimage.label
         self.label_structure = [[1, 1, 1], [1, 1, 1], [1, 1, 1]]
 
-        csvHeader = "x_mean,y_mean,n_pix,energy,var_mx,var_mn,angle,xE_mean,yE_mean,varE_mx,varE_mn"
+        csvHeader = "time,x_mean,y_mean,n_pix,energy,var_mx,var_mn,angle,xE_mean,yE_mean,varE_mx,varE_mn"
         if self.csvfile is not None:
             self.csvfile.write(csvHeader + '\n')
+
+        self.t_start = None
 
     def covmat_2d(self, x, y, vals):
         """Covariance matrix of sampled 2d distribution
@@ -303,7 +305,9 @@ class frameAnalyzer:
             return self.n_pixels, self.n_clusters, self.n_cpixels, self.circularity, self.cluster_energies
 
         # timing
-        # _t0 = time.time()
+        if self.t_start is None:
+           self.t_start = time.time()
+        t_frame = time.time() - self.t_start
 
         # find connected areas in pixel image using label() from scipy.ndimage
         f_labeled, n_labels = label(f_isgt0, structure=self.label_structure)
@@ -383,9 +387,9 @@ class frameAnalyzer:
         if self.csvfile is not None:
             for _xym, _npix, _energy, _var, _angle, _xyEm, _varE in self.clusters:
                 print(
-                    f"{_xym[0]:.2f}, {_xym[1]:.2f}, {_npix}, {_energy:.1f}, "
-                    + f"{_var[0]:.2f}, {_var[1]:.2f}, {_angle:.2f}, "
-                    + f"{_xyEm[0]:.2f}, {_xyEm[1]:.2f}, {_varE[0]:.3f}, {_varE[1]:.3f}",
+                    f"{t_frame:.3f}, {_xym[0]:.2f}, {_xym[1]:.2f}, {_npix}, {_energy:.1f}"
+                    + f", {_var[0]:.2f}, {_var[1]:.2f}, {_angle:.2f}"
+                    + f", {_xyEm[0]:.2f}, {_xyEm[1]:.2f}, {_varE[0]:.3f}, {_varE[1]:.3f}",
                     file=self.csvfile,
                 )
 
@@ -1004,6 +1008,7 @@ class runDAQ:
         finally:
             # end daq loop
             if self.csvfile is not None:
+                self.csvfile.flush()
                 self.csvfile.close()
             if self.read_filename is None:
                 self.daq.cmdQ.put("e")
