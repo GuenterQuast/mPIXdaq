@@ -595,13 +595,11 @@ class miniPIXana:
         # and add actual data to cumulated values
         self.cimage += frame2d
 
-        self.clusters = None
         if self.i_buf < self.n_overlay - 1:
             self.i_buf = self.i_buf + 1
         else:
             # buffer filled, analyze data
             self.anaviz(self.cimage)
-            self.clusters = self.frameAna.clusters
             # reset buffer index
             self.i_buf = 0
 
