@@ -383,7 +383,7 @@ class frameAnalyzer:
             self.n_cpixels[self.n_clusters] = len(single_pix_list)
             self.cluster_energies[self.n_clusters] = f[single_pix_list[:, 0], single_pix_list[:, 1]].sum()
             for spx in single_pix_list:
-                self.clusters = self.clusters + (((spx[0], spx[1]), 1, f[spx[0], spx[1]], (0, 0), 0, (0, 0), (0, 0)),)
+                self.clusters = self.clusters + (((spx[0], spx[1]), 1, f[spx[0], spx[1]], (0, 0), 0, (spx[0], spx[1]), (0, 0)),)
 
         if self.csvfile is not None:
             for _xym, _npix, _energy, _var, _angle, _xyEm, _varE in self.clusters:
