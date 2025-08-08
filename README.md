@@ -43,7 +43,7 @@ To get started, follow the steps below:
  - Get the code from gitlab @ KIT  
    ``git clone https://gitlab.kit.edu/Guenter.Quast/mPIXdaq``.
 
-   This repository includes the python code and a minimalistic set
+   This repository includes the *Python* code and a minimalistic set
    of libraries provided by ADVACAM. `cd` to the `mPIXdaq` directory
    you just downloaded.
 
@@ -132,7 +132,16 @@ to clusters. The latter ones have a high probability of being produced in
 interactions of photons, while electrons from β radiation or from 
 photon interactions produce long traces, and α particles produce large,
 circular clusters due to their very high ionization loss in the
-detector material.   
+detector material.  
+
+A further, very sensitive variable is the variance of the energy distribution
+in the clusters. For α particles, the distribution peaks at the centre and
+steeply falls off towards the boundary, leading to a very small variance.
+A small ratio of the variances of the energy distribution and if the area
+covered by pixels ist therefore a very prominent signature of α particles.
+
+Properties of clusters are optionally written to a file in *.csv* format
+for later off-line analysis.
 
 To test the software without access to a miniPIX EDU device or without
 a radioactive source, a file with recorded data is provided. Use the
@@ -149,8 +158,8 @@ A fixed number of frames (*acq_counts*) with an adjustable accumulation
 time (*acq_time*) are read from the miniPIX device and added up. 
 
 The chosen readout mode is *PX_TPXMODE_TOT*, where "ToT" means 
-"time over threshold". This quantity shows good proportionality
-to the deposited energy ath high signal values, but a strong 
+"time over threshold". This quantity shows good proportionality to
+the deposited energy at high signal values, but exhibits a strong 
 non-linear behavior for small signals near the detection threshold 
 of the miniPIX. Calibration constants are stored on the miniPIX
 device for each pixel, which are used to provide deposited energies
@@ -205,7 +214,7 @@ in the detector material (via the Compton process).
 
 The analysis shown here is suitable for low-rate scenarios, e.g.
 the analysis of natural radiation as emitted by minerals like
-Pitchblend (=Uraninit).  Columbit, Thorianit and others. Radon
+Pitchblend (=Uraninit),  Columbit, Thorianit and others. Radon
 accumulated from the air in basement rooms on the surface
 of an electrostatically charged ballon also work fine. Therefore,
 the frame collection is chosen to be on the order of seconds, 
