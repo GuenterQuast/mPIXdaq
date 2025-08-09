@@ -1,5 +1,5 @@
 """
-mPIXdaq: Minimalist Python Script to illustrate data acquisition and 
+mPIXdaq: Minimalist Python Script to illustrate data acquisition and
 data analysis for the miniPIX EDU device by ADVACAM
 """
 
@@ -8,7 +8,7 @@ import sys
 
 # Import version info
 from ._version_info import *
+from .mpixdaq import *
 
 # and set version
 __version__ = _version_info._get_version_string()
-
