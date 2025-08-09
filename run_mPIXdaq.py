@@ -19,7 +19,7 @@ if path_modified:
     try:
         os.execv(sys.argv[0], sys.argv)
     except Exception as e:
-        sys.exit('EXCEPTION: Failed to Execute under modified environment, ' + e)
+        sys.exit('EXCEPTION: Failed to Execute under modified environment, ' + str(e))
 else:  # restart python script for setting to take effect
     # get current working directory before importing minipix libraries
     wd = os.getcwd()

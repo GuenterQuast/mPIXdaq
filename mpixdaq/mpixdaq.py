@@ -52,6 +52,8 @@ def import_pixet():
         from .advacam_armhf import pypixet
     elif mach == 'aarch64' and arch[0] == "64bit":
         from .advacam_arm64 import pypixet
+    elif 'Windows' in arch[1]:
+        exit(" !!! mPIXdaq not yet ready for architecture " + mach + arch)
     # elif: ### MAC to be done
     else:
         exit(" !!! pypixet not available for architecture " + mach + arch[0])
