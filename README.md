@@ -34,9 +34,13 @@ their own studies.
 
 ## Getting ready for data taking
 
-This code has been tested on *Ubuntu*, *openSuse* and on *Raspberry Pi*
-for the 32bit 64bit versions of *OS12*. 
-Other Linux distributions, however, should not pose any problem.
+This code has been tested on *Ubuntu*, *openSuse*, *Fedora*, on
+Windows 64bit with *Python3.7.9* and on *Raspberry Pi* for the 
+32- and 64-bit versions of *OS12*. Other Linux distribution should
+not pose any problem.  
+On MS Windows, the libraries provided by the vendor only support
+*Python* vers. 3.7.9; such a rather historic version can be set up
+using e.g. the *miniconda* framework. 
 
 To get started, follow the steps below: 
 
