@@ -35,7 +35,7 @@ requires-python = ">=3.10"
 include = ["mpixdaq*"]
 
 [tool.setuptools.package-data]
-"*" = ["data/*", "*.so", "*.ini", "*/factory/*"]
+"*" = ["data/*", "*.so", "*.ini", "*.dll", "*.pyd", "*/factory/*"]
 
 [tool.setuptools.dynamic]
 version = {attr = "mpixdaq.__version__"}
