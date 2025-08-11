@@ -290,6 +290,7 @@ class frameAnalyzer:
           - n_cpixels: number of pixels per cluster
           - circularity: circularity per cluster (0. for linear, 1. for circular)
           - cluster_energies: energy per cluster
+          - single_energies: energies in single pixels
 
           - self.clusters is a tuple with properties per cluster with mean of x and y coordinates,
             number of pixels, energy, eigenvalues of covariance matrix and orientation ([-pi/2, pi/2])
@@ -313,7 +314,7 @@ class frameAnalyzer:
         # timing
         if self.t_start is None:
             self.t_start = time.time()
-        t_frame = time.time() - self.t_start
+        self.t_frame = time.time() - self.t_start
 
         # find connected areas in pixel image using label() from scipy.ndimage
         f_labeled, n_labels = label(f_isgt0, structure=self.label_structure)
@@ -386,19 +387,19 @@ class frameAnalyzer:
         # finally, store properties of all single-pixel objects
         single_pix_list = self.pixel_list[self.n_clusters]
         if single_pix_list is not None:
-            self.n_cpixels[self.n_clusters] = len(single_pix_list)
+            n_single = len(single_pix_list)
+            self.single_energies = np.zeros(n_single, dtype=np.int32)
+            self.n_cpixels[self.n_clusters] = n_single
             self.cluster_energies[self.n_clusters] = f[single_pix_list[:, 0], single_pix_list[:, 1]].sum()
-            for spx in single_pix_list:
-                self.clusters = self.clusters + (((spx[0], spx[1]), 1, f[spx[0], spx[1]], (0, 0), 0, (spx[0], spx[1]), (0, 0)),)
-
-        if self.csvfile is not None:
-            for _xym, _npix, _energy, _var, _angle, _xyEm, _varE in self.clusters:
-                print(
-                    f"{t_frame:.3f}, {_xym[0]:.2f}, {_xym[1]:.2f}, {_npix}, {_energy:.1f}"
-                    + f", {_var[0]:.2f}, {_var[1]:.2f}, {_angle:.2f}"
-                    + f", {_xyEm[0]:.2f}, {_xyEm[1]:.2f}, {_varE[0]:.3f}, {_varE[1]:.3f}",
-                    file=self.csvfile,
-                )
+            for _is, spx in enumerate(single_pix_list):
+                _x = spx[0]
+                _y = spx[1]
+                _e = f[_x, _y]
+                self.single_energies[_is] = _e
+                self.clusters = self.clusters + (((_x, _y), 1, _e, (0, 0), 0, (_x, _y), (0, 0)),)
+        else:
+            self.single_energies = np.array([])
+        cluster_smry = (self.n_pixels, self.n_clusters, self.n_cpixels, self.circularity, self.cluster_energies, self.single_energies)
 
         # alternative clustering using sclearn.cluster.DBSCAN (is a bit slower)
         # _t0 = time.time()
@@ -418,7 +419,20 @@ class frameAnalyzer:
         # self.np_unass = self.n_cpixels[self.n_clusters]
         # self.E_unass = self.cluster_energies[self.n_clusters]
 
-        return self.n_pixels, self.n_clusters, self.n_cpixels, self.circularity, self.cluster_energies
+        if self.csvfile is not None:
+            self.write_csv()
+
+        return cluster_smry
+
+    def write_csv(self):
+        """Write cluster data to csv file"""
+        for _xym, _npix, _energy, _var, _angle, _xyEm, _varE in self.clusters:
+            print(
+                f"{self.t_frame:.3f}, {_xym[0]:.2f}, {_xym[1]:.2f}, {_npix}, {_energy:.1f}"
+                + f", {_var[0]:.2f}, {_var[1]:.2f}, {_angle:.2f}"
+                + f", {_xyEm[0]:.2f}, {_xyEm[1]:.2f}, {_varE[0]:.3f}, {_varE[1]:.3f}",
+                file=self.csvfile,
+            )
 
     def check(self):
         """check for consistency
@@ -539,14 +553,14 @@ class miniPIXana:
         be2 = np.geomspace(min2, max2, nbins2 + 1, endpoint=True)
         self.bhist2 = bhist(
             ax=self.axh2,
-            data=([], []),
+            data=([], [], []),
             binedges=be2,
             xlabel="cluster energies " + self.unit,
             ylabel="",
             xscale="log",
             yscale="log",
-            labels=("linear", "circular"),
-            colors=('yellow', 'cyan'),
+            labels=("linear", "circular", "single"),
+            colors=('yellow', 'cyan', 'red'),
         )
 
         # - scatter plot: cluster energies & sizes
@@ -575,7 +589,7 @@ class miniPIXana:
 
     def anaviz(self, frame2d):
         """analyze frame data and update image and plots"""
-        n_pixels, n_clusters, n_cpixels, circularity, cluster_energies = self.frameAna(frame2d)
+        n_pixels, n_clusters, n_cpixels, circularity, cluster_energies, single_energies = self.frameAna(frame2d)
 
         if n_clusters > 0:
             self.Energy = cluster_energies.sum()
@@ -598,7 +612,7 @@ class miniPIXana:
 
         # update histogram 2 with cluster energies
         if n_clusters > 0:
-            self.bhist2.add((cluster_energies[:n_clusters][is_lin], cluster_energies[:n_clusters][is_cir]))
+            self.bhist2.add((cluster_energies[:n_clusters][is_lin], cluster_energies[:n_clusters][is_cir], single_energies))
 
         # update scatter plot
         xlin = cluster_energies[:n_clusters][is_lin]
