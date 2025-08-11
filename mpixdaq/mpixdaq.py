@@ -335,10 +335,11 @@ class frameAnalyzer:
         self.pixel_list.append(single_pixel_list)
         self.n_clusters = len(self.clabels)
 
-        # initialize objects for each cluster
+        # initialize objects for cluster summary
         self.n_cpixels = np.zeros(self.n_clusters + 1, dtype=np.int32)
         self.cluster_energies = np.zeros(self.n_clusters + 1, dtype=np.float32)
         self.circularity = np.zeros(self.n_clusters + 1, dtype=np.float32)
+
         # - tuple with properties per cluster, format ( (x,y), n_pix, energy, (var_mx, var_mn), angle)
         self.clusters = ()
         # loop over clusters
@@ -511,24 +512,38 @@ class miniPIXana:
 
         #  - histogram of pixel energies
         self.axh1 = self.fig.add_subplot(gs[1:5, -4:])
-        nbins1 = 65
+        nbins1 = 45
+        min1 = 5
         max1 = 1300
-        be1 = np.linspace(0, max1, nbins1 + 1, endpoint=True)
+        # be1 = np.linspace(min1, max1, nbins1 + 1, endpoint=True)
+        # log scale
+        be1 = np.geomspace(min1, max1, nbins1 + 1, endpoint=True)
         self.bhist1 = bhist(
-            ax=self.axh1, data=([],), binedges=be1, xlabel="pixel energies " + self.unit, ylabel="", yscale="log", labels=None, colors=('r',)
+            ax=self.axh1,
+            data=([],),
+            binedges=be1,
+            xlabel="pixel energies " + self.unit,
+            ylabel="",
+            xscale="log",
+            yscale="log",
+            labels=None,
+            colors=('r',),
         )
 
         # - histogram of cluster energies
         self.axh2 = self.fig.add_subplot(gs[6:10, -4:])
-        nbins2 = 100
+        nbins2 = 50
+        min2 = 5
         max2 = 10000
-        be2 = np.linspace(0, 10000, nbins2 + 1, endpoint=True)
+        # be2 = np.linspace(min2, max2, nbins2 + 1, endpoint=True)
+        be2 = np.geomspace(min2, max2, nbins2 + 1, endpoint=True)
         self.bhist2 = bhist(
             ax=self.axh2,
             data=([], []),
             binedges=be2,
             xlabel="cluster energies " + self.unit,
             ylabel="",
+            xscale="log",
             yscale="log",
             labels=("linear", "circular"),
             colors=('yellow', 'cyan'),
@@ -641,12 +656,13 @@ class bhist:
         * bindeges: array of bin edges
         * xlabel: label for x-axis
         * ylabel: label for y axis
-        * yscale: "lin" or "log" scale
+        * xscale: "linear" or "log" x-scale
+        * yscale: "linear" or "log" y-scale
         * labels: labels for classes
         * colors: colors corresponding to labels
     """
 
-    def __init__(self, ax=None, data=None, binedges=None, xlabel="x", ylabel="freqeuency", yscale="log", labels=None, colors=None):
+    def __init__(self, ax=None, data=None, binedges=None, xlabel="x", ylabel="freqeuency", yscale="log", xscale="linear", labels=None, colors=None):
         # ### own implementation of one-dimensional histogram (numpy + pyplot bar) ###
 
         if type(data) != type((1,)):
@@ -674,18 +690,18 @@ class bhist:
         _bc, self.be = np.histogram(data[0], binedges)  # histogram data
         self.bheights.append(_bc)
         self.bcnt = (self.be[:-1] + self.be[1:]) / 2.0
-        self.w = 0.8 * (self.be[1] - self.be[0])
-        self.bars.append(plt.bar(self.bcnt, _bc, align="center", width=self.w, facecolor=colors[0], label=labels[0], edgecolor="grey", alpha=0.75))
+        self.w = 0.8 * (self.be[1:] - self.be[:-1])
+        ec = 'grey'
+        self.bars.append(plt.bar(self.bcnt, _bc, align="center", width=self.w, color=colors[0], label=labels[0], edgecolor=ec, alpha=0.75))
         sum = _bc
 
         # plot other classes
         for _ic in range(1, self.n_classes):
             _bc, _be = np.histogram(data[_ic], binedges)  # histogram data
             self.bheights.append(_bc)
+
             self.bars.append(
-                plt.bar(
-                    self.bcnt, _bc, align="center", width=self.w, facecolor=colors[_ic], label=labels[_ic], edgecolor="grey", alpha=0.75, bottom=sum
-                )
+                plt.bar(self.bcnt, _bc, align="center", width=self.w, color=colors[_ic], label=labels[_ic], edgecolor=ec, alpha=0.75, bottom=sum)
             )
             sum = sum + _bc
 
@@ -693,7 +709,8 @@ class bhist:
         self.ax.set_ylabel(ylabel)
         _mx = max(sum)
         self.maxh = _mx if _mx > 0.0 else 1000
-        self.ax.set_ylim(0.9, self.maxh)
+        self.ax.set_ylim(0.75, self.maxh)
+        self.ax.set_xscale(xscale)
         self.ax.set_yscale(yscale)
         if labels[0] is not None:
             self.ax.legend(loc="upper right")
