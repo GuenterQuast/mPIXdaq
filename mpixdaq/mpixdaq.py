@@ -298,9 +298,8 @@ class frameAnalyzer:
             and the minimal and maximal eigenvalues of the covariance matrix of the energy distribution:
             format  ( (x, y), n_pix, energy, (var_mx, var_mn), angle, (xEm, yEm), (varE_mx, varE_mn) )
 
-          - self.pixel_list is a list of dimension n_clusters + 1 and contains the pixel indices
-            contributing to each of the clusters. self.pixel_list[-1] contains the list of single pixels
-
+          - self.cluster_pxl_lst is a list of dimension n_clusters + 1 and contains the pixel indices
+            contributing to each of the clusters. self.cluster_pxl_lst[-1] contains the list of single pixels
         """
         # find clusters (lines,  circular  and unassigned = single pixels)
         self.n_pixels = (f > 0).sum()
@@ -314,7 +313,9 @@ class frameAnalyzer:
         self.t_frame = time.time() - self.t_start
 
         # find connected pixel areas ("clusters") in frame
-        self.n_clusters, self.n_single, self.pixel_list = self.find_connected(f)
+        self.cluster_pxl_lst = self.find_connected(f)
+        self.n_clusters = len(self.cluster_pxl_lst) - 1
+        self.n_single = len(self.cluster_pxl_lst[-1])
 
         # initialize objects for cluster summary
         self.n_cpixels = np.zeros(self.n_clusters + 1, dtype=np.int32)
@@ -325,7 +326,7 @@ class frameAnalyzer:
         # loop over clusters
         for _i in range(self.n_clusters):
             # number of pixels in cluster
-            pl = self.pixel_list[_i]
+            pl = self.cluster_pxl_lst[_i]
             npix = len(pl)
             self.n_cpixels[_i] = npix
             # energy in cluster
@@ -364,7 +365,7 @@ class frameAnalyzer:
 
         # finally, store properties of all single-pixel objects
         if self.n_single > 0:
-            single_pixel_list = np.asarray(self.pixel_list[self.n_clusters])
+            single_pixel_list = np.asarray(self.cluster_pxl_lst[self.n_clusters])
             self.single_energies = np.zeros(self.n_single, dtype=np.int32)
             self.n_cpixels[self.n_clusters] = self.n_single
             self.cluster_energies[self.n_clusters] = f[single_pixel_list[:, 0], single_pixel_list[:, 1]].sum()
@@ -393,11 +394,17 @@ class frameAnalyzer:
 
         label() works with binary frame data (0/1 or False/True)
 
-        produces:
-          - self.n_clusters: number of clusters
-          - self.n_single: numer of single, unclustered pixels
-          - self.pixel_list: list of pixel coordinates for each cluster,
-            single pixels collected in pixel_list[self.n_clusters]
+        Args:
+
+          - frame: 2d-frame from the miniPIX
+
+        Returns:
+
+          - pixel_list: list of pixel coordinates for each cluster,
+            single pixels collected in pixel_list[self.n_clusters];
+            number of custers, n_clusters,  is len(pixel_list) - 1,
+            list of unclustered pixels is pixel_list[n_clusters],
+            numberof single pixels is len(pixel_list[n_clusters]).
         """
 
         f_labeled, n_labels = ndimage.label(frame > 0, structure=self.label_structure)
@@ -425,10 +432,7 @@ class frameAnalyzer:
         #     pl = px_list[clabels == _l]
         #     pixel_list.append(pl)
 
-        # collect results
-        n_clusters = len(pixel_list) - 1
-        n_single = len(pixel_list[-1])
-        return (n_clusters, n_single, pixel_list)
+        return pixel_list
 
     def write_csv(self, pixel_clusters):
         """Write cluster data to csv file"""
