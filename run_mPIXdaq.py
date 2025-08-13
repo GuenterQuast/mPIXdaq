@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 import os, sys
 
-# pypixet requires '.' in LD_LIBRARY_PATH so that al neccessary C-libratreis are found
+# pypixet requires '.' in LD_LIBRARY_PATH so that al neccessary C-libraries are found
 #  - add current directory to LD-LIBRARY_PATH
 #  - and restart python script for changes to take effect
 
