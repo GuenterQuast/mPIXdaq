@@ -13,7 +13,13 @@ readme = "README.md"
 authors = [
     {name = "Guenter Quast", email = "Guenter.Quast@kit.edu"},
 ]
-
+dependencies = [
+    "NumPy",
+    "numpy_append_array",
+    "matplotlib",
+    "Scipy",
+    ]
+    
 classifiers = [
     "Development Status :: 4 - Beta",
     # "Development Status :: 5 - Production/Stable",
@@ -24,12 +30,15 @@ classifiers = [
     "Topic :: Scientific/Engineering",
     "Topic :: Scientific/Engineering :: Physics",
     "Topic :: Scientific/Engineering :: Visualization",
+    "Programming Language :: Python :: 3.7",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12"
     ]
 
-requires-python = ">=3.10"
+requires-python = ">=3.7"
 
 [tool.setuptools.packages.find]
 include = ["mpixdaq*"]
