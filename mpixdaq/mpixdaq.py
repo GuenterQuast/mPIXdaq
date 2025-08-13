@@ -233,6 +233,7 @@ class frameAnalyzer:
         if self.csvfile is not None:
             self.csvfile.write(csvHeader + '\n')
 
+        self.ea = np.array([])
         self.t_start = None
 
     def covmat_2d(self, x, y, vals):
@@ -302,14 +303,10 @@ class frameAnalyzer:
 
         """
         # find clusters (lines,  circular  and unassigned = single pixels)
-        f_isgt0 = f > 0
-        self.n_pixels = f_isgt0.sum()
+        self.n_pixels = (f > 0).sum()
         if self.n_pixels == 0:
-            self.n_clusters = 0
-            self.n_cpixels = np.array([])
-            self.circularity = np.array([])
-            self.cluster_energies = np.array([])
-            return self.n_pixels, self.n_clusters, self.n_cpixels, self.circularity, self.cluster_energies
+            # n_pixels, n_clusters, n_cpixels, circularity, cluster_energies, single_energies
+            return self.n_pixels, 0, self.ea, self.ea, self.ea, self.ea
 
         # timing
         if self.t_start is None:
@@ -317,15 +314,14 @@ class frameAnalyzer:
         self.t_frame = time.time() - self.t_start
 
         # find connected pixel areas ("clusters") in frame
-        self.find_connected(f)
- 
+        self.n_clusters, self.n_single, self.pixel_list = self.find_connected(f)
+
         # initialize objects for cluster summary
         self.n_cpixels = np.zeros(self.n_clusters + 1, dtype=np.int32)
         self.cluster_energies = np.zeros(self.n_clusters + 1, dtype=np.float32)
         self.circularity = np.zeros(self.n_clusters + 1, dtype=np.float32)
-
-        # - tuple with properties per cluster, format ( (x,y), n_pix, energy, (var_mx, var_mn), angle)
-        self.clusters = ()
+        # - list of properties per cluster, format ( (x,y), n_pix, energy, (var_mx, var_mn), angle)
+        self.clusters = []
         # loop over clusters
         for _i in range(self.n_clusters):
             # number of pixels in cluster
@@ -333,8 +329,7 @@ class frameAnalyzer:
             npix = len(pl)
             self.n_cpixels[_i] = npix
             # energy in cluster
-            #        cluster_energies[_i] = f[*pixel_list[labels == _l].T].sum()  # 2d-list as index is tricky!
-            energy = f[pl[:, 0], pl[:, 1]].sum()  # a more readable approach
+            energy = f[pl[:, 0], pl[:, 1]].sum()
             self.cluster_energies[_i] = energy
 
             # analyze shape of clusters
@@ -365,36 +360,35 @@ class frameAnalyzer:
             self.circularity[_i] = circularity
 
             # add results to tuple with object properties
-            self.clusters = self.clusters + (((x_mean, y_mean), npix, energy, (var_mx, var_mn), angle, (xEm, yEm), (varE_mx, varE_mn)),)
+            self.clusters.append(((x_mean, y_mean), npix, energy, (var_mx, var_mn), angle, (xEm, yEm), (varE_mx, varE_mn)))
 
         # finally, store properties of all single-pixel objects
         if self.n_single > 0:
             single_pixel_list = np.asarray(self.pixel_list[self.n_clusters])
             self.single_energies = np.zeros(self.n_single, dtype=np.int32)
-            self.n_cpixels[self.n_clusters] = self.n_single            
+            self.n_cpixels[self.n_clusters] = self.n_single
             self.cluster_energies[self.n_clusters] = f[single_pixel_list[:, 0], single_pixel_list[:, 1]].sum()
             for _is, spx in enumerate(single_pixel_list):
                 _x = spx[0]
                 _y = spx[1]
                 _e = f[_x, _y]
                 self.single_energies[_is] = _e
-                self.clusters = self.clusters + (((_x, _y), 1, _e, (0, 0), 0, (_x, _y), (0, 0)),)
+                self.clusters.append(((_x, _y), 1, _e, (0, 0), 0, (_x, _y), (0, 0)))
         else:
             self.single_energies = np.array([])
         cluster_smry = (self.n_pixels, self.n_clusters, self.n_cpixels, self.circularity, self.cluster_energies, self.single_energies)
 
         # total energy in clusters and unassigned pixels and energy
-        # self.Energy_in_clusters = self.cluster_energies[: self.n_clusters].sum()
-        # self.np_unass = self.n_cpixels[self.n_clusters]
-        # self.E_unass = self.cluster_energies[self.n_clusters]
+        #   self.Energy_in_clusters = self.cluster_energies[: self.n_clusters].sum()
+        #   self.np_unass = self.n_cpixels[self.n_clusters]
+        #   self.E_unass = self.cluster_energies[self.n_clusters]
 
         if self.csvfile is not None:
             self.write_csv(self.clusters)
 
         return cluster_smry
 
-
-    def find_connected(self, frame):   
+    def find_connected(self, frame):
         """find connected areas in pixel image using label() from scipy.ndimage
 
         label() works with binary frame data (0/1 or False/True)
@@ -402,15 +396,14 @@ class frameAnalyzer:
         produces:
           - self.n_clusters: number of clusters
           - self.n_single: numer of single, unclustered pixels
-          - self.pixel_list: list of pixel coordinates for each cluster, 
-            single pixels collected in pixel_list[self.n_clusters]        
+          - self.pixel_list: list of pixel coordinates for each cluster,
+            single pixels collected in pixel_list[self.n_clusters]
         """
 
-        f_labeled, n_labels = ndimage.label(frame>0, structure=self.label_structure)
+        f_labeled, n_labels = ndimage.label(frame > 0, structure=self.label_structure)
 
         # separating clusters fom single hits
-        self.clabels = []
-        self.pixel_list = []
+        pixel_list = []
         sngl_pxl_list = []
         for _l in range(1, 1 + n_labels):
             pl = np.argwhere(f_labeled == _l)
@@ -418,26 +411,24 @@ class frameAnalyzer:
                 # collect single pixels in one pixel list
                 sngl_pxl_list.append(pl[0])
             else:
-                self.clabels.append(_l)
-                self.pixel_list.append(pl)
-        # store results
-        self.n_clusters = len(self.clabels)
-        self.n_single = len(sngl_pxl_list)
-        self.pixel_list.append(sngl_pxl_list)
- 
+                pixel_list.append(pl)
+        # append single pixels
+        pixel_list.append(sngl_pxl_list)
+
         # alternative clustering using sclearn.cluster.DBSCAN (is a bit slower)
-        #   this works with the pixel coordinates 
+        #   this algorithm works with the pixel coordinates
         # px_list = np.argwhere(f > 0)
         # cluster_result = DBSCAN(eps=1.5, min_samples=2, algorithm="ball_tree").fit(px_list)
-        # self.clabels = self.cluster_result.labels_
-        # self.n_clusters = len(set(self.clabels)) - (1 if -1 in self.clabels else 0)
-        # self.n_single = len(pixel_list[clabels==-1])        # 
-        # self.pixel_list = []
-        # for _l in set(self.clabels)):
-        #     pl = px_list[self.clabels == _l]
-        #     self.pixel_list.append(pl)
+        # clabels = self.cluster_result.labels_
+        # pixel_list = []
+        # for _l in set(clabels)):
+        #     pl = px_list[clabels == _l]
+        #     pixel_list.append(pl)
 
-
+        # collect results
+        n_clusters = len(pixel_list) - 1
+        n_single = len(pixel_list[-1])
+        return (n_clusters, n_single, pixel_list)
 
     def write_csv(self, pixel_clusters):
         """Write cluster data to csv file"""
@@ -652,7 +643,7 @@ class miniPIXana:
         if self.i_buf < self.n_overlay - 1:
             self.i_buf = self.i_buf + 1
         else:
-            # buffer filled, analyze data
+            # buffer filled, analyze and visualize data
             self.anaviz(self.cimage)
             # reset buffer index
             self.i_buf = 0
