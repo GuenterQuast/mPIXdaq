@@ -909,7 +909,8 @@ class runDAQ:
 
         # write to user HOME if no path given
         if wd_path is None:
-            wd_path = os.getenv("HOME")
+        #    wd_path = os.getenv("HOME")
+            wd_path = os.getcwd()
         os.chdir(wd_path)
         self.wd_path = wd_path
 
