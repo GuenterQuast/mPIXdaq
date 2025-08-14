@@ -145,7 +145,9 @@ A small ratio of the variances of the energy distribution and if the area
 covered by pixels ist therefore a very prominent signature of α particles.
 
 Properties of clusters are optionally written to a file in *.csv* format
-for later off-line analysis.
+for later off-line analysis. A *Jupyter* notebook, 
+*analyze_mPIXclusters.ipynb*, is provided which illustrates an example 
+analysis. 
 
 To test the software without access to a miniPIX EDU device or without
 a radioactive source, a file with recorded data is provided. Use the
@@ -193,7 +195,7 @@ for convenience.
 
 The analysis shown in this example is intentionally very simple and based 
 on standard libraries and functions. Pixels clustering is performed by
-finding connected regions in the pixel image with *scipy.ndimage.label*.
+finding connected regions in the pixel image with *scipy.ndimage.label()*.
 The shape of the clusters is determined from the ratio of the smaller 
 and the larger one of the two eigenvalues of the covariance matrix 
 calculated from the *x* and *y* coordinates of the pixels in a cluster. 
@@ -273,7 +275,7 @@ for data analysis:
 
   - `numpy`
   - `matplotlib`,
-  - `skimage.measure.label`
+  - `scipy.ndimage.label`
   - `numpy.cov`
   - `numpy.linalg.eig`
 
@@ -336,13 +338,15 @@ class frameAnalyzer:
     - n_cpixels: number of pixels per cluster
     - circularity: circularity per cluster (0. for linear, 1. for circular)
     - cluster_energies: energy per cluster
+    - single_energies: energies in single pixels
 
-     - self.clusters is a tuple with properties per cluster with mean of x and y coordinates,
-       number of pixels, energy, eigenvalues of covariance matrix and orientation of the
-       eigenvector corresponding to the largest eigenvalue in the range [-pi/2, pi/2]:
-
-        format of the tuple:
-            ( (x,y), n_pix, energy, (var_mx, var_mn), angle )
+    - self.clusters is a tuple with properties per cluster with mean of x and y coordinates,
+      number of pixels, energy, eigenvalues of covariance matrix and orientation ([-pi/2, pi/2])
+      and the minimal and maximal eigenvalues of the covariance matrix of the energy distribution:
+        
+        format of the tuple:  
+            
+            ( (x, y), n_pix, energy, (var_mx, var_mn), angle, (xEm, yEm), (varE_mx, varE_mn) )
   """
 ```
 
@@ -363,8 +367,9 @@ class miniPIXana:
 
 ``` 
 
-These classes are used by the class `runDAQ`. It accepts the command-line 
-arguments to set various options, as already described above. 
+Objects of these classes are instantiated by the class `runDAQ`. 
+This class also accepts the command-line arguments to set various options, 
+as already described above. 
 
 
 ```
@@ -456,4 +461,19 @@ else:  # restart python script for setting to take effect
 
     rD = mpixdaq.runDAQ(wd)  # start daq in working directory
     rD()
+```
+
+Note that *Python* 3.7.9 is required to run under Microsoft Windows.
+Changing the environment does not work either under Windows, and therefore
+a simplified version of the run-script must be used:
+
+```
+from mpixdaq import mpixdaq 
+rD = mpixdaq.runDAQ() 
+rD()
+```
+It is also possible to start the script as a *Python* module:
+
+```
+python -m mpixdaq
 ```
