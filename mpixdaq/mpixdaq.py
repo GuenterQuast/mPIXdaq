@@ -1073,4 +1073,4 @@ class runDAQ:
 
 if __name__ == "__main__":  # -  - - - - - - - - - -
     rD = runDAQ()
-    rD.run()
+    rD()
