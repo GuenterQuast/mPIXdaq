@@ -233,11 +233,14 @@ class frameAnalyzer:
         if self.csvfile is not None:
             self.csvfile.write(csvHeader + '\n')
 
+        # an empty numpy array for null results
         self.ea = np.array([])
+
+        # initialize start-time
         self.t_start = None
 
     def covmat_2d(self, x, y, vals):
-        """Covariance matrix of sampled 2d distribution
+        """Covariance matrix of a sampled 2d distribution
 
         Args:
           - x:  x-index _ix of array vals
@@ -327,12 +330,10 @@ class frameAnalyzer:
         for _i in range(self.n_clusters):
             # number of pixels in cluster
             pl = self.cluster_pxl_lst[_i]
-            npix = len(pl)
-            self.n_cpixels[_i] = npix
+            self.n_cpixels[_i] = npix = len(pl)
             # energy in cluster
-            energy = f[pl[:, 0], pl[:, 1]].sum()
-            self.cluster_energies[_i] = energy
-
+            self.cluster_energies[_i] = energy = f[pl[:, 0], pl[:, 1]].sum()
+ 
             # analyze shape of clusters
             #  - mean values of x and y and covariance matrix of pixel area
             x_mean = pl[:, 0].mean(dtype=np.float32)
@@ -340,15 +341,18 @@ class frameAnalyzer:
             _evals, _evecs = np.linalg.eigh(np.cov(pl[:, 0], pl[:, 1], dtype=np.float32))
             _idmx = 0 if _evals[0] > _evals[1] else 1
             var_mx, var_mn = _evals[_idmx], _evals[1 - _idmx]
+            # circularity as the ratio of the two eigenvalues of the covariance matrix
+            self.circularity[_i] = circularity = var_mn / var_mx
+
+            # orientation of clusters
             angle = np.arctan2(_evecs[_idmx, 0], _evecs[_idmx, 1])
             if angle > np.pi / 2.0:
                 angle -= np.pi
             elif angle < -np.pi / 2.0:
                 angle += np.pi
+
             # linearity: variance of uniform distribution on lenght npix is npix**2/12
-            linearity = min(12 * var_mx / (npix * npix), 1.0)
-            # circularity as the ratio of the two eigenvalues of the covariance matrix
-            circularity = var_mn / var_mx
+            #linearity = min(12 * var_mx / (npix * npix), 1.0)
 
             # - covariance matrix of energy distribution
             (xEm, yEm), covmat = self.covmat_2d(pl[:, 0], pl[:, 1], f)
@@ -357,8 +361,6 @@ class frameAnalyzer:
             _idmx = 0 if _evals[0] > _evals[1] else 1
             varE_mx, varE_mn = _evals[_idmx], _evals[1 - _idmx]
             # circE = vare_mn / vare_mx  # ratio of eigenvalues
-
-            self.circularity[_i] = circularity
 
             # add results to tuple with object properties
             self.clusters.append(((x_mean, y_mean), npix, energy, (var_mx, var_mn), angle, (xEm, yEm), (varE_mx, varE_mn)))
@@ -376,18 +378,18 @@ class frameAnalyzer:
                 self.single_energies[_is] = _e
                 self.clusters.append(((_x, _y), 1, _e, (0, 0), 0, (_x, _y), (0, 0)))
         else:
-            self.single_energies = np.array([])
-        cluster_smry = (self.n_pixels, self.n_clusters, self.n_cpixels, self.circularity, self.cluster_energies, self.single_energies)
-
-        # total energy in clusters and unassigned pixels and energy
-        #   self.Energy_in_clusters = self.cluster_energies[: self.n_clusters].sum()
-        #   self.np_unass = self.n_cpixels[self.n_clusters]
-        #   self.E_unass = self.cluster_energies[self.n_clusters]
+            self.single_energies = self.ea
 
         if self.csvfile is not None:
             self.write_csv(self.clusters)
 
-        return cluster_smry
+        # total energy in clusters, number of unassigned pixels and energy from quantities already calculated
+        #   self.Energy_in_clusters = self.cluster_energies[: self.n_clusters].sum()
+        #   self.np_unass = self.n_cpixels[self.n_clusters]
+        #   self.E_unass = self.cluster_energies[self.n_clusters]
+
+        # return some of the values caculated above for live display
+        return self.n_pixels, self.n_clusters, self.n_cpixels, self.circularity, self.cluster_energies, self.single_energies
 
     def find_connected(self, frame):
         """find connected areas in pixel image using label() from scipy.ndimage
@@ -897,7 +899,7 @@ class runDAQ:
           graphical display
     """
 
-    def __init__(self, wd_path):
+    def __init__(self, wd_path=None):
         """initialize:
 
         - options from command line arguments
