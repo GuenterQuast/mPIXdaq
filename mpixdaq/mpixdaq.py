@@ -272,6 +272,160 @@ class frameAnalyzer:
         covmat = np.array([[varx, cov], [cov, vary]])
         return (mean, covmat)
 
+    def find_connected(self, frame):
+        """find connected areas in pixel image using label() from scipy.ndimage
+
+        label() works with binary frame data (0/1 or False/True)
+
+        Args:
+
+          - frame: 2d-frame from the miniPIX
+
+        Returns:
+
+          - pixel_list: list of pixel coordinates for each cluster,
+            single pixels collected in pixel_list[self.n_clusters];
+            number of clusters, n_clusters,  is len(pixel_list) - 1,
+            list of unclustered pixels is pixel_list[n_clusters],
+            number of single pixels is len(pixel_list[n_clusters]).
+        """
+
+        f_labeled, n_labels = ndimage.label(frame > 0, structure=self.label_structure)
+
+        # separating clusters fom single hits
+        pixel_list = []
+        sngl_pxl_list = []
+        for _l in range(1, 1 + n_labels):
+            pl = np.argwhere(f_labeled == _l)
+            if len(pl) == 1:
+                # collect single pixels in one pixel list
+                sngl_pxl_list.append(pl[0])
+            else:
+                pixel_list.append(pl)
+        # append single pixels
+        pixel_list.append(sngl_pxl_list)
+
+        # alternative clustering using sclearn.cluster.DBSCAN (is a bit slower)
+        #   this algorithm works with the pixel coordinates
+        # px_list = np.argwhere(f > 0)
+        # cluster_result = DBSCAN(eps=1.5, min_samples=2, algorithm="ball_tree").fit(px_list)
+        # clabels = self.cluster_result.labels_
+        # pixel_list = []
+        # for _l in set(clabels)):
+        #     pl = px_list[clabels == _l]
+        #     pixel_list.append(pl)
+
+        return pixel_list
+
+    def cluster_properties(self, f, pl):
+        """
+        Create  a tuples with properties per cluster:
+            - mean of x and y coordinates,
+            - number of pixels,
+            - energy,
+            - eigenvalues of covariance matrix and orientation ([-pi/2, pi/2])
+            - minimal and maximal eigenvalues of the covariance matrix of the energy distribution:
+
+        Args:
+
+            - f: pixel frame
+            - pl: list of pixels contributing to cluster
+
+        Returns:
+            clusters: tuple of format
+            (x, y), n_pix, energy, (var_mx, var_mn), angle, (xEm, yEm), (varE_mx, varE_mn) )
+
+        """
+
+        npix = len(pl)
+        if npix > 1:
+            # energy in cluster
+            energy = f[pl[:, 0], pl[:, 1]].sum()
+            #  - mean values of x and y and covariance matrix of pixel area
+            x_mean = pl[:, 0].mean(dtype=np.float32)
+            y_mean = pl[:, 1].mean(dtype=np.float32)
+
+            # analyze cluster shape
+            # - covariance matrix of cluster area
+            _evals, _evecs = np.linalg.eigh(np.cov(pl[:, 0], pl[:, 1], dtype=np.float32))
+            _idmx = 0 if _evals[0] > _evals[1] else 1
+            var_mx, var_mn = _evals[_idmx], _evals[1 - _idmx]
+            # orientation of cluster
+            angle = np.arctan2(_evecs[_idmx, 0], _evecs[_idmx, 1])
+            if angle > np.pi / 2.0:
+                angle -= np.pi
+            elif angle < -np.pi / 2.0:
+                angle += np.pi
+
+            # - covariance matrix of energy distribution
+            (xEm, yEm), covmat = self.covmat_2d(pl[:, 0], pl[:, 1], f)
+            # calculate eigenvalues and orientation
+            _evals, _evecs = np.linalg.eigh(covmat)
+            _idmx = 0 if _evals[0] > _evals[1] else 1
+            varE_mx, varE_mn = _evals[_idmx], _evals[1 - _idmx]
+        else:  # single-pixel object
+            _x, _y = pl[0]
+            x_mean = _x
+            y_mean = _y
+            energy = f[_x, _y]
+            var_mx, var_mn = (0, 0)
+            angle = 0.0
+            xEm, yEm = _x, _y
+            varE_mx, varE_mn = (0, 0)
+        return ((x_mean, y_mean), npix, energy, (var_mx, var_mn), angle, (xEm, yEm), (varE_mx, varE_mn))
+
+    def write_csv(self, pixel_clusters):
+        """Write cluster data to csv file"""
+        for _xym, _npix, _energy, _var, _angle, _xyEm, _varE in pixel_clusters:
+            print(
+                f"{self.t_frame:.3f}, {_xym[0]:.2f}, {_xym[1]:.2f}, {_npix}, {_energy:.1f}"
+                + f", {_var[0]:.2f}, {_var[1]:.2f}, {_angle:.2f}"
+                + f", {_xyEm[0]:.2f}, {_xyEm[1]:.2f}, {_varE[0]:.3f}, {_varE[1]:.3f}",
+                file=self.csvfile,
+            )
+
+    def cluster_summary(self, clusters, n_pixels, n_clusters, n_single):
+        """summarize cluster properties in frame from cluster tuples of format
+              ( (x,y), n_pix, energy, (var_mx, var_mn), angle, (xE, yE), (varE_mx, VarE_mn))
+
+        Args:
+
+          - clusters: list of cluster tuples
+          - n_pixels:   number of pixels with energy > 0
+          - n_clusters: number of clusters with >= 2 pixels
+          - n_single: number of single pixels (not clustered)
+
+        Returns:
+
+          - n_pixels: number of pixels with energy > 0
+          - n_clusters: number of clusters in frame
+          - n_cpixels: number of pixels per cluster
+          - circularity: circularity per cluster (0. for linear, 1. for circular)
+          - cluster_energies: energy per cluster
+          - single_energies: energies in single pixels
+        """
+
+        id_npix = 1
+        id_e = 2
+        id_var = 3
+        n_cpixels = np.zeros(n_clusters + 1, dtype=np.int32)
+        cluster_energies = np.zeros(n_clusters + 1, dtype=np.float32)
+        circularity = np.zeros(n_clusters + 1, dtype=np.float32)
+        single_energies = np.zeros(n_single, dtype=np.int32)
+        for _ic, c in enumerate(clusters):
+            if _ic < n_clusters:
+                # clusters with more than one pixel
+                n_cpixels[_ic] = c[id_npix]
+                cluster_energies[_ic] = c[id_e]
+                circularity[_ic] = c[id_var][1] / c[id_var][0]
+            else:
+                # single pixels
+                single_energies[_ic - n_clusters] = c[id_e]
+        # finally, add summary of single-pixel-clusters
+        n_cpixels[self.n_clusters] = n_single
+        cluster_energies[n_clusters] = single_energies.sum()
+        return n_pixels, n_clusters, n_cpixels, circularity, cluster_energies, single_energies
+
     def __call__(self, f):
         """Analyze frame data
 
@@ -320,131 +474,25 @@ class frameAnalyzer:
         self.n_clusters = len(self.cluster_pxl_lst) - 1
         self.n_single = len(self.cluster_pxl_lst[-1])
 
-        # initialize objects for cluster summary
-        self.n_cpixels = np.zeros(self.n_clusters + 1, dtype=np.int32)
-        self.cluster_energies = np.zeros(self.n_clusters + 1, dtype=np.float32)
-        self.circularity = np.zeros(self.n_clusters + 1, dtype=np.float32)
-        # - list of properties per cluster, format ( (x,y), n_pix, energy, (var_mx, var_mn), angle)
+        # - list of properties per cluster in format
+        #      ( (x,y), n_pix, energy, (var_mx, var_mn), angle, (xE, yE), (varE_mx, VarE_mn))
         self.clusters = []
-        # loop over clusters
+        # loop over clusters ...
         for _i in range(self.n_clusters):
             # number of pixels in cluster
             pl = self.cluster_pxl_lst[_i]
-            self.n_cpixels[_i] = npix = len(pl)
-            # energy in cluster
-            self.cluster_energies[_i] = energy = f[pl[:, 0], pl[:, 1]].sum()
- 
-            # analyze shape of clusters
-            #  - mean values of x and y and covariance matrix of pixel area
-            x_mean = pl[:, 0].mean(dtype=np.float32)
-            y_mean = pl[:, 1].mean(dtype=np.float32)
-            _evals, _evecs = np.linalg.eigh(np.cov(pl[:, 0], pl[:, 1], dtype=np.float32))
-            _idmx = 0 if _evals[0] > _evals[1] else 1
-            var_mx, var_mn = _evals[_idmx], _evals[1 - _idmx]
-            # circularity as the ratio of the two eigenvalues of the covariance matrix
-            self.circularity[_i] = circularity = var_mn / var_mx
+            self.clusters.append(self.cluster_properties(f, pl))
+        # and single pixels
+        for _is in range(self.n_single):
+            self.clusters.append(self.cluster_properties(f, [self.cluster_pxl_lst[self.n_clusters][_is]]))
 
-            # orientation of clusters
-            angle = np.arctan2(_evecs[_idmx, 0], _evecs[_idmx, 1])
-            if angle > np.pi / 2.0:
-                angle -= np.pi
-            elif angle < -np.pi / 2.0:
-                angle += np.pi
-
-            # linearity: variance of uniform distribution on lenght npix is npix**2/12
-            #linearity = min(12 * var_mx / (npix * npix), 1.0)
-
-            # - covariance matrix of energy distribution
-            (xEm, yEm), covmat = self.covmat_2d(pl[:, 0], pl[:, 1], f)
-            # calculate eigenvalues and orientation
-            _evals, _evecs = np.linalg.eigh(covmat)
-            _idmx = 0 if _evals[0] > _evals[1] else 1
-            varE_mx, varE_mn = _evals[_idmx], _evals[1 - _idmx]
-            # circE = vare_mn / vare_mx  # ratio of eigenvalues
-
-            # add results to tuple with object properties
-            self.clusters.append(((x_mean, y_mean), npix, energy, (var_mx, var_mn), angle, (xEm, yEm), (varE_mx, varE_mn)))
-
-        # finally, store properties of all single-pixel objects
-        if self.n_single > 0:
-            single_pixel_list = np.asarray(self.cluster_pxl_lst[self.n_clusters])
-            self.single_energies = np.zeros(self.n_single, dtype=np.int32)
-            self.n_cpixels[self.n_clusters] = self.n_single
-            self.cluster_energies[self.n_clusters] = f[single_pixel_list[:, 0], single_pixel_list[:, 1]].sum()
-            for _is, spx in enumerate(single_pixel_list):
-                _x = spx[0]
-                _y = spx[1]
-                _e = f[_x, _y]
-                self.single_energies[_is] = _e
-                self.clusters.append(((_x, _y), 1, _e, (0, 0), 0, (_x, _y), (0, 0)))
-        else:
-            self.single_energies = self.ea
-
+        # write to file if requested
         if self.csvfile is not None:
             self.write_csv(self.clusters)
 
-        # total energy in clusters, number of unassigned pixels and energy from quantities already calculated
-        #   self.Energy_in_clusters = self.cluster_energies[: self.n_clusters].sum()
-        #   self.np_unass = self.n_cpixels[self.n_clusters]
-        #   self.E_unass = self.cluster_energies[self.n_clusters]
-
-        # return some of the values caculated above for live display
-        return self.n_pixels, self.n_clusters, self.n_cpixels, self.circularity, self.cluster_energies, self.single_energies
-
-    def find_connected(self, frame):
-        """find connected areas in pixel image using label() from scipy.ndimage
-
-        label() works with binary frame data (0/1 or False/True)
-
-        Args:
-
-          - frame: 2d-frame from the miniPIX
-
-        Returns:
-
-          - pixel_list: list of pixel coordinates for each cluster,
-            single pixels collected in pixel_list[self.n_clusters];
-            number of custers, n_clusters,  is len(pixel_list) - 1,
-            list of unclustered pixels is pixel_list[n_clusters],
-            numberof single pixels is len(pixel_list[n_clusters]).
-        """
-
-        f_labeled, n_labels = ndimage.label(frame > 0, structure=self.label_structure)
-
-        # separating clusters fom single hits
-        pixel_list = []
-        sngl_pxl_list = []
-        for _l in range(1, 1 + n_labels):
-            pl = np.argwhere(f_labeled == _l)
-            if len(pl) == 1:
-                # collect single pixels in one pixel list
-                sngl_pxl_list.append(pl[0])
-            else:
-                pixel_list.append(pl)
-        # append single pixels
-        pixel_list.append(sngl_pxl_list)
-
-        # alternative clustering using sclearn.cluster.DBSCAN (is a bit slower)
-        #   this algorithm works with the pixel coordinates
-        # px_list = np.argwhere(f > 0)
-        # cluster_result = DBSCAN(eps=1.5, min_samples=2, algorithm="ball_tree").fit(px_list)
-        # clabels = self.cluster_result.labels_
-        # pixel_list = []
-        # for _l in set(clabels)):
-        #     pl = px_list[clabels == _l]
-        #     pixel_list.append(pl)
-
-        return pixel_list
-
-    def write_csv(self, pixel_clusters):
-        """Write cluster data to csv file"""
-        for _xym, _npix, _energy, _var, _angle, _xyEm, _varE in pixel_clusters:
-            print(
-                f"{self.t_frame:.3f}, {_xym[0]:.2f}, {_xym[1]:.2f}, {_npix}, {_energy:.1f}"
-                + f", {_var[0]:.2f}, {_var[1]:.2f}, {_angle:.2f}"
-                + f", {_xyEm[0]:.2f}, {_xyEm[1]:.2f}, {_varE[0]:.3f}, {_varE[1]:.3f}",
-                file=self.csvfile,
-            )
+        # return summary of clusters in frame
+        cluster_smry = self.cluster_summary(self.clusters, self.n_pixels, self.n_clusters, self.n_single)
+        return cluster_smry
 
     def check(self):
         """check for consistency
@@ -909,7 +957,7 @@ class runDAQ:
 
         # write to user HOME if no path given
         if wd_path is None:
-        #    wd_path = os.getenv("HOME")
+            #    wd_path = os.getenv("HOME")
             wd_path = os.getcwd()
         os.chdir(wd_path)
         self.wd_path = wd_path
