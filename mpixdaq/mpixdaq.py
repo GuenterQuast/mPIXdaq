@@ -1,5 +1,5 @@
 """mPIXdaq: Minimalist Python Script to illustrate data acquisition and data analysis
-   for the miniPIX EDU device by ADVACAM
+   for the miniPIX (EDU) device by ADVACAM
 
 Code for reading data from device taken from examples provided by the manufacturer,
 see https://wiki.advacam.cz/wiki/Python_API
@@ -72,11 +72,11 @@ def import_npy_append_array():
 #  main functions and classes - - - - -
 #
 
-# - handling the miniPIX EDU device
+# - handling the miniPIX device
 
 
 class miniPIXdaq:
-    """Initialize, readout miniPIX EDU device and store data
+    """Initialize, readout miniPIX device and store data
 
     After initialization, data from the device is stored in a
     ring buffer and the current buffer index is sent to the
@@ -122,7 +122,7 @@ class miniPIXdaq:
             return
 
         self.pixet = pypixet.pixet
-        devs = self.pixet.devicesByType(self.pixet.PX_DEVTYPE_MPX2)  # miniPIX EDU uses the mediPIX 2 chip
+        devs = self.pixet.devicesByType(self.pixet.PX_DEVTYPE_MPX2)  # miniPIX uses the mediPIX 2 chip
         if len(devs) == 0:
             print("!!! no miniPIX device found")
             return
@@ -554,7 +554,7 @@ class miniPIXana:
 
         # - prepare a figure with subplots
         self.fig = plt.figure('PIX data', figsize=(11.5, 8.5), facecolor="#1f1f1f")
-        self.fig.suptitle("miniPiX EDU Data Acquisition and Analysis", size="xx-large", color="cornsilk")
+        self.fig.suptitle("miniPiX Data Acquisition and Analysis", size="xx-large", color="cornsilk")
         self.fig.canvas.mpl_connect('close_event', self.on_mpl_close)
         self.mpl_active = True
         self.fig.subplots_adjust(left=0.05, bottom=0.03, right=0.97, top=0.99, wspace=0.0, hspace=0.1)
@@ -965,7 +965,7 @@ class runDAQ:
         self.wd_path = wd_path
 
         # parse command line arguments
-        parser = argparse.ArgumentParser(description="read, analyze and display data from miniPIX EDU device")
+        parser = argparse.ArgumentParser(description="read, analyze and display data from miniPIX device")
         parser.add_argument('-v', '--verbosity', type=int, default=1, help='verbosity level (1)')
         parser.add_argument('-o', '--overlay', type=int, default=10, help='number of frames to overlay in graph (10)')
         parser.add_argument('-a', '--acq_time', type=float, default=0.1, help='acquisition time/frame (0.1)')
