@@ -1,4 +1,4 @@
-## mPIXdaq: Data acquisition for *miniPIX EDU* pixel detector 
+## mPIXdaq: Data acquisition for *miniPIX (EDU)* pixel detector 
 ----------------------------------------------------------------  
 
                                             Vers. 0.9.2, August 2025
@@ -41,6 +41,10 @@ not pose any problem.
 On MS Windows, the libraries provided by the vendor only support
 *Python* vers. 3.7.9; such a rather historic version can be set up
 using e.g. the *miniconda* framework. 
+
+The code also supports devices other than the miniPIX EDU if the 
+configuration files are available and copied to the *factory/*
+directory in the *pypixet* *Python* interface. 
 
 To get started, follow the steps below: 
 
@@ -94,7 +98,7 @@ data archival to disk are shown by typing
 usage: run_mPIXdaq.py [-h] [-v VERBOSITY] [-o OVERLAY] [-a ACQ_TIME] [-c ACQ_COUNT] [-f FILE] [-w WRITEFILE] [-t TIME]
                       [--circularity_cut CIRCULARITY_CUT] [-r READFILE]
 
-read, analyze and display data from miniPIX EDU device
+read, analyze and display data from miniPIX device
 
 options:
   -h, --help            show this help message and exit
@@ -149,7 +153,7 @@ for later off-line analysis. A *Jupyter* notebook,
 *analyze_mPIXclusters.ipynb*, is provided which illustrates an example 
 analysis. 
 
-To test the software without access to a miniPIX EDU device or without
+To test the software without access to a miniPIX device or without
 a radioactive source, a file with recorded data is provided. Use the
 option `--readfile data/BlackForestStone.npy.gz` to start a demonstration.
 Note that the analysis of the recorded pixel frames is done in real
@@ -234,7 +238,7 @@ multiple cores must be used for the analysis task.
 
 ## Sensor Details
 
-The miniPIX EDU is based on the [*Timepix*](https://home.cern/tags/timepix)
+The miniPIX (EDU) is based on the [*Timepix*](https://home.cern/tags/timepix)
 hybrid silicon pixel device, consisting of a semiconductor detector chip
 segmented into 256 x 256 square pixels with a pitch of 55 mm that is 
 bump-bonded to the readout chip. Each element of the pixel matrix is
@@ -293,7 +297,7 @@ Details on the interfaces are given below.
 
 ```
 class miniPIXdaq:
-    """Initialize, readout miniPIX EDU device and store data
+    """Initialize, readout miniPIX device and store data
 
     After initialization, data from the device is stored in a
     ring buffer and the current buffer index is sent to the
