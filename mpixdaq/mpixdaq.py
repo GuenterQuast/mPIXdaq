@@ -194,6 +194,8 @@ class miniPIXdaq:
                 + f"  c: {c.mean():.3g} +/- {c.std():.2g}"
                 + f"  t: {t.mean():.3g} +/- {t.std():.2g}"
             )
+        else: 
+            print("   No calibration parameters found on Chip")
 
     def __call__(self):
         """Read *ac_count* frames with *ac_time* accumulation time each and add all up
