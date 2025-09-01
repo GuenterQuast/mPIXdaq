@@ -194,7 +194,7 @@ class miniPIXdaq:
                 + f"  c: {c.mean():.3g} +/- {c.std():.2g}"
                 + f"  t: {t.mean():.3g} +/- {t.std():.2g}"
             )
-        else: 
+        else:
             print("   No calibration parameters found on Chip")
 
     def __call__(self):
@@ -957,11 +957,10 @@ class runDAQ:
         - graphics display
         """
 
-        # write to user HOME if no path given
+        # write current directory if no path given
         if wd_path is None:
             #    wd_path = os.getenv("HOME")
             wd_path = os.getcwd()
-        os.chdir(wd_path)
         self.wd_path = wd_path
 
         # parse command line arguments
@@ -1018,6 +1017,9 @@ class runDAQ:
                 self.npx = self.daq.npx
                 self.unit = "(keV)" if self.daq.dev.isUsingCalibration() else "ToT (µs)"
         #  end device initialization ---
+
+        # set path to working directory where all output goes
+        os.chdir(self.wd_path)
 
         if self.read_filename is not None:
             # read from file if requested

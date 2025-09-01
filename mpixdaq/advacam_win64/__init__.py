@@ -1,6 +1,6 @@
 """ADVACAM pixet1.8.3 library for armhf
 
-Note: Windows version needs local directory in library path 
+Note: Windows version needs local directory in library path
 
 """
 
