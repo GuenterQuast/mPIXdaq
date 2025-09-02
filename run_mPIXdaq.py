@@ -6,8 +6,7 @@ import os, platform, sys
 #  - and restart python script for changes to take effect
 
 path_modified = False
-
-if 'LD_LIBRARY_PATH' not in os.environ and platform.system != 'Windows':
+if 'LD_LIBRARY_PATH' not in os.environ and platform.system() != 'Windows':
     os.environ['LD_LIBRARY_PATH'] = '.'
     path_modified = True
     print(" ! temporarily added '.' to LD_LIBRARY_PATH !")
@@ -21,5 +20,6 @@ if 'LD_LIBRARY_PATH' not in os.environ and platform.system != 'Windows':
 wd = os.getcwd()
 from mpixdaq import mpixdaq  # this may change the working directory, depending on system
 
-rD = mpixdaq.runDAQ(wd)  # start daq in working directory
+# start daq in working directory
+rD = mpixdaq.runDAQ(wd)
 rD()
