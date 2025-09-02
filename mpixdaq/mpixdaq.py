@@ -1093,7 +1093,7 @@ class runDAQ:
 
                 # write frame to file ?
                 if self.out_filename is not None:
-                    with NpyAppendArray(out_filename) as npa:
+                    with NpyAppendArray(self.out_filename) as npa:
                         npa.append(np.array([frame2d]))
 
                 # real-time analysis and animated visualization
