@@ -568,12 +568,12 @@ class miniPIXana:
         self.axim.set_ylabel("# y             ", loc="top")
         # no default frame around graph
         self.axim.set_frame_on(False)
-        _rect = mpl.patches.Rectangle((0, 0), 255, 255, linewidth=1, edgecolor='grey', facecolor='none')
+        _rect = mpl.patches.Rectangle((0, 0), self.npx, self.npx, linewidth=1, edgecolor='grey', facecolor='none')
         self.axim.add_patch(_rect)
         self.vmin = 0.5
         vmax = 500
         self.img = self.axim.imshow(np.zeros((self.npx, self.npx)), origin="lower", cmap='hot', norm=LogNorm(vmin=self.vmin, vmax=vmax))
-        cbar = self.fig.colorbar(self.img, shrink=0.6, aspect=40, pad=-0.045)
+        cbar = self.fig.colorbar(self.img, shrink=0.6, aspect=40, pad=-0.04)
         self.img.set_clim(vmin=self.vmin, vmax=vmax)
         # cbar.set_label("Energy " + unit, loc="top", labelpad=-5 )
         self.axim.arrow(146, 261.0, 110.0, 0, length_includes_head=True, width=1.5, color="b")
