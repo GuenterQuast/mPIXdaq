@@ -1,4 +1,4 @@
-"""ADVACAM pixet1.8.3 library for x86_64 systems"""
+"""ADVACAM pixet1.8.4 library for mac"""
 
 import os
 import sys
@@ -8,6 +8,3 @@ cur_file_dir = os.path.dirname(os.path.realpath(__file__))
 sys.path.append(cur_file_dir)
 #  add to path so that pypixet.so finds its dependencies
 os.chdir(cur_file_dir)
-
-# load symbols of pypixet into upper module
-from pypixet import *

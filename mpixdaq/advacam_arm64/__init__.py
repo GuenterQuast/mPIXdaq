@@ -1,4 +1,4 @@
-"""ADVACAM pixet1.8.3 library for armhf
+"""ADVACAM pixet1.8.4 library for arm64
 
 Note: arm version also depends on library zest.so, which
  is only found by linker if the current directory is in $LD_LIBRARY_PATH:
@@ -15,5 +15,3 @@ sys.path.append(cur_file_dir)
 # add to path so that pypixet.so finds its dependencies
 os.chdir(cur_file_dir)
 
-# load every symbols of pypixet into upper module
-from pypixet import *

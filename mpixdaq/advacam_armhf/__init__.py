@@ -14,6 +14,3 @@ cur_file_dir = os.path.dirname(os.path.realpath(__file__))
 sys.path.append(cur_file_dir)
 # add to path so that pypixet.so finds its dependencies
 os.chdir(cur_file_dir)
-
-# load every symbols of pypixet into upper module
-from pypixet import *
