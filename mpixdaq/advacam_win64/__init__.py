@@ -1,4 +1,4 @@
-"""ADVACAM pixet1.8.4 library for windows 64bit
+"""ADVACAM pixet1.8.4 libraries for windows 64bit
 
 Note: Windows version needs local directory in library path
 
@@ -7,8 +7,9 @@ Note: Windows version needs local directory in library path
 import os
 import sys
 
-cur_file_dir = os.path.dirname(os.path.realpath(__file__))
+PIXETDIR = os.path.dirname(os.path.realpath(__file__))
+print("advacam_win64: ", PIXETDIR)
 # add current file directory so that pypixet.so is found by python
-sys.path.append(cur_file_dir)
+sys.path.append(PIXETDIR)
 # add to path so that pypixet.so finds its dependencies
-os.chdir(cur_file_dir)
+os.chdir(PIXETDIR)
