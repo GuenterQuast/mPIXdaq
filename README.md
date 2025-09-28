@@ -8,7 +8,9 @@ for radiation based on the [Timepix](https://home.cern/tags/timepix)
 pixel read-out chip with 256x256 radiation-sensitive pixels of 55x55µm² 
 area and 300µm depth each. The chip is covered by a very thin foil to 
 permit α and β radiation to reach  the pixels. The device is enclosed 
-in a sturdy aluminum housing with a USB 2.0 interface.
+in an aluminum housing with a USB 2.0 interface. The sensor chip
+is covered by a thin foil and is very fragile; this area should be 
+covered with a protective material if not measuring α radiation. 
 
 Other than single semi-conductor chips or simple Geiger counters, 
 this device provides two-dimensional images of particle traces in 
@@ -76,15 +78,16 @@ is relative to the current working directory.
 and configuration data to the directory */tmp/mPIX/*.
 
 It is also worth mentioning that on some systems the current directory,
-".", needs to be contained in the `LD_LIBRARY_PATH` so that the *Python*
-interface *pypixet* finds all its *C* libraries. This is also done in the 
-*Python* script ``run_mPIXdaq.py`` by temporarily modifying the environment 
-variable `LD_LIBRARY_PATH` if necessary and then restarting to execute the
- *Python* code. Starting the *Python* code by a different mechanism may
-not work without adjusting the environment variable `LD_LIBRARY_PATH`. 
-In the *bash* shell, this is achieved by `export LD_LIBRARY_PATH='.'` on
-the command line. Note, however, that such a permanent change opens up
-a security gap on your computer!
+".", needs to be contained in the `LD_LIBRARY_PATH` so that the ADVACAM 
+*Python* interface *pypixet* finds all its *C* libraries. This is also 
+done in the *Python* script ``run_mPIXdaq.py`` by temporarily modifying 
+the environment variable `LD_LIBRARY_PATH` if necessary and then restarting 
+to execute the *Python* code in the new environment.  
+Starting the *Python* code by a different mechanism may not work without 
+adjusting the environment variable `LD_LIBRARY_PATH`. In the *bash* shell, 
+this is achieved by `export LD_LIBRARY_PATH='.'` on the command line. 
+Note, however, that such a permanent change opens up a security gap on 
+your computer!
  
 
 ## Running the example script
@@ -145,7 +148,7 @@ detector material.
 A further, very sensitive variable is the variance of the energy distribution
 in the clusters. For α particles, the distribution peaks at the centre and
 steeply falls off towards the boundary, leading to a very small variance.
-A small ratio of the variances of the energy distribution and if the area
+A small ratio of the variances of the energy distribution and of the area
 covered by pixels ist therefore a very prominent signature of α particles.
 
 Properties of clusters are optionally written to a file in *.csv* format
@@ -177,7 +180,8 @@ per pixel in units of keV.
 
 The relevant libraries for device control are provided in directories
 `advacam_<arch>` for `x86_64` Linux, `arm32` and `arm64` and for 
-Macintosh arm64 architectures. The contents of a typical directory is: 
+Macintosh arm64 amd MS Windows architectures. The contents of a 
+typical directory is: 
 
 ```
   __init__.py   # package initialization
@@ -191,7 +195,7 @@ Macintosh arm64 architectures. The contents of a typical directory is:
 Note that the copyright of these libraries belongs to ADVACAM. 
 The libraries may be downloaded from their web page, 
 [ADVACAM DWONLOADS](https://advacam.com/downloads/). 
-They are provided here as as *Python* packages for some platforms
+They are provided here as *Python* packages for some platforms
 for convenience. 
 
 
@@ -203,8 +207,9 @@ finding connected regions in the pixel image with *scipy.ndimage.label()*.
 The shape of the clusters is determined from the ratio of the smaller 
 and the larger one of the two eigenvalues of the covariance matrix 
 calculated from the *x* and *y* coordinates of the pixels in a cluster. 
-For circular clusters, as produced by α radiation, this ratio is close
-to one, while it is almost zero for the longer traces from β radiation.  
+For circular clusters, as typically produced by α radiation, this ratio 
+is close to one, while it is almost zero for the longer traces from
+β radiation.  
 
 The figure below shows the graphical display of the program with a 
 pixel image and the typical distributions of the pixel and cluster 
