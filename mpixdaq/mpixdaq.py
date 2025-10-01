@@ -122,8 +122,8 @@ class miniPIXdaq:
         if not pypixet.isrunning():
             print("!!! pipixet did not start!")
             return
-
         self.pixet = pypixet.pixet
+        print("*==* loaded pypixet vers. ", self.pixet.pixetVersion())
         devs = self.pixet.devicesByType(self.pixet.PX_DEVTYPE_MPX2)  # miniPIX uses the mediPIX 2 chip
         if len(devs) == 0:
             print("!!! no miniPIX device found")
