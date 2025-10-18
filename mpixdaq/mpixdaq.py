@@ -227,20 +227,23 @@ class frameAnalyzer:
         Args:
             csv: file handle of an open txt file to store results
         """
-
         self.csvfile = csv
 
-        # structure for connecting pixels in scipy.ndimage.label
+        # set parameters for analysis
+        # - structure for connecting pixels in scipy.ndimage.label
         self.label_structure = [[1, 1, 1], [1, 1, 1], [1, 1, 1]]
-
+        #  - maximum number of clusters per frame
+        self.max_n_clusters = 250
+        self.warning_issued = False
+        #  - CSV header line
         csvHeader = "time,x_mean,y_mean,n_pix,energy,var_mx,var_mn,angle,xE_mean,yE_mean,varE_mx,varE_mn"
         if self.csvfile is not None:
             self.csvfile.write(csvHeader + '\n')
 
-        # an empty numpy array for null results
+        # initialize
+        # - an empty numpy array for null results
         self.ea = np.array([])
-
-        # initialize start-time
+        # - start-time
         self.t_start = None
 
     def covmat_2d(self, x, y, vals):
@@ -294,11 +297,19 @@ class frameAnalyzer:
             number of single pixels is len(pixel_list[n_clusters]).
         """
 
-        f_labeled, n_labels = ndimage.label(frame > 0, structure=self.label_structure)
-
-        # separating clusters fom single hits
+        # initialize results lists, separating clusters fom single hits
         pixel_list = []
         sngl_pxl_list = []
+        f_labeled, n_labels = ndimage.label(frame > 0, structure=self.label_structure)
+
+        # avoid analyzing unreasonably large number of cluster
+        if n_labels > self.max_n_clusters:
+            if not self.warning_issued:
+                print(f"!!! frameAnalyzer: rejecting frames with > {self.max_n_clusters} clusters !")
+                self.warning_issued = True
+            return pixel_list
+
+        # retrieve and store cluster data
         for _l in range(1, 1 + n_labels):
             pl = np.argwhere(f_labeled == _l)
             if len(pl) == 1:
@@ -475,7 +486,11 @@ class frameAnalyzer:
 
         # find connected pixel areas ("clusters") in frame
         self.cluster_pxl_lst = self.find_connected(f)
-        self.n_clusters = len(self.cluster_pxl_lst) - 1
+        n_objects = len(self.cluster_pxl_lst)
+        if n_objects == 0:
+            # n_pixels, n_clusters, n_cpixels, circularity, cluster_energies, single_energies
+            return self.n_pixels, 0, self.ea, self.ea, self.ea, self.ea
+        self.n_clusters = n_objects - 1
         self.n_single = len(self.cluster_pxl_lst[-1])
 
         # - list of properties per cluster in format
@@ -538,6 +553,10 @@ class miniPIXana:
         self.circularity_cut = circ
         self.unit = unit
         self.acq_time = acq_time
+
+        # maximum number of frames in scatter plot
+        self.max_n_frames_for_scatter_plot = 2000
+        self.warning_issued = False
 
         # - data structure to store miniPIX frames and analysis results per frame
         self.framebuf = np.zeros((self.n_overlay, self.npx, self.npx), dtype=np.float32)
@@ -678,7 +697,13 @@ class miniPIXana:
         if n_clusters > 0:
             self.bhist2.add((cluster_energies[:n_clusters][is_lin], cluster_energies[:n_clusters][is_cir], single_energies))
 
-        # update scatter plot
+        # update scatter
+        #    protect because of large memory need of scatter plot
+        if self.i_frame > self.max_n_frames_for_scatter_plot:
+            if not self.warning_issued:
+                print(f"!!! anaviz: stop updating scatter plot due to large number of frames")
+                self.warning_issued = True
+            return
         xlin = cluster_energies[:n_clusters][is_lin]
         ylin = n_cpixels[:n_clusters][is_lin]
         xcir = cluster_energies[:n_clusters][is_cir]
@@ -1057,7 +1082,7 @@ class runDAQ:
             if self.verbosity > 0:
                 print("*==* writing clusters to file " + fn)
 
-        # finally, initialize analyis and figures
+        # finally, initialize analysis and figures
         self.mpixana = miniPIXana(
             npix=self.npx, nover=self.n_overlay, unit=self.unit, circ=self.circularity_cut, acq_time=self.tot_acq_time, csv=self.csvfile
         )
