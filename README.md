@@ -1,7 +1,7 @@
 ## mPIXdaq: Data acquisition for *miniPIX (EDU)* pixel detector 
 ----------------------------------------------------------------  
 
-                                            Vers. 0.9.3, September 2025
+                                            Vers. 0.9.4, November 2025
 
 The [miniPIX EDU](https://advacam.com/camera/minipix-edu) is a camera
 for radiation based on the [Timepix](https://home.cern/tags/timepix) 
@@ -121,6 +121,8 @@ options:
                         cicrularity cut
   -r READFILE, --readfile READFILE
                         file to read frame data
+  -b BADPIXELS, --badpixels BADPIXELS
+                        file with bad pixels
 ```
 
 The default values are adjusted to situations with low rates, where
@@ -129,6 +131,12 @@ are read. For the graphics display, `overlay = 10` recent frames are
 overlaid, leading to a total integration time of 5 s. 
 These images represent a two-dimensional pixel map with a color code 
 indicating the energy measured in each pixel. 
+
+The miniPIX EDU version, in particular, may suffer from a large number of
+dead or noisy pixels, and therefore they may be masked by providing a file
+with the pixel indices to be ignored. The default file name is *badpixels.txt*
+in the working directory; alternatively a file name may be specified using
+the `-b` or `--badpixels` option. 
 
 Data analysis consists of clustering of pixels in each overlay-frame and
 determination of cluster parameters, like the number of pixels, energy
@@ -146,10 +154,10 @@ circular clusters due to their very high ionization loss in the
 detector material.  
 
 A further, very sensitive variable is the variance of the energy distribution
-in the clusters. For α particles, the distribution peaks at the centre and
+in the clusters. For α particles, this distribution peaks at the centre and
 steeply falls off towards the boundary, leading to a very small variance.
 A small ratio of the variances of the energy distribution and of the area
-covered by pixels ist therefore a very prominent signature of α particles.
+covered by pixels is therefore a very prominent signature of α particles.
 
 Properties of clusters are optionally written to a file in *.csv* format
 for later off-line analysis. A *Jupyter* notebook, 

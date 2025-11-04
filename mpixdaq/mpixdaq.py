@@ -101,7 +101,7 @@ class miniPIXdaq:
 
     """
 
-    def __init__(self, ac_count=10, ac_time=0.1):
+    def __init__(self, ac_count=10, ac_time=0.1, bad_pixels=None):
         """initialize miniPIX device and set up data acquisition"""
 
         # no device yet
@@ -144,10 +144,12 @@ class miniPIXdaq:
         else:
             print("*==* running in ToT mode converted to keV")
         # parameters controlling data acquisition
+
         #  -  ac_count, ac_time, fileType, fileName
         #     if ac_count>1: frame data is available only from last frame
         self.ac_count = ac_count
         self.ac_time = ac_time
+        self.bad_pixels = bad_pixels
 
         # ring buffer for data collection
         self.Nbuf = 8
@@ -209,7 +211,11 @@ class miniPIXdaq:
                 print("!!! miniPIX device readout error: ", self.dev.lastError())
                 self.dataQ.put(None)
             # get frame and store in ring buffer
-            self.fBuffer[self.widx, :] = self.dev.lastAcqFrameRefInc().data()
+
+            self.fBuffer[self.widx, :] = np.asarray(self.dev.lastAcqFrameRefInc().data())
+            # remove noisy pixels from (linear) data frame based on bad-pixel list
+            if self.bad_pixels is not None:
+                self.fBuffer[self.widx][self.bad_pixels] = -1
             self.dataQ.put(self.widx)
             self.widx = self.widx + 1 if self.widx < self.Nbuf - 1 else 0
 
@@ -279,7 +285,7 @@ class frameAnalyzer:
         covmat = np.array([[varx, cov], [cov, vary]])
         return (mean, covmat)
 
-    def find_connected(self, frame):
+    def find_connected(self, f):
         """find connected areas in pixel image using label() from scipy.ndimage
 
         label() works with binary frame data (0/1 or False/True)
@@ -298,9 +304,12 @@ class frameAnalyzer:
         """
 
         # initialize results lists, separating clusters fom single hits
+        f_labeled, n_labels = ndimage.label(f > 0, structure=self.label_structure)
+
+        # separating clusters fom single hits
         pixel_list = []
         sngl_pxl_list = []
-        f_labeled, n_labels = ndimage.label(frame > 0, structure=self.label_structure)
+        f_labeled, n_labels = ndimage.label(f > 0, structure=self.label_structure)
 
         # avoid analyzing unreasonably large number of cluster
         if n_labels > self.max_n_clusters:
@@ -424,22 +433,22 @@ class frameAnalyzer:
         id_e = 2
         id_var = 3
         n_cpixels = np.zeros(n_clusters + 1, dtype=np.int32)
-        cluster_energies = np.zeros(n_clusters + 1, dtype=np.float32)
+        self.cluster_energies = np.zeros(n_clusters + 1, dtype=np.float32)
         circularity = np.zeros(n_clusters + 1, dtype=np.float32)
         single_energies = np.zeros(n_single, dtype=np.int32)
         for _ic, c in enumerate(clusters):
             if _ic < n_clusters:
                 # clusters with more than one pixel
                 n_cpixels[_ic] = c[id_npix]
-                cluster_energies[_ic] = c[id_e]
+                self.cluster_energies[_ic] = c[id_e]
                 circularity[_ic] = c[id_var][1] / c[id_var][0]
             else:
                 # single pixels
                 single_energies[_ic - n_clusters] = c[id_e]
         # finally, add summary of single-pixel-clusters
         n_cpixels[self.n_clusters] = n_single
-        cluster_energies[n_clusters] = single_energies.sum()
-        return n_pixels, n_clusters, n_cpixels, circularity, cluster_energies, single_energies
+        self.cluster_energies[n_clusters] = single_energies.sum()
+        return n_pixels, n_clusters, n_cpixels, circularity, self.cluster_energies, single_energies
 
     def __call__(self, f):
         """Analyze frame data
@@ -473,6 +482,7 @@ class frameAnalyzer:
           - self.cluster_pxl_lst is a list of dimension n_clusters + 1 and contains the pixel indices
             contributing to each of the clusters. self.cluster_pxl_lst[-1] contains the list of single pixels
         """
+
         # find clusters (lines,  circular  and unassigned = single pixels)
         self.n_pixels = (f > 0).sum()
         if self.n_pixels == 0:
@@ -520,7 +530,7 @@ class frameAnalyzer:
         """
         if self.n_clusters > 0:
             # cross check: total energy in frame
-            E_from_clusters = cluster_energies.sum()
+            E_from_clusters = self.cluster_energies.sum()
             if E_from_clusters != self.total_Energy:
                 print(f"!!! warning: Energy {E_from_clusters} ne.  energy from pixels {self.total_Energy}")
 
@@ -1001,6 +1011,7 @@ class runDAQ:
         parser.add_argument('-t', '--time', type=int, default=36000, help='run time in seconds')
         parser.add_argument('--circularity_cut', type=float, default=0.5, help='cicrularity cut')
         parser.add_argument('-r', '--readfile', type=str, default='', help='file to read frame data')
+        parser.add_argument('-b', '--badpixels', type=str, default='', help='file with bad pixels')
         args = parser.parse_args()
         timestamp = time.strftime('%y%m%d-%H%M', time.localtime())
 
@@ -1009,6 +1020,7 @@ class runDAQ:
         self.out_filename = args.file + '_' + timestamp + '.npy' if args.file != '' else None
         self.read_filename = args.readfile if args.readfile != '' else None
         self.csv_filename = args.writefile if args.writefile != '' else None
+        self.fname_badpixels = args.badpixels
         self.acq_time = args.acq_time
         self.acq_count = args.acq_count
         self.n_overlay = args.overlay
@@ -1022,11 +1034,22 @@ class runDAQ:
             # data recording with npy_append_array()
             import_npy_append_array()
 
+        # handling of bad pixels
+        if self.fname_badpixels == '':
+            try:
+                badpixel_list = np.loadtxt("badpixels.txt", dtype=np.int32).tolist()
+            except FileNotFoundError:
+                badpixel_list = None
+        else:
+            badpixel_list = np.loadtxt(self.fname_badpixels, dtype=np.int32).tolist()
+            print("*==* list of bad pixels from file ", self.fname_badpixels)
+            # print(self.badpixel_list)
+
         # try to load pypixet library and connect to miniPIX
         if self.read_filename is None:
             self.tot_acq_time = self.acq_count * self.acq_time
             # initialize data acquisition object
-            self.daq = miniPIXdaq(self.acq_count, self.acq_time)
+            self.daq = miniPIXdaq(self.acq_count, self.acq_time, bad_pixels=badpixel_list)
             if self.daq.dev is None:
                 _a = input("  Problem with miniPIX device - read data from file ? (y/n) > ")
                 if _a in {'y', 'Y', 'j', 'J'}:
@@ -1105,7 +1128,6 @@ class runDAQ:
                 if self.read_filename is None:
                     #                    frame2d[:, :] = np.array(self.daq.dataQ.get()).reshape((self.npx, self.npx))
                     _idx = self.daq.dataQ.get()
-                    # print(self.daq.dataQ.qsize())
                     # data as 2d pixel array
                     frame2d[:, :] = self.daq.fBuffer[_idx].reshape(self.npx, self.npx)
                     dt_alive += self.acq_count * self.acq_time
