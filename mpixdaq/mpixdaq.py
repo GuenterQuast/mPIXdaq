@@ -546,7 +546,7 @@ class miniPIXana:
         """call-back for matplotlib 'close_event'"""
         self.mpl_active = False
 
-    def __init__(self, npix=256, nover=10, unit='keV', circ=0.5, acq_time=1.0, csv=None):
+    def __init__(self, npix=256, nover=10, unit='keV', circ=0.5, acq_time=1.0, csv=None, badpixels=None):
         """initialize figure with pixel image, two histograms and a scatter plot
 
         Args:
@@ -593,6 +593,15 @@ class miniPIXana:
         gs = self.fig.add_gridspec(nrows=16, ncols=16)
 
         # - - 2d-display for pixel map
+        #  hanling of bad pixels
+        if badpixels is None:
+            self.badpixel_map = None
+        else:  # create bad-pixel map as masked array
+            bp = np.zeros(self.npx * self.npx)
+            bp[badpixels] = 1.1
+            badpixel_map = np.ma.masked_where(bp == 1, bp).reshape((self.npx, self.npx))
+            # badpixel_map = bp.reshape((self.npx, self.npx))
+
         self.axim = self.fig.add_subplot(gs[:, :-4])
         self.axim.set_title("Pixel Energy Map " + self.unit, y=0.96, size="x-large")
         self.axim.set_xlabel("# x        ", loc="right")
@@ -603,6 +612,8 @@ class miniPIXana:
         self.axim.add_patch(_rect)
         self.vmin = 0.5
         vmax = 500
+        if badpixels is not None:
+            _ = self.axim.imshow(badpixel_map, origin="lower", cmap='grey', vmax=5.)
         self.img = self.axim.imshow(np.zeros((self.npx, self.npx)), origin="lower", cmap='hot', norm=LogNorm(vmin=self.vmin, vmax=vmax))
         cbar = self.fig.colorbar(self.img, shrink=0.6, aspect=40, pad=-0.04)
         self.img.set_clim(vmin=self.vmin, vmax=vmax)
@@ -1066,6 +1077,8 @@ class runDAQ:
                     self.daq.device_info()
                 self.npx = self.daq.npx
                 self.unit = "(keV)" if self.daq.dev.isUsingCalibration() else "ToT (µs)"
+
+
         #  end device initialization ---
 
         # set path to working directory where all output goes
@@ -1107,7 +1120,13 @@ class runDAQ:
 
         # finally, initialize analysis and figures
         self.mpixana = miniPIXana(
-            npix=self.npx, nover=self.n_overlay, unit=self.unit, circ=self.circularity_cut, acq_time=self.tot_acq_time, csv=self.csvfile
+            npix=self.npx,
+            nover=self.n_overlay,
+            unit=self.unit,
+            circ=self.circularity_cut,
+            acq_time=self.tot_acq_time,
+            csv=self.csvfile,
+            badpixels=badpixel_list,
         )
 
     def __call__(self):
