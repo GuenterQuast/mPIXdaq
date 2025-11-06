@@ -598,7 +598,7 @@ class miniPIXana:
             self.badpixel_map = None
         else:  # create bad-pixel map as masked array
             bp = np.zeros(self.npx * self.npx)
-            bp[badpixels] = 1.1
+            bp[badpixels] = 1.0
             badpixel_map = np.ma.masked_where(bp == 1, bp).reshape((self.npx, self.npx))
             # badpixel_map = bp.reshape((self.npx, self.npx))
 
@@ -608,12 +608,12 @@ class miniPIXana:
         self.axim.set_ylabel("# y             ", loc="top")
         # no default frame around graph
         self.axim.set_frame_on(False)
-        _rect = mpl.patches.Rectangle((0, 0), self.npx, self.npx, linewidth=1, edgecolor='grey', facecolor='none')
+        _rect = mpl.patches.Rectangle((0, 0), self.npx, self.npx, linewidth=1, edgecolor='gray', facecolor='none')
         self.axim.add_patch(_rect)
         self.vmin = 0.5
         vmax = 500
         if badpixels is not None:
-            _ = self.axim.imshow(badpixel_map, origin="lower", cmap='grey', vmax=5.0)
+            _ = self.axim.imshow(badpixel_map, origin="lower", cmap='gray', vmax=10.0)
         self.img = self.axim.imshow(np.zeros((self.npx, self.npx)), origin="lower", cmap='hot', norm=LogNorm(vmin=self.vmin, vmax=vmax))
         cbar = self.fig.colorbar(self.img, shrink=0.6, aspect=40, pad=-0.04)
         self.img.set_clim(vmin=self.vmin, vmax=vmax)
@@ -815,7 +815,7 @@ class bhist:
         self.bheights.append(_bc)
         self.bcnt = (self.be[:-1] + self.be[1:]) / 2.0
         self.w = 0.8 * (self.be[1:] - self.be[:-1])
-        ec = 'grey'
+        ec = 'gray'
         self.bars.append(plt.bar(self.bcnt, _bc, align="center", width=self.w, color=colors[0], label=labels[0], edgecolor=ec, alpha=0.75))
         sum = _bc
 
