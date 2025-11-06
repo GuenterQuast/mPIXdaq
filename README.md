@@ -39,7 +39,7 @@ their own studies.
 This code has been tested on *Ubuntu*, *openSuse*, *Fedora*, on
 Windows 64bit with *Python3.7.9* and on *Raspberry Pi* for the 
 32- and 64-bit versions of *OS12*. Other Linux distribution should
-not pose any problem.  
+not pose any unsurmountable problems.  
 On MS Windows, the libraries provided by the vendor only support
 *Python* vers. 3.7.9; such a rather historic version can be set up
 using e.g. the *miniconda* framework. 
@@ -50,8 +50,9 @@ directory in the *pypixet* *Python* interface.
 
 To get started, follow the steps below: 
 
- - Get the code from gitlab @ KIT  
-   ``git clone https://gitlab.kit.edu/Guenter.Quast/mPIXdaq``.
+ - Get the code from gitlab @ KIT or from github  
+   ``git clone https://gitlab.kit.edu/Guenter.Quast/mPIXdaq`` or    
+   ``git clone https://github.com/GuenterQuast/mPIXdaq``.
 
    This repository includes the *Python* code and a minimalistic set
    of libraries provided by ADVACAM. `cd` to the `mPIXdaq` directory
@@ -133,7 +134,7 @@ These images represent a two-dimensional pixel map with a color code
 indicating the energy measured in each pixel. 
 
 The miniPIX EDU version, in particular, may suffer from a large number of
-dead or noisy pixels, and therefore they may be masked by providing a file
+dead or noisy pixels, and therefore they should be masked by providing a file
 with the pixel indices to be ignored. The default file name is *badpixels.txt*
 in the working directory; alternatively a file name may be specified using
 the `-b` or `--badpixels` option. 
@@ -210,7 +211,7 @@ for convenience.
 ## Data Analysis
 
 The analysis shown in this example is intentionally very simple and based 
-on standard libraries and functions. Pixels clustering is performed by
+on standard libraries and functions. clustering of pixels is performed by
 finding connected regions in the pixel image with *scipy.ndimage.label()*.
 The shape of the clusters is determined from the ratio of the smaller 
 and the larger one of the two eigenvalues of the covariance matrix 
