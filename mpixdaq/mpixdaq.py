@@ -565,7 +565,7 @@ class miniPIXana:
         self.acq_time = acq_time
 
         # maximum number of frames in scatter plot
-        self.max_n_frames_for_scatter_plot = 2000
+        self.max_n_frames_for_scatter_plot = 5000
         self.warning_issued = False
 
         # - data structure to store miniPIX frames and analysis results per frame
@@ -613,7 +613,7 @@ class miniPIXana:
         self.vmin = 0.5
         vmax = 500
         if badpixels is not None:
-            _ = self.axim.imshow(badpixel_map, origin="lower", cmap='grey', vmax=5.)
+            _ = self.axim.imshow(badpixel_map, origin="lower", cmap='grey', vmax=5.0)
         self.img = self.axim.imshow(np.zeros((self.npx, self.npx)), origin="lower", cmap='hot', norm=LogNorm(vmin=self.vmin, vmax=vmax))
         cbar = self.fig.colorbar(self.img, shrink=0.6, aspect=40, pad=-0.04)
         self.img.set_clim(vmin=self.vmin, vmax=vmax)
@@ -1046,15 +1046,19 @@ class runDAQ:
             import_npy_append_array()
 
         # handling of bad pixels
+        badpixel_list = None
         if self.fname_badpixels == '':
-            try:
-                badpixel_list = np.loadtxt("badpixels.txt", dtype=np.int32).tolist()
-            except FileNotFoundError:
-                badpixel_list = None
+            fname = "badpixels.txt"  # check default bad-pixel file
+            if self.read_filename is None:
+                try:
+                    badpixel_list = np.loadtxt(fname, dtype=np.int32).tolist()
+                    print("*==* list of bad pixels from file ", fname)
+                except FileNotFoundError:
+                    pass
         else:
             badpixel_list = np.loadtxt(self.fname_badpixels, dtype=np.int32).tolist()
             print("*==* list of bad pixels from file ", self.fname_badpixels)
-            # print(self.badpixel_list)
+        # print(self.badpixel_list)
 
         # try to load pypixet library and connect to miniPIX
         if self.read_filename is None:
@@ -1066,6 +1070,7 @@ class runDAQ:
                 if _a in {'y', 'Y', 'j', 'J'}:
                     path = os.path.dirname(os.path.realpath(__file__)) + '/'
                     self.read_filename = path + "data/BlackForestStone.npy.gz"
+                    badpixel_list = None
                 else:
                     exit("Exiting")
             else:  # library and device are ok
@@ -1077,7 +1082,6 @@ class runDAQ:
                     self.daq.device_info()
                 self.npx = self.daq.npx
                 self.unit = "(keV)" if self.daq.dev.isUsingCalibration() else "ToT (µs)"
-
 
         #  end device initialization ---
 
