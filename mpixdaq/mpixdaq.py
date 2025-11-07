@@ -425,6 +425,7 @@ class frameAnalyzer:
           - n_clusters: number of clusters in frame
           - n_cpixels: number of pixels per cluster
           - circularity: circularity per cluster (0. for linear, 1. for circular)
+          - sharpness:  ratio of maximum variances of pixel and energy distributions in clusters
           - cluster_energies: energy per cluster
           - single_energies: energies in single pixels
         """
@@ -432,9 +433,11 @@ class frameAnalyzer:
         id_npix = 1
         id_e = 2
         id_var = 3
+        id_varE = 6
         n_cpixels = np.zeros(n_clusters + 1, dtype=np.int32)
         self.cluster_energies = np.zeros(n_clusters + 1, dtype=np.float32)
         circularity = np.zeros(n_clusters + 1, dtype=np.float32)
+        sharpness = np.zeros(n_clusters + 1, dtype=np.float32)
         single_energies = np.zeros(n_single, dtype=np.int32)
         for _ic, c in enumerate(clusters):
             if _ic < n_clusters:
@@ -442,13 +445,14 @@ class frameAnalyzer:
                 n_cpixels[_ic] = c[id_npix]
                 self.cluster_energies[_ic] = c[id_e]
                 circularity[_ic] = c[id_var][1] / c[id_var][0]
+                sharpness[_ic] = c[id_varE][0] / c[id_var][0]
             else:
                 # single pixels
                 single_energies[_ic - n_clusters] = c[id_e]
         # finally, add summary of single-pixel-clusters
         n_cpixels[self.n_clusters] = n_single
         self.cluster_energies[n_clusters] = single_energies.sum()
-        return n_pixels, n_clusters, n_cpixels, circularity, self.cluster_energies, single_energies
+        return n_pixels, n_clusters, n_cpixels, circularity, sharpness, self.cluster_energies, single_energies
 
     def __call__(self, f):
         """Analyze frame data
@@ -561,6 +565,7 @@ class miniPIXana:
         self.npx = npix
         self.n_overlay = nover
         self.circularity_cut = circ
+        self.sharpness_cut = 0.4
         self.unit = unit
         self.acq_time = acq_time
 
@@ -651,8 +656,8 @@ class miniPIXana:
         # - histogram of cluster energies
         self.axh2 = self.fig.add_subplot(gs[6:10, -4:])
         nbins2 = 50
-        min2 = 5
-        max2 = 10000
+        min2 = 5  # 5keV
+        max2 = 15000  # 15 MeV
         # be2 = np.linspace(min2, max2, nbins2 + 1, endpoint=True)
         be2 = np.geomspace(min2, max2, nbins2 + 1, endpoint=True)
         self.bhist2 = bhist(
@@ -663,7 +668,7 @@ class miniPIXana:
             ylabel="",
             xscale="log",
             yscale="log",
-            labels=("linear", "circular", "single"),
+            labels=("linear (β)", "circular (α)", "singles"),
             colors=('yellow', 'cyan', 'red'),
         )
 
@@ -680,7 +685,7 @@ class miniPIXana:
             binedges=(bex, bey),
             xlabel="cluster energies (keV)",
             ylabel="pixels per cluster",
-            labels=("linear", "circular", "single pixels"),
+            labels=("linear (β)", "circular (α)", "single pixels"),
             colors=('yellow', 'cyan', 'r'),
         )
 
@@ -693,7 +698,8 @@ class miniPIXana:
 
     def anaviz(self, frame2d):
         """analyze frame data and update image and plots"""
-        n_pixels, n_clusters, n_cpixels, circularity, cluster_energies, single_energies = self.frameAna(frame2d)
+
+        n_pixels, n_clusters, n_cpixels, circularity, sharpness, cluster_energies, single_energies = self.frameAna(frame2d)
 
         if n_clusters > 0:
             self.Energy = cluster_energies.sum()
@@ -707,16 +713,20 @@ class miniPIXana:
             self.E_unass = self.Energy
         self.n_clusters = n_clusters
 
-        # boolean indices for linear and circular objects
+        # boolean indices for linear and circular, spiky objects
         is_lin = circularity[:n_clusters] <= self.circularity_cut
-        is_cir = circularity[:n_clusters] > self.circularity_cut
+        is_flat = sharpness[:n_clusters] >= self.sharpness_cut
+        is_round = circularity[:n_clusters] > self.circularity_cut
+        is_sharp = sharpness[:n_clusters] < self.sharpness_cut
+
+        is_alpha = is_round & is_sharp
 
         # update histogram 1 with pixel energies
         self.bhist1.add((frame2d[frame2d > 0],))
 
         # update histogram 2 with cluster energies
         if n_clusters > 0:
-            self.bhist2.add((cluster_energies[:n_clusters][is_lin], cluster_energies[:n_clusters][is_cir], single_energies))
+            self.bhist2.add((cluster_energies[:n_clusters][~is_alpha], cluster_energies[:n_clusters][is_alpha], single_energies))
 
         # update scatter
         #    protect because of large memory need of scatter plot
@@ -725,10 +735,10 @@ class miniPIXana:
                 print(f"!!! anaviz: stop updating scatter plot due to large number of frames")
                 self.warning_issued = True
             return
-        xlin = cluster_energies[:n_clusters][is_lin]
-        ylin = n_cpixels[:n_clusters][is_lin]
-        xcir = cluster_energies[:n_clusters][is_cir]
-        ycir = n_cpixels[:n_clusters][is_cir]
+        xlin = cluster_energies[:n_clusters][~is_alpha]
+        ylin = n_cpixels[:n_clusters][~is_alpha]
+        xcir = cluster_energies[:n_clusters][is_alpha]
+        ycir = n_cpixels[:n_clusters][is_alpha]
         self.scpl.add([(xlin, ylin), (xcir, ycir), ([self.E_unass], [self.np_unass])])
 
     def __call__(self, frame2d, dt_alive):
@@ -1020,7 +1030,9 @@ class runDAQ:
         parser.add_argument('-f', '--file', type=str, default='', help='file to store frame data')
         parser.add_argument('-w', '--writefile', type=str, default='', help='csv file to write cluster data')
         parser.add_argument('-t', '--time', type=int, default=36000, help='run time in seconds')
-        parser.add_argument('--circularity_cut', type=float, default=0.5, help='cicrularity cut')
+        parser.add_argument('--circularity_cut', type=float, default=0.5, help='cut on cicrularity for alpha detetion')
+        parser.add_argument('--sharpness_cut', type=float, default=0.4, help='cut on sharpness for alpha detection')
+        
         parser.add_argument('-r', '--readfile', type=str, default='', help='file to read frame data')
         parser.add_argument('-b', '--badpixels', type=str, default='', help='file with bad pixels')
         args = parser.parse_args()
@@ -1036,6 +1048,7 @@ class runDAQ:
         self.acq_count = args.acq_count
         self.n_overlay = args.overlay
         self.circularity_cut = args.circularity_cut
+        self.sharpness_cut = args.sharpness_cut
         self.run_time = args.time
 
         if self.verbosity > 0:
@@ -1149,7 +1162,6 @@ class runDAQ:
         try:
             while dt_active < self.run_time and self.mpixana.mpl_active:
                 if self.read_filename is None:
-                    #                    frame2d[:, :] = np.array(self.daq.dataQ.get()).reshape((self.npx, self.npx))
                     _idx = self.daq.dataQ.get()
                     # data as 2d pixel array
                     frame2d[:, :] = self.daq.fBuffer[_idx].reshape(self.npx, self.npx)
