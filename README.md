@@ -119,7 +119,9 @@ options:
                         csv file to write cluster data
   -t TIME, --time TIME  run time in seconds
   --circularity_cut CIRCULARITY_CUT
-                        cicrularity cut
+                        cut on cicrularity for alpha detection
+  --flatness_cut FLATNESS_CUT
+                        cut on flatness for alpha detection
   -r READFILE, --readfile READFILE
                         file to read frame data
   -b BADPIXELS, --badpixels BADPIXELS
@@ -218,14 +220,16 @@ and the larger one of the two eigenvalues of the covariance matrix
 calculated from the *x* and *y* coordinates of the pixels in a cluster. 
 For circular clusters, as typically produced by α radiation, this ratio 
 is close to one, while it is almost zero for the longer traces from
-β radiation.  
+β radiation. In addition, she shape of the energy distribution is 
+considered, which shows a sharp maximum at the center for α particles but
+is flat otherwise.
 
-The figure below shows the graphical display of the program with a 
-pixel image and the typical distributions of the pixel and cluster 
-energies and the number of pixels per cluster. The source used was a 
-weakly radioactive stone from the Black Forest containing a small amount
-of Uranium and its decay products. The pixel map shown in the figure was 
-sampled over a time of five seconds. The histogram in the lower-right
+The figure below shows the graphical display with a pixel image and 
+the typical distributions of the pixel and cluster energies and the 
+number of pixels per cluster. The source used was a weakly radioactive
+stone from the Black Forest containing a small amount of Uranium and 
+its decay products. The pixel map shown in the figure was sampled 
+over a time of five seconds. The histogram in the lower-right
 corner shows how well the cluster types discriminate different types
 of radiation: α rays in the green band with relatively low numbers 
 of pixels per cluster, electrons (β) as long tracks with large numbers

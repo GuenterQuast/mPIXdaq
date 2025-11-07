@@ -202,8 +202,8 @@ class miniPIXdaq:
             print("   No calibration parameters found on Chip")
 
     def __call__(self):
-        """Read *ac_count* frames with *ac_time* accumulation time each and add all up
-        return data via Queue
+        """Read *ac_count* frames with *ac_time* accumulation time each and add all up;
+        return pointer to buffer data via Queue
         """
         while self.cmdQ.empty():
             rc = self.dev.doSimpleIntegralAcquisition(self.ac_count, self.ac_time, self.pixet.PX_FTYPE_AUTODETECT, "")
@@ -408,7 +408,7 @@ class frameAnalyzer:
                 file=self.csvfile,
             )
 
-    def cluster_summary(self, clusters, n_pixels, n_clusters, n_single):
+    def cluster_summary(self, clusters, n_clusters, n_single):
         """summarize cluster properties in frame from cluster tuples of format
               ( (x,y), n_pix, energy, (var_mx, var_mn), angle, (xE, yE), (varE_mx, VarE_mn))
 
@@ -421,11 +421,10 @@ class frameAnalyzer:
 
         Returns:
 
-          - n_pixels: number of pixels with energy > 0
           - n_clusters: number of clusters in frame
           - n_cpixels: number of pixels per cluster
           - circularity: circularity per cluster (0. for linear, 1. for circular)
-          - sharpness:  ratio of maximum variances of pixel and energy distributions in clusters
+          - flatness:  ratio of maximum variances of pixel and energy distributions in clusters
           - cluster_energies: energy per cluster
           - single_energies: energies in single pixels
         """
@@ -437,7 +436,7 @@ class frameAnalyzer:
         n_cpixels = np.zeros(n_clusters + 1, dtype=np.int32)
         self.cluster_energies = np.zeros(n_clusters + 1, dtype=np.float32)
         circularity = np.zeros(n_clusters + 1, dtype=np.float32)
-        sharpness = np.zeros(n_clusters + 1, dtype=np.float32)
+        flatness = np.zeros(n_clusters + 1, dtype=np.float32)
         single_energies = np.zeros(n_single, dtype=np.int32)
         for _ic, c in enumerate(clusters):
             if _ic < n_clusters:
@@ -445,14 +444,14 @@ class frameAnalyzer:
                 n_cpixels[_ic] = c[id_npix]
                 self.cluster_energies[_ic] = c[id_e]
                 circularity[_ic] = c[id_var][1] / c[id_var][0]
-                sharpness[_ic] = c[id_varE][0] / c[id_var][0]
+                flatness[_ic] = c[id_varE][0] / c[id_var][0]
             else:
                 # single pixels
                 single_energies[_ic - n_clusters] = c[id_e]
         # finally, add summary of single-pixel-clusters
         n_cpixels[self.n_clusters] = n_single
         self.cluster_energies[n_clusters] = single_energies.sum()
-        return n_pixels, n_clusters, n_cpixels, circularity, sharpness, self.cluster_energies, single_energies
+        return n_clusters, n_cpixels, circularity, flatness, self.cluster_energies, single_energies
 
     def __call__(self, f):
         """Analyze frame data
@@ -524,7 +523,7 @@ class frameAnalyzer:
             self.write_csv(self.clusters)
 
         # return summary of clusters in frame
-        cluster_smry = self.cluster_summary(self.clusters, self.n_pixels, self.n_clusters, self.n_single)
+        cluster_smry = self.cluster_summary(self.clusters, self.n_clusters, self.n_single)
         return cluster_smry
 
     def check(self):
@@ -565,7 +564,7 @@ class miniPIXana:
         self.npx = npix
         self.n_overlay = nover
         self.circularity_cut = circ
-        self.sharpness_cut = 0.4
+        self.flatness_cut = 0.4
         self.unit = unit
         self.acq_time = acq_time
 
@@ -699,7 +698,7 @@ class miniPIXana:
     def anaviz(self, frame2d):
         """analyze frame data and update image and plots"""
 
-        n_pixels, n_clusters, n_cpixels, circularity, sharpness, cluster_energies, single_energies = self.frameAna(frame2d)
+        n_clusters, n_cpixels, circularity, flatness, cluster_energies, single_energies = self.frameAna(frame2d)
 
         if n_clusters > 0:
             self.Energy = cluster_energies.sum()
@@ -709,17 +708,15 @@ class miniPIXana:
         else:
             self.Energy = frame2d[frame2d > 0].sum()  # raw pixel energy
             self.Energy_in_clusters = 0.0
-            self.np_unass = n_pixels
+            self.np_unass = len(frame2d[frame2d > 0])
             self.E_unass = self.Energy
         self.n_clusters = n_clusters
 
         # boolean indices for linear and circular, spiky objects
-        is_lin = circularity[:n_clusters] <= self.circularity_cut
-        is_flat = sharpness[:n_clusters] >= self.sharpness_cut
         is_round = circularity[:n_clusters] > self.circularity_cut
-        is_sharp = sharpness[:n_clusters] < self.sharpness_cut
+        is_flat = flatness[:n_clusters] > self.flatness_cut
 
-        is_alpha = is_round & is_sharp
+        is_alpha = is_round & ~is_flat
 
         # update histogram 1 with pixel energies
         self.bhist1.add((frame2d[frame2d > 0],))
@@ -1031,7 +1028,7 @@ class runDAQ:
         parser.add_argument('-w', '--writefile', type=str, default='', help='csv file to write cluster data')
         parser.add_argument('-t', '--time', type=int, default=36000, help='run time in seconds')
         parser.add_argument('--circularity_cut', type=float, default=0.5, help='cut on cicrularity for alpha detetion')
-        parser.add_argument('--sharpness_cut', type=float, default=0.4, help='cut on sharpness for alpha detection')
+        parser.add_argument('--flatness_cut', type=float, default=0.4, help='cut on flatness for alpha detection')
         
         parser.add_argument('-r', '--readfile', type=str, default='', help='file to read frame data')
         parser.add_argument('-b', '--badpixels', type=str, default='', help='file with bad pixels')
@@ -1048,7 +1045,7 @@ class runDAQ:
         self.acq_count = args.acq_count
         self.n_overlay = args.overlay
         self.circularity_cut = args.circularity_cut
-        self.sharpness_cut = args.sharpness_cut
+        self.flatness_cut = args.flatness_cut
         self.run_time = args.time
 
         if self.verbosity > 0:
