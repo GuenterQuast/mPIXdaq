@@ -408,19 +408,18 @@ class frameAnalyzer:
                 + f", {_xyEm[0]:.2f}, {_xyEm[1]:.2f}, {_varE[0]:.3f}, {_varE[1]:.3f}",
                 file=self.csvfile,
             )
-
-    def cluster_summary(self, clusters, n_multipix):
-        """summarize cluster properties in frame from cluster tuples of format
+    @staticmethod
+    def cluster_summary(pixel_clusters):
+        """summarize cluster properties from cluster tuples of format
               ( (x,y), n_pix, energy, (var_mx, var_mn), angle, (xE, yE), (varE_mx, VarE_mn))
 
         Args:
 
-          - clusters: list of cluster tuples (multi-pixel clusters first, then single pixels)
-          - n_multipix: number of clusters with >= 2 pixels (at beginning of list)
+          - clusters: list of cluster tuples (as produced by frameAnalyzer.cluster_properties())
 
         Returns:
 
-          - n_clusters: number of clusters in frame
+          - n_clusters: number of multi-pixel clusters
           - n_cpixels: number of pixels per cluster
           - circularity: circularity per cluster (0. for linear, 1. for circular)
           - flatness:  ratio of maximum variances of pixel and energy distributions in clusters
@@ -432,26 +431,36 @@ class frameAnalyzer:
         id_e = 2
         id_var = 3
         id_varE = 6
+
+        # count muli- and single-pixel clusters
+        npix = np.asarray([pixel_clusters[_i][id_npix] for _i in range(len(pixel_clusters))])
+        n_multipix = len(npix[npix > 1])
+        n_singlepix = len(pixel_clusters) - n_multipix
+        # create arrays to store info
         n_cpixels = np.zeros(n_multipix + 1, dtype=np.int32)
-        self.cluster_energies = np.zeros(n_multipix + 1, dtype=np.float32)
+        cluster_energies = np.zeros(n_multipix + 1, dtype=np.float32)
         circularity = np.zeros(n_multipix + 1, dtype=np.float32)
         flatness = np.zeros(n_multipix + 1, dtype=np.float32)
-        n_singlepix = len(clusters) - n_multipix
         single_energies = np.zeros(n_singlepix, dtype=np.int32)
-        for _ic, c in enumerate(clusters):
-            if _ic < n_multipix:
-                # clusters with more than one pixel
-                n_cpixels[_ic] = c[id_npix]
-                self.cluster_energies[_ic] = c[id_e]
-                circularity[_ic] = c[id_var][1] / c[id_var][0]
-                flatness[_ic] = c[id_varE][0] / c[id_var][0]
+        # collect summary info
+        _idx_mlt = 0
+        _idx_sngl = 0
+        for  c in pixel_clusters:
+            _npx = c[id_npix]
+            if _npx > 1:   # clusters with more than one pixel
+                n_cpixels[_idx_mlt] = _npx             
+                cluster_energies[_idx_mlt] = c[id_e]
+                circularity[_idx_mlt] = c[id_var][1] / c[id_var][0]
+                flatness[_idx_mlt] = c[id_varE][0] / c[id_var][0]
+                _idx_mlt += 1
             else:
                 # single pixels
-                single_energies[_ic - n_multipix] = c[id_e]
+                single_energies[_idx_sngl] = c[id_e]
+                _idx_sngl += 1
         # finally, add summary of single-pixel-clusters
         n_cpixels[n_multipix] = n_singlepix
-        self.cluster_energies[n_multipix] = single_energies.sum()
-        return n_multipix, n_cpixels, circularity, flatness, self.cluster_energies, single_energies
+        cluster_energies[n_multipix] = single_energies.sum()
+        return n_multipix, n_cpixels, circularity, flatness, cluster_energies, single_energies
 
     def __call__(self, f):
         """Analyze frame data
@@ -523,19 +532,8 @@ class frameAnalyzer:
             self.write_csv(self.clusters)
 
         # return summary of clusters in frame
-        cluster_smry = self.cluster_summary(self.clusters, self.n_clusters)
+        cluster_smry = self.cluster_summary(self.clusters)
         return cluster_smry
-
-    def check(self):
-        """check for consistency
-
-        total Energy and Energy in clusters must match
-        """
-        if self.n_clusters > 0:
-            # cross check: total energy in frame
-            E_from_clusters = self.cluster_energies.sum()
-            if E_from_clusters != self.total_Energy:
-                print(f"!!! warning: Energy {E_from_clusters} ne.  energy from pixels {self.total_Energy}")
 
 
 class miniPIXana:
@@ -1029,7 +1027,7 @@ class runDAQ:
         parser.add_argument('-t', '--time', type=int, default=36000, help='run time in seconds')
         parser.add_argument('--circularity_cut', type=float, default=0.5, help='cut on cicrularity for alpha detetion')
         parser.add_argument('--flatness_cut', type=float, default=0.4, help='cut on flatness for alpha detection')
-        
+
         parser.add_argument('-r', '--readfile', type=str, default='', help='file to read frame data')
         parser.add_argument('-b', '--badpixels', type=str, default='', help='file with bad pixels')
         args = parser.parse_args()
