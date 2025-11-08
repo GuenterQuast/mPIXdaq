@@ -343,11 +343,12 @@ class frameAnalyzer:
 
     def cluster_properties(self, f, pl):
         """
-        Create  a tuples with properties per cluster:
+        Create a tuples with properties per cluster:
             - mean of x and y coordinates,
             - number of pixels,
-            - energy,
-            - eigenvalues of covariance matrix and orientation ([-pi/2, pi/2])
+            - total energy of cluster,
+            - eigenvalues of covariance matrix and orientation (angle in range [-pi/2, pi/2])
+            - mean x and y of energy distribution
             - minimal and maximal eigenvalues of the covariance matrix of the energy distribution:
 
         Args:
@@ -408,16 +409,14 @@ class frameAnalyzer:
                 file=self.csvfile,
             )
 
-    def cluster_summary(self, clusters, n_clusters, n_single):
+    def cluster_summary(self, clusters, n_multipix):
         """summarize cluster properties in frame from cluster tuples of format
               ( (x,y), n_pix, energy, (var_mx, var_mn), angle, (xE, yE), (varE_mx, VarE_mn))
 
         Args:
 
-          - clusters: list of cluster tuples
-          - n_pixels:   number of pixels with energy > 0
-          - n_clusters: number of clusters with >= 2 pixels
-          - n_single: number of single pixels (not clustered)
+          - clusters: list of cluster tuples (multi-pixel clusters first, then single pixels)
+          - n_multipix: number of clusters with >= 2 pixels (at beginning of list)
 
         Returns:
 
@@ -433,13 +432,14 @@ class frameAnalyzer:
         id_e = 2
         id_var = 3
         id_varE = 6
-        n_cpixels = np.zeros(n_clusters + 1, dtype=np.int32)
-        self.cluster_energies = np.zeros(n_clusters + 1, dtype=np.float32)
-        circularity = np.zeros(n_clusters + 1, dtype=np.float32)
-        flatness = np.zeros(n_clusters + 1, dtype=np.float32)
-        single_energies = np.zeros(n_single, dtype=np.int32)
+        n_cpixels = np.zeros(n_multipix + 1, dtype=np.int32)
+        self.cluster_energies = np.zeros(n_multipix + 1, dtype=np.float32)
+        circularity = np.zeros(n_multipix + 1, dtype=np.float32)
+        flatness = np.zeros(n_multipix + 1, dtype=np.float32)
+        n_singlepix = len(clusters) - n_multipix
+        single_energies = np.zeros(n_singlepix, dtype=np.int32)
         for _ic, c in enumerate(clusters):
-            if _ic < n_clusters:
+            if _ic < n_multipix:
                 # clusters with more than one pixel
                 n_cpixels[_ic] = c[id_npix]
                 self.cluster_energies[_ic] = c[id_e]
@@ -447,11 +447,11 @@ class frameAnalyzer:
                 flatness[_ic] = c[id_varE][0] / c[id_var][0]
             else:
                 # single pixels
-                single_energies[_ic - n_clusters] = c[id_e]
+                single_energies[_ic - n_multipix] = c[id_e]
         # finally, add summary of single-pixel-clusters
-        n_cpixels[self.n_clusters] = n_single
-        self.cluster_energies[n_clusters] = single_energies.sum()
-        return n_clusters, n_cpixels, circularity, flatness, self.cluster_energies, single_energies
+        n_cpixels[n_multipix] = n_singlepix
+        self.cluster_energies[n_multipix] = single_energies.sum()
+        return n_multipix, n_cpixels, circularity, flatness, self.cluster_energies, single_energies
 
     def __call__(self, f):
         """Analyze frame data
@@ -471,7 +471,7 @@ class frameAnalyzer:
         Returns:
 
           - n_pixels: number of pixels with energy > 0
-          - n_clusters: number of clusters
+          - n_clusters: number of clusters  with >= 2 pixels
           - n_cpixels: number of pixels per cluster
           - circularity: circularity per cluster (0. for linear, 1. for circular)
           - cluster_energies: energy per cluster
@@ -523,7 +523,7 @@ class frameAnalyzer:
             self.write_csv(self.clusters)
 
         # return summary of clusters in frame
-        cluster_smry = self.cluster_summary(self.clusters, self.n_clusters, self.n_single)
+        cluster_smry = self.cluster_summary(self.clusters, self.n_clusters)
         return cluster_smry
 
     def check(self):
