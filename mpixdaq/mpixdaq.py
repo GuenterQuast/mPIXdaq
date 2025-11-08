@@ -228,12 +228,16 @@ class miniPIXdaq:
 
 class frameAnalyzer:
     def __init__(self, csv=None):
-        """Analyzer frame data
+        """Analyze frame data
 
         Args:
-            csv: file handle of an open txt file to store results
+
+           csv: file in text format (csv) to write header and data
         """
+
         self.csvfile = csv
+        if csv is not None:
+            self.write_csvheader()
 
         # set parameters for analysis
         # - structure for connecting pixels in scipy.ndimage.label
@@ -241,10 +245,6 @@ class frameAnalyzer:
         #  - maximum number of clusters per frame
         self.max_n_clusters = 250
         self.warning_issued = False
-        #  - CSV header line
-        csvHeader = "time,x_mean,y_mean,n_pix,energy,var_mx,var_mn,angle,xE_mean,yE_mean,varE_mx,varE_mn"
-        if self.csvfile is not None:
-            self.csvfile.write(csvHeader + '\n')
 
         # initialize
         # - an empty numpy array for null results
@@ -399,15 +399,21 @@ class frameAnalyzer:
             varE_mx, varE_mn = (0, 0)
         return ((x_mean, y_mean), npix, energy, (var_mx, var_mn), angle, (xEm, yEm), (varE_mx, varE_mn))
 
-    def write_csv(self, pixel_clusters):
+    def write_csvheader(self):
+        """Write csv header line to file"""
+        csvHeader = "time,x_mean,y_mean,n_pix,energy,var_mx,var_mn,angle,xE_mean,yE_mean,varE_mx,varE_mn"
+        self.csvfile.write(csvHeader + '\n')
+
+    def write_csv(self):
         """Write cluster data to csv file"""
-        for _xym, _npix, _energy, _var, _angle, _xyEm, _varE in pixel_clusters:
+        for _xym, _npix, _energy, _var, _angle, _xyEm, _varE in self.clusters:
             print(
                 f"{self.t_frame:.3f}, {_xym[0]:.2f}, {_xym[1]:.2f}, {_npix}, {_energy:.1f}"
                 + f", {_var[0]:.2f}, {_var[1]:.2f}, {_angle:.2f}"
                 + f", {_xyEm[0]:.2f}, {_xyEm[1]:.2f}, {_varE[0]:.3f}, {_varE[1]:.3f}",
                 file=self.csvfile,
             )
+
     @staticmethod
     def cluster_summary(pixel_clusters):
         """summarize cluster properties from cluster tuples of format
@@ -445,10 +451,10 @@ class frameAnalyzer:
         # collect summary info
         _idx_mlt = 0
         _idx_sngl = 0
-        for  c in pixel_clusters:
+        for c in pixel_clusters:
             _npx = c[id_npix]
-            if _npx > 1:   # clusters with more than one pixel
-                n_cpixels[_idx_mlt] = _npx             
+            if _npx > 1:  # clusters with more than one pixel
+                n_cpixels[_idx_mlt] = _npx
                 cluster_energies[_idx_mlt] = c[id_e]
                 circularity[_idx_mlt] = c[id_var][1] / c[id_var][0]
                 flatness[_idx_mlt] = c[id_varE][0] / c[id_var][0]
@@ -527,17 +533,13 @@ class frameAnalyzer:
         for _is in range(self.n_single):
             self.clusters.append(self.cluster_properties(f, [self.cluster_pxl_lst[self.n_clusters][_is]]))
 
-        # write to file if requested
-        if self.csvfile is not None:
-            self.write_csv(self.clusters)
-
         # return summary of clusters in frame
         cluster_smry = self.cluster_summary(self.clusters)
         return cluster_smry
 
 
-class miniPIXana:
-    """Analysis of miniPIX frames for low-rate scenarios,
+class miniPIXvis:
+    """display of miniPIX frames and histograms for low-rate scenarios
     where on-line analysis is possible and animated graphs are meaningful
 
     Animated graph of (overlayed) pixel images and cluster properties
@@ -547,7 +549,7 @@ class miniPIXana:
         """call-back for matplotlib 'close_event'"""
         self.mpl_active = False
 
-    def __init__(self, npix=256, nover=10, unit='keV', circ=0.5, acq_time=1.0, csv=None, badpixels=None):
+    def __init__(self, npix=256, nover=10, unit='keV', circ=0.5, acq_time=1.0, badpixels=None):
         """initialize figure with pixel image, two histograms and a scatter plot
 
         Args:
@@ -556,7 +558,6 @@ class miniPIXana:
            - unit: unit of energy measurement ("keV" or "µs ToT")
            - circ: circularity of "round" clusters (0. - 1.)
            - acq_time: accumulation time per read-out frame
-           - csv: an open csv file (passed to frameAnalyser)
         """
 
         self.npx = npix
@@ -577,13 +578,18 @@ class miniPIXana:
         # cumulative image
         self.cimage = np.zeros((self.npx, self.npx), dtype=np.float32)
         # frame summary statistics
-        self.n_clusters = 0
         self.Energy = 0.0
         self.np_unass = 0
         self.E_unass = 0.0
+        self.N_clusters = 0
 
-        # set-up frame analyzer
-        self.frameAna = frameAnalyzer(csv=csv)
+        # variables for cluster statistics and histograms
+        self.n_clusters = 0
+        self.n_cpixels = np.array([])
+        self.circularity = np.array([])
+        self.flatness = np.array([])
+        self.cluster_energies = np.array([])
+        self.single_energies = np.array([])
 
         # - prepare a figure with subplots
         self.fig = plt.figure('PIX data', figsize=(11.5, 8.5), facecolor="#1f1f1f")
@@ -693,10 +699,10 @@ class miniPIXana:
         self.dt_last_plot = 0.0
         self.t_start = time.time()
 
-    def anaviz(self, frame2d):
-        """analyze frame data and update image and plots"""
+    def vizualize(self, frame2d, cluster_summary):
+        """update pixel map and plots"""
 
-        n_clusters, n_cpixels, circularity, flatness, cluster_energies, single_energies = self.frameAna(frame2d)
+        n_clusters, n_cpixels, circularity, flatness, cluster_energies, single_energies = cluster_summary
 
         if n_clusters > 0:
             self.Energy = cluster_energies.sum()
@@ -708,7 +714,7 @@ class miniPIXana:
             self.Energy_in_clusters = 0.0
             self.np_unass = len(frame2d[frame2d > 0])
             self.E_unass = self.Energy
-        self.n_clusters = n_clusters
+        self.N_clusters = n_clusters
 
         # boolean indices for linear and circular, spiky objects
         is_round = circularity[:n_clusters] > self.circularity_cut
@@ -736,7 +742,7 @@ class miniPIXana:
         ycir = n_cpixels[:n_clusters][is_alpha]
         self.scpl.add([(xlin, ylin), (xcir, ycir), ([self.E_unass], [self.np_unass])])
 
-    def __call__(self, frame2d, dt_alive):
+    def __call__(self, frame2d, cluster_summary, dt_alive):
         """update cumulative pixel image, analyze data and
         update histograms, scatter plot and status text
         """
@@ -748,14 +754,29 @@ class miniPIXana:
         self.framebuf[self.i_buf, :, :] = frame2d[:, :]
         # and add actual data to cumulated values
         self.cimage += frame2d
+        # add resp. concatenate information on cluster properties
+        n_clusters, n_cpixels, circularity, flatness, cluster_energies, single_energies = cluster_summary
+        self.n_clusters += n_clusters
+        self.n_cpixels = np.concatenate((self.n_cpixels, n_cpixels))
+        self.circularity = np.concatenate((self.circularity, circularity))
+        self.flatness = np.concatenate((self.flatness, flatness))
+        self.cluster_energies = np.concatenate((self.cluster_energies, cluster_energies))
+        self.single_energies = np.concatenate((self.single_energies, single_energies))
 
         if self.i_buf < self.n_overlay - 1:
-            self.i_buf = self.i_buf + 1
+            self.i_buf += 1
         else:
-            # buffer filled, analyze and visualize data
-            self.anaviz(self.cimage)
-            # reset buffer index
+            # buffer filled, visualize data
+            summary = (self.n_clusters, self.n_cpixels, self.circularity, self.flatness, self.cluster_energies, self.single_energies)
+            self.vizualize(self.cimage, summary)
+            # reset buffer index and cumulative variables
             self.i_buf = 0
+            self.n_clusters = 0
+            self.n_cpixels = np.array([])
+            self.circularity = np.array([])
+            self.flatness = np.array([])
+            self.cluster_energies = np.array([])
+            self.single_energies = np.array([])
 
         dt_active = time.time() - self.t_start
         # update, redraw and show all subplots in figure
@@ -763,7 +784,7 @@ class miniPIXana:
             dead_time_fraction = 1.0 - dt_alive / dt_active
             status = (
                 f"#{self.i_frame}   active {dt_active:.0f}s   alive {dt_alive:.0f}s "
-                + f"  clusters = {self.n_clusters:.0f} / {self.Energy:.0f}keV "
+                + f"  clusters = {self.N_clusters:.0f} / {self.Energy:.0f}keV "
                 + f"  single pixels: {self.np_unass:.0f} / {self.E_unass:.0f}keV"
                 + 10 * " "
             )
@@ -1130,14 +1151,16 @@ class runDAQ:
             if self.verbosity > 0:
                 print("*==* writing clusters to file " + fn)
 
-        # finally, initialize analysis and figures
-        self.mpixana = miniPIXana(
+        # set-up frame analyzer
+        self.frameAna = frameAnalyzer(csv=self.csvfile)
+
+        # finally, initialize visualizer
+        self.mpixvis = miniPIXvis(
             npix=self.npx,
             nover=self.n_overlay,
             unit=self.unit,
             circ=self.circularity_cut,
             acq_time=self.tot_acq_time,
-            csv=self.csvfile,
             badpixels=badpixel_list,
         )
 
@@ -1155,7 +1178,7 @@ class runDAQ:
         # start daq loop
         print("\n" + 15 * ' ' + "\033[36m type <cntrl C> to end" + "\033[31m", end='\r')
         try:
-            while dt_active < self.run_time and self.mpixana.mpl_active:
+            while dt_active < self.run_time and self.mpixvis.mpl_active:
                 if self.read_filename is None:
                     _idx = self.daq.dataQ.get()
                     # data as 2d pixel array
@@ -1175,8 +1198,14 @@ class runDAQ:
                     with NpyAppendArray(self.out_filename) as npa:
                         npa.append(np.array([frame2d]))
 
-                # real-time analysis and animated visualization
-                self.mpixana(frame2d, dt_alive)
+                # analyze frame and retrieve result
+                cluster_summary = self.frameAna(frame2d)
+                pixel_clusters = self.frameAna.clusters
+                if self.csvfile is not None:
+                    self.frameAna.write_csv()
+
+                # animated visualization
+                self.mpixvis(frame2d, cluster_summary, dt_alive)
 
                 # heart-beat for console
                 print(f"  #{i_frame}", end="\r")
@@ -1193,7 +1222,7 @@ class runDAQ:
                 self.csvfile.close()
             if self.read_filename is None:
                 self.daq.cmdQ.put("e")
-            if self.mpixana.mpl_active:
+            if self.mpixvis.mpl_active:
                 _a = input("\033[36m\n" + 20 * ' ' + " type <ret> to close window --> ")
                 print("\033[0m")
             else:
