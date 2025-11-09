@@ -228,11 +228,26 @@ class miniPIXdaq:
 
 class frameAnalyzer:
     def __init__(self, csv=None):
-        """Analyze frame data
+        """Analyze frame data and produce a list of cluster objects,
 
         Args:
 
-           csv: file in text format (csv) to write header and data
+           csv: file in text format (csv) to (optionally) write csv header and data
+
+        Output:
+
+          pixel_clusters: a list of tuples of format
+            (x, y), n_pix, energy, (var_mx, var_mn), angle, (xEm, yEm), (varE_mx, varE_mn) )
+          with cluster properties
+
+          A static method, cluster_summary, calculates a summary of the clusters
+          in a pixel frame, returning
+            - n_clusters: number of multi-pixel clusters
+            - n_cpixels: number of pixels per cluster
+            - circularity: circularity per cluster (0. for linear, 1. for circular)
+            - flatness:  ratio of maximum variances of pixel and energy distributions in clusters
+            - cluster_energies: energy per cluster
+            - single_energies: energies in single pixels
         """
 
         self.csvfile = csv
@@ -251,6 +266,11 @@ class frameAnalyzer:
         self.ea = np.array([])
         # - start-time
         self.t_start = None
+
+        # initialize data members for results
+        self.pixel_clusters = []  # result of __call__()
+        self.cluster_pxl_lst = []  # result of find_connected()
+        self.cluster_summary = None  # result of static method get_cluster_summary(pixel_clusters)
 
     def covmat_2d(self, x, y, vals):
         """Covariance matrix of a sampled 2d distribution
@@ -300,7 +320,7 @@ class frameAnalyzer:
             single pixels collected in pixel_list[self.n_clusters];
             number of clusters, n_clusters,  is len(pixel_list) - 1,
             list of unclustered pixels is pixel_list[n_clusters],
-            number of single pixels is len(pixel_list[n_clusters]).
+            the number of single pixels is len(pixel_list[n_clusters]).
         """
 
         # initialize results lists, separating clusters fom single hits
@@ -330,7 +350,6 @@ class frameAnalyzer:
         pixel_list.append(sngl_pxl_list)
 
         # alternative clustering using sclearn.cluster.DBSCAN (is a bit slower)
-        #   this algorithm works with the pixel coordinates
         # px_list = np.argwhere(f > 0)
         # cluster_result = DBSCAN(eps=1.5, min_samples=2, algorithm="ball_tree").fit(px_list)
         # clabels = self.cluster_result.labels_
@@ -404,9 +423,9 @@ class frameAnalyzer:
         csvHeader = "time,x_mean,y_mean,n_pix,energy,var_mx,var_mn,angle,xE_mean,yE_mean,varE_mx,varE_mn"
         self.csvfile.write(csvHeader + '\n')
 
-    def write_csv(self):
+    def write_csv(self, pixel_clusters):
         """Write cluster data to csv file"""
-        for _xym, _npix, _energy, _var, _angle, _xyEm, _varE in self.clusters:
+        for _xym, _npix, _energy, _var, _angle, _xyEm, _varE in pixel_clusters:
             print(
                 f"{self.t_frame:.3f}, {_xym[0]:.2f}, {_xym[1]:.2f}, {_npix}, {_energy:.1f}"
                 + f", {_var[0]:.2f}, {_var[1]:.2f}, {_angle:.2f}"
@@ -415,7 +434,7 @@ class frameAnalyzer:
             )
 
     @staticmethod
-    def cluster_summary(pixel_clusters):
+    def get_cluster_summary(pixel_clusters):
         """summarize cluster properties from cluster tuples of format
               ( (x,y), n_pix, energy, (var_mx, var_mn), angle, (xE, yE), (varE_mx, VarE_mn))
 
@@ -485,21 +504,27 @@ class frameAnalyzer:
 
         Returns:
 
+          - self.pixel_clusters: list of tuples with properties per cluster: mean of x and y
+            coordinates, the number of pixels, energy, eigenvalues of covariance matrix and
+            their orientation as an angle in range [-pi/2, pi/2] and the minimal and maximal
+            eigenvalues of the covariance matrix of the energy distribution. The format is:
+            ( (x, y), n_pix, energy, (var_mx, var_mn), angle, (xEm, yEm), (varE_mx, varE_mn) )
+
+          - self.cluster_pxl_lst is a list of dimension n_clusters + 1 and contains the pixel indices
+            contributing to each of the clusters. self.cluster_pxl_lst[-1] contains the list of single pixels
+
+        A static method, get_cluster_summary(pixel_clusters), provides summary infomation
+
           - n_pixels: number of pixels with energy > 0
           - n_clusters: number of clusters  with >= 2 pixels
           - n_cpixels: number of pixels per cluster
           - circularity: circularity per cluster (0. for linear, 1. for circular)
           - cluster_energies: energy per cluster
           - single_energies: energies in single pixels
-
-          - self.clusters is a tuple with properties per cluster with mean of x and y coordinates,
-            number of pixels, energy, eigenvalues of covariance matrix and orientation ([-pi/2, pi/2])
-            and the minimal and maximal eigenvalues of the covariance matrix of the energy distribution:
-            format  ( (x, y), n_pix, energy, (var_mx, var_mn), angle, (xEm, yEm), (varE_mx, varE_mn) )
-
-          - self.cluster_pxl_lst is a list of dimension n_clusters + 1 and contains the pixel indices
-            contributing to each of the clusters. self.cluster_pxl_lst[-1] contains the list of single pixels
         """
+
+        # clear output while processing new data
+        self.pixel_clusters = []
 
         # find clusters (lines,  circular  and unassigned = single pixels)
         self.n_pixels = (f > 0).sum()
@@ -521,21 +546,20 @@ class frameAnalyzer:
         self.n_clusters = n_objects - 1
         self.n_single = len(self.cluster_pxl_lst[-1])
 
-        # - list of properties per cluster in format
+        # - crate list of properties per cluster in format
         #      ( (x,y), n_pix, energy, (var_mx, var_mn), angle, (xE, yE), (varE_mx, VarE_mn))
-        self.clusters = []
         # loop over clusters ...
         for _i in range(self.n_clusters):
             # number of pixels in cluster
             pl = self.cluster_pxl_lst[_i]
-            self.clusters.append(self.cluster_properties(f, pl))
+            self.pixel_clusters.append(self.cluster_properties(f, pl))
         # and single pixels
         for _is in range(self.n_single):
-            self.clusters.append(self.cluster_properties(f, [self.cluster_pxl_lst[self.n_clusters][_is]]))
+            self.pixel_clusters.append(self.cluster_properties(f, [self.cluster_pxl_lst[self.n_clusters][_is]]))
 
-        # return summary of clusters in frame
-        cluster_smry = self.cluster_summary(self.clusters)
-        return cluster_smry
+        # calculate summary of clusters in frame
+        # self.cluster_summary = self.get_cluster_summary(self.pixel_clusters)
+        return self.pixel_clusters
 
 
 class miniPIXvis:
@@ -1199,12 +1223,13 @@ class runDAQ:
                         npa.append(np.array([frame2d]))
 
                 # analyze frame and retrieve result
-                cluster_summary = self.frameAna(frame2d)
-                pixel_clusters = self.frameAna.clusters
+                pixel_clusters = self.frameAna(frame2d)
                 if self.csvfile is not None:
-                    self.frameAna.write_csv()
+                    if pixel_clusters is not []:
+                        self.frameAna.write_csv(pixel_clusters)
 
                 # animated visualization
+                cluster_summary = frameAnalyzer.get_cluster_summary(pixel_clusters)
                 self.mpixvis(frame2d, cluster_summary, dt_alive)
 
                 # heart-beat for console

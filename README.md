@@ -176,7 +176,7 @@ time and may take some time on slow computers.
 
 ## Implementation Details
 
-The default data acquisition is based on the function 
+The default data acquisition in class `miniPIXdaq` is based on  
 *doSimpleIntegralAcquisition()* from  the *ADVACAM* *Python* API.
 A fixed number of frames (*acq_counts*) with an adjustable accumulation
 time (*acq_time*) are read from the miniPIX device and added up. 
@@ -213,8 +213,12 @@ for convenience.
 ## Data Analysis
 
 The analysis shown in this example is intentionally very simple and based 
-on standard libraries and functions. clustering of pixels is performed by
-finding connected regions in the pixel image with *scipy.ndimage.label()*.
+on standard libraries and functions.  The class `frameAnalyzer` implements 
+a search for connected pixels and returns a list of tuples with cluster
+ properties. It also contains methods to provide summary of cluster properties, 
+ useful for histogramming, and for writing data to a file in CSV format.  
+Clustering of pixels is performed by finding connected regions in the 
+pixel image with the method *scipy.ndimage.label()*.
 The shape of the clusters is determined from the ratio of the smaller 
 and the larger one of the two eigenvalues of the covariance matrix 
 calculated from the *x* and *y* coordinates of the pixels in a cluster. 
@@ -224,10 +228,18 @@ is close to one, while it is almost zero for the longer traces from
 considered, which shows a sharp maximum at the center for α particles but
 is flat otherwise.
 
-The figure below shows the graphical display with a pixel image and 
-the typical distributions of the pixel and cluster energies and the 
-number of pixels per cluster. The source used was a weakly radioactive
-stone from the Black Forest containing a small amount of Uranium and 
+The class `miniPIXvis` implements the graphical display. Shown are the
+pixel map with pixel energies encoded as colors on a logarithmic scale,
+and histograms showing the distributions of pixel energies, of cluster
+energies and of cluster energies vs. the number of pixels in the clusters.
+If drawn for different shapes of clusters (either circular or linear)
+and for different energy distributions within the cluster (flat or 
+peaking in the centre) a very good separation of α and β radiation
+can be achieved. 
+
+The figure below shows the graphical display with a pixel image and
+the histograms. The source used was a weakly radioactive stone
+from the Black Forest containing a small amount of Uranium and 
 its decay products. The pixel map shown in the figure was sampled 
 over a time of five seconds. The histogram in the lower-right
 corner shows how well the cluster types discriminate different types
@@ -236,7 +248,7 @@ of pixels per cluster, electrons (β) as long tracks with large numbers
 of pixels per cluster and rather low energies. Single pixels not 
 associated to clusters originate from 𝛾 rays. Some of the electron 
 tracks  with typically low energies also stem from photon interactions 
-in the detector material (via the Compton process).
+in the detector material (predominantly via the Compton process).
 
 ![The graphical display of miniPIXdaq](miniPIXdaq.png)
 
