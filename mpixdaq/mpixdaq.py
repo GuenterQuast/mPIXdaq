@@ -264,6 +264,7 @@ class frameAnalyzer:
         # initialize
         # - an empty numpy array for null results
         self.ea = np.array([])
+        self.ea2 = np.array([[None], [None]])
         # - start-time
         self.t_start = None
 
@@ -331,7 +332,7 @@ class frameAnalyzer:
         sngl_pxl_list = []
         f_labeled, n_labels = ndimage.label(f > 0, structure=self.label_structure)
 
-        # avoid analyzing unreasonably large number of cluster
+        # avoid analyzing unreasonably large number of clusters
         if n_labels > self.max_n_clusters:
             if not self.warning_issued:
                 print(f"!!! frameAnalyzer: rejecting frames with > {self.max_n_clusters} clusters !")
@@ -426,6 +427,8 @@ class frameAnalyzer:
     def write_csv(self, pixel_clusters):
         """Write cluster data to csv file"""
         for _xym, _npix, _energy, _var, _angle, _xyEm, _varE in pixel_clusters:
+            if _npix == 0:
+                return
             print(
                 f"{self.t_frame:.3f}, {_xym[0]:.2f}, {_xym[1]:.2f}, {_npix}, {_energy:.1f}"
                 + f", {_var[0]:.2f}, {_var[1]:.2f}, {_angle:.2f}"
@@ -460,13 +463,13 @@ class frameAnalyzer:
         # count muli- and single-pixel clusters
         npix = np.asarray([pixel_clusters[_i][id_npix] for _i in range(len(pixel_clusters))])
         n_multipix = len(npix[npix > 1])
-        n_singlepix = len(pixel_clusters) - n_multipix
+        n_singlepix = len(npix[npix == 1])
         # create arrays to store info
         n_cpixels = np.zeros(n_multipix + 1, dtype=np.int32)
         cluster_energies = np.zeros(n_multipix + 1, dtype=np.float32)
         circularity = np.zeros(n_multipix + 1, dtype=np.float32)
         flatness = np.zeros(n_multipix + 1, dtype=np.float32)
-        single_energies = np.zeros(n_singlepix, dtype=np.int32)
+        single_energies = np.zeros(max(1, n_singlepix), dtype=np.int32)
         # collect summary info
         _idx_mlt = 0
         _idx_sngl = 0
@@ -529,8 +532,8 @@ class frameAnalyzer:
         # find clusters (lines,  circular  and unassigned = single pixels)
         self.n_pixels = (f > 0).sum()
         if self.n_pixels == 0:
-            # n_pixels, n_clusters, n_cpixels, circularity, cluster_energies, single_energies
-            return self.n_pixels, 0, self.ea, self.ea, self.ea, self.ea
+            #      ( (x,y), n_pix, energy, (var_mx, var_mn), angle, (xE, yE), (varE_mx, VarE_mn))
+            return [(self.ea2, self.n_pixels, 0, self.ea2, None, self.ea2, self.ea2)]
 
         # timing
         if self.t_start is None:
@@ -541,8 +544,8 @@ class frameAnalyzer:
         self.cluster_pxl_lst = self.find_connected(f)
         n_objects = len(self.cluster_pxl_lst)
         if n_objects == 0:
-            # n_pixels, n_clusters, n_cpixels, circularity, cluster_energies, single_energies
-            return self.n_pixels, 0, self.ea, self.ea, self.ea, self.ea
+            #      ( (x,y), n_pix, energy, (var_mx, var_mn), angle, (xE, yE), (varE_mx, VarE_mn))
+            return [(self.ea2, self.n_pixels, 0, self.ea2, None, self.ea2, self.ea2)]
         self.n_clusters = n_objects - 1
         self.n_single = len(self.cluster_pxl_lst[-1])
 
@@ -557,8 +560,8 @@ class frameAnalyzer:
         for _is in range(self.n_single):
             self.pixel_clusters.append(self.cluster_properties(f, [self.cluster_pxl_lst[self.n_clusters][_is]]))
 
-        # calculate summary of clusters in frame
-        # self.cluster_summary = self.get_cluster_summary(self.pixel_clusters)
+        #     calculate summary of clusters in frame
+        #        self.cluster_summary = self.get_cluster_summary(self.pixel_clusters)
         return self.pixel_clusters
 
 
@@ -1201,7 +1204,7 @@ class runDAQ:
             Thread(target=self.daq, daemon=True).start()
         # start daq loop
         print("\n" + 15 * ' ' + "\033[36m type <cntrl C> to end" + "\033[31m", end='\r')
-        try:
+        while True:
             while dt_active < self.run_time and self.mpixvis.mpl_active:
                 if self.read_filename is None:
                     _idx = self.daq.dataQ.get()
@@ -1235,12 +1238,12 @@ class runDAQ:
                 # heart-beat for console
                 print(f"  #{i_frame}", end="\r")
 
-        except KeyboardInterrupt:
-            pass
-        except Exception as e:
-            print("Excpetion in daq loop: ", str(e))
+            #        except KeyboardInterrupt:
+            #            pass
+            #        except Exception as e:
+            #            print("Excpetion in daq loop: ", str(e))
 
-        finally:
+            #        finally:
             # end daq loop
             if self.csvfile is not None:
                 self.csvfile.flush()
