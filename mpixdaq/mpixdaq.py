@@ -263,8 +263,6 @@ class frameAnalyzer:
 
         # initialize
         # - an empty numpy array for null results
-        self.ea = np.array([])
-        self.ea2 = np.array([[None], [None]])
         # - start-time
         self.t_start = None
 
@@ -460,6 +458,9 @@ class frameAnalyzer:
         id_var = 3
         id_varE = 6
 
+        if pixel_clusters is None:
+            return None
+
         # count muli- and single-pixel clusters
         npix = np.asarray([pixel_clusters[_i][id_npix] for _i in range(len(pixel_clusters))])
         n_multipix = len(npix[npix > 1])
@@ -532,8 +533,7 @@ class frameAnalyzer:
         # find clusters (lines,  circular  and unassigned = single pixels)
         self.n_pixels = (f > 0).sum()
         if self.n_pixels == 0:
-            #      ( (x,y), n_pix, energy, (var_mx, var_mn), angle, (xE, yE), (varE_mx, VarE_mn))
-            return [(self.ea2, self.n_pixels, 0, self.ea2, None, self.ea2, self.ea2)]
+            return None
 
         # timing
         if self.t_start is None:
@@ -544,8 +544,8 @@ class frameAnalyzer:
         self.cluster_pxl_lst = self.find_connected(f)
         n_objects = len(self.cluster_pxl_lst)
         if n_objects == 0:
-            #      ( (x,y), n_pix, energy, (var_mx, var_mn), angle, (xE, yE), (varE_mx, VarE_mn))
-            return [(self.ea2, self.n_pixels, 0, self.ea2, None, self.ea2, self.ea2)]
+            return None
+
         self.n_clusters = n_objects - 1
         self.n_single = len(self.cluster_pxl_lst[-1])
 
@@ -726,8 +726,8 @@ class miniPIXvis:
         self.dt_last_plot = 0.0
         self.t_start = time.time()
 
-    def vizualize(self, frame2d, cluster_summary):
-        """update pixel map and plots"""
+    def upd_histograms(self, frame2d, cluster_summary):
+        """update histograms"""
 
         n_clusters, n_cpixels, circularity, flatness, cluster_energies, single_energies = cluster_summary
 
@@ -782,20 +782,21 @@ class miniPIXvis:
         # and add actual data to cumulated values
         self.cimage += frame2d
         # add resp. concatenate information on cluster properties
-        n_clusters, n_cpixels, circularity, flatness, cluster_energies, single_energies = cluster_summary
-        self.n_clusters += n_clusters
-        self.n_cpixels = np.concatenate((self.n_cpixels, n_cpixels))
-        self.circularity = np.concatenate((self.circularity, circularity))
-        self.flatness = np.concatenate((self.flatness, flatness))
-        self.cluster_energies = np.concatenate((self.cluster_energies, cluster_energies))
-        self.single_energies = np.concatenate((self.single_energies, single_energies))
+        if cluster_summary is not None:
+            n_clusters, n_cpixels, circularity, flatness, cluster_energies, single_energies = cluster_summary
+            self.n_clusters += n_clusters
+            self.n_cpixels = np.concatenate((self.n_cpixels, n_cpixels))
+            self.circularity = np.concatenate((self.circularity, circularity))
+            self.flatness = np.concatenate((self.flatness, flatness))
+            self.cluster_energies = np.concatenate((self.cluster_energies, cluster_energies))
+            self.single_energies = np.concatenate((self.single_energies, single_energies))
 
         if self.i_buf < self.n_overlay - 1:
             self.i_buf += 1
         else:
             # buffer filled, visualize data
             summary = (self.n_clusters, self.n_cpixels, self.circularity, self.flatness, self.cluster_energies, self.single_energies)
-            self.vizualize(self.cimage, summary)
+            self.upd_histograms(self.cimage, summary)
             # reset buffer index and cumulative variables
             self.i_buf = 0
             self.n_clusters = 0
@@ -818,7 +819,7 @@ class miniPIXvis:
             self.img.set(data=self.cimage)
             self.im_text.set_text(status)
             # self.fig.canvas.start_event_loop(0.001)  # better than plt.pause(), which would steal the focus
-            self.fig.canvas.draw_idle()
+            self.fig.canvas.update()
             self.fig.canvas.flush_events()
             self.dt_last_plot = dt_active
 
@@ -1191,6 +1192,16 @@ class runDAQ:
             badpixels=badpixel_list,
         )
 
+        # keyboard control via thread
+        self.ACTIVE = True
+        self.kbdQ = Queue()  # Queue for command input from keyboard
+        self.kbdthread = Thread(name="kbdInput", target=self.keyboard_input, args=(self.kbdQ,)).start()
+
+    def keyboard_input(self, cmd_queue):
+        """Read keyboard input and send to Queue, runing as background-thread to avoid blocking"""
+        while self.ACTIVE:
+            cmd_queue.put(input())
+
     def __call__(self):
         """run daq loop"""
 
@@ -1202,10 +1213,11 @@ class runDAQ:
         # start daq as a Thread
         if self.read_filename is None:
             Thread(target=self.daq, daemon=True).start()
+
         # start daq loop
-        print("\n" + 15 * ' ' + "\033[36m type <cntrl C> to end" + "\033[31m", end='\r')
-        while True:
-            while dt_active < self.run_time and self.mpixvis.mpl_active:
+        print("\n" + 15 * ' ' + "\033[36m type 'E<ret>' or close graphics window to end" + "\033[31m", end='\r')
+        try:
+            while dt_active < self.run_time and self.mpixvis.mpl_active and self.ACTIVE:
                 if self.read_filename is None:
                     _idx = self.daq.dataQ.get()
                     # data as 2d pixel array
@@ -1218,7 +1230,7 @@ class runDAQ:
                         break
                     frame2d = self.fdata[i_frame - 1]
                     ##!time.sleep(1.0)
-                    time.sleep(0.05)
+                    time.sleep(0.2)
 
                 # write frame to file ?
                 if self.out_filename is not None:
@@ -1227,10 +1239,9 @@ class runDAQ:
 
                 # analyze frame and retrieve result
                 pixel_clusters = self.frameAna(frame2d)
-                if self.csvfile is not None:
-                    if pixel_clusters is not []:
+                if pixel_clusters is not None:
+                    if self.csvfile is not None:
                         self.frameAna.write_csv(pixel_clusters)
-
                 # animated visualization
                 cluster_summary = frameAnalyzer.get_cluster_summary(pixel_clusters)
                 self.mpixvis(frame2d, cluster_summary, dt_alive)
@@ -1238,23 +1249,30 @@ class runDAQ:
                 # heart-beat for console
                 print(f"  #{i_frame}", end="\r")
 
-            #        except KeyboardInterrupt:
-            #            pass
-            #        except Exception as e:
-            #            print("Excpetion in daq loop: ", str(e))
+                if not self.kbdQ.empty():
+                    cmd = self.kbdQ.get()
+                    if cmd == 'E':
+                        self.ACTIVE = False
+                        if self.read_filename is None:
+                            self.daq.cmdQ.put("e")
+                        # self.mpixvis.mpl_active = False
+                        print("\033[36m\n" + 20 * ' ' + "'E'nd command received - type <ret> to terminate")
 
-            #        finally:
+        except KeyboardInterrupt:
+            self.ACTIVE = False
+        except Exception as e:
+            print("Excpetion in daq loop: ", str(e))
+
+        finally:
+            self.ACTIVE = False
             # end daq loop
             if self.csvfile is not None:
                 self.csvfile.flush()
                 self.csvfile.close()
             if self.read_filename is None:
                 self.daq.cmdQ.put("e")
-            if self.mpixvis.mpl_active:
-                _a = input("\033[36m\n" + 20 * ' ' + " type <ret> to close window --> ")
-                print("\033[0m")
-            else:
-                print("\33[0m\n" + 20 * ' ' + " Window closed, ending \n")
+            if not self.mpixvis.mpl_active:
+                print("\33[0m" + 25 * ' ' + " Graphics window closed, ending" + 20 * ' ' + "\n")
             if self.read_filename is None:
                 pypixet.exit()
 
