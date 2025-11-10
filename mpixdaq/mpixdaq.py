@@ -1152,7 +1152,7 @@ class runDAQ:
                 print("*==* data from file " + self.read_filename)
             suffix = pathlib.Path(self.read_filename).suffix
             if suffix == ".gz":
-                f = gzip.GzipFile(self.read_filename)
+                f = gzip.GzipFile(self.read_filename, mode='r')
                 self.fdata = np.load(f)
             elif suffix == ".npy":
                 self.fdata = np.load(self.read_filename, mmap_mode="r")
@@ -1227,7 +1227,8 @@ class runDAQ:
                     i_frame += 1
                 else:  # from file
                     i_frame += 1
-                    if i_frame > self.n_frames_in_file:
+                    if i_frame > self.n_frames_in_file:                        
+                        print("\033[36m\n" + 20 * ' ' + "'end-of-file - type <ret> to terminate")
                         break
                     frame2d = self.fdata[i_frame - 1]
                     ##!time.sleep(1.0)
