@@ -316,10 +316,10 @@ class frameAnalyzer:
         Returns:
 
           - pixel_list: list of pixel coordinates for each cluster
-            
-            single pixels are collected in last list item (i.e. pixel_list[n_clusters]), where 
+
+            single pixels are collected in last list item (i.e. pixel_list[n_clusters]), where
             n_clusters, the number of clusters with 2 or more pixels,  is len(pixel_list) - 1;
-            the list of unclustered pixels is pixel_list[n_clusters], and the number of 
+            the list of unclustered pixels is pixel_list[n_clusters], and the number of
             single pixels is len(pixel_list[n_clusters]).
         """
 
@@ -570,14 +570,14 @@ class miniPIXvis:
     """display of miniPIX frames and histograms for low-rate scenarios
     where on-line analysis is possible and animated graphs are meaningful
 
-    Animated graph of (overlayed) pixel images and cluster properties
+    Animated graph of (overlayed) pixel images and histograms cluster properties
     """
 
     def on_mpl_close(self, event):
         """call-back for matplotlib 'close_event'"""
         self.mpl_active = False
 
-    def __init__(self, npix=256, nover=10, unit='keV', circ=0.5, acq_time=1.0, badpixels=None):
+    def __init__(self, npix=256, nover=10, unit='keV', circ=0.5,flat = 0.5, acq_time=1.0, badpixels=None):
         """initialize figure with pixel image, two histograms and a scatter plot
 
         Args:
@@ -585,13 +585,14 @@ class miniPIXvis:
            - nover: number of frames to overlay
            - unit: unit of energy measurement ("keV" or "µs ToT")
            - circ: circularity of "round" clusters (0. - 1.)
+           - flat: flatness of enery distrbituion of pixels in clusters (0. - 1.)
            - acq_time: accumulation time per read-out frame
         """
 
         self.npx = npix
         self.n_overlay = nover
         self.circularity_cut = circ
-        self.flatness_cut = 0.4
+        self.flatness_cut = flat
         self.unit = unit
         self.acq_time = acq_time
 
@@ -1067,14 +1068,14 @@ class runDAQ:
         self.wd_path = wd_path
 
         # parse command line arguments
-        parser = argparse.ArgumentParser(description="read, analyze and display data from miniPIX device")
+        parser = argparse.ArgumentParser(description="read, analyze, display and histogram data from miniPIX device")
         parser.add_argument('-v', '--verbosity', type=int, default=1, help='verbosity level (1)')
         parser.add_argument('-o', '--overlay', type=int, default=10, help='number of frames to overlay in graph (10)')
         parser.add_argument('-a', '--acq_time', type=float, default=0.1, help='acquisition time/frame (0.1)')
         parser.add_argument('-c', '--acq_count', type=int, default=5, help='number of frames to add (5)')
         parser.add_argument('-f', '--file', type=str, default='', help='file to store frame data')
         parser.add_argument('-w', '--writefile', type=str, default='', help='csv file to write cluster data')
-        parser.add_argument('-t', '--time', type=int, default=36000, help='run time in seconds')
+        parser.add_argument('-t', '--time', type=int, default=36000, help='run time in seconds (36000)')
         parser.add_argument('--circularity_cut', type=float, default=0.5, help='cut on cicrularity for alpha detetion')
         parser.add_argument('--flatness_cut', type=float, default=0.4, help='cut on flatness for alpha detection')
 
@@ -1216,9 +1217,10 @@ class runDAQ:
             Thread(target=self.daq, daemon=True).start()
 
         # start daq loop
+        t_start = time.time()
         print("\n" + 15 * ' ' + "\033[36m type 'E<ret>' or close graphics window to end" + "\033[31m", end='\r')
         try:
-            while dt_active < self.run_time and self.mpixvis.mpl_active and self.ACTIVE:
+            while (dt_active < self.run_time) and self.mpixvis.mpl_active and self.ACTIVE:
                 if self.read_filename is None:
                     _idx = self.daq.dataQ.get()
                     # data as 2d pixel array
@@ -1227,7 +1229,7 @@ class runDAQ:
                     i_frame += 1
                 else:  # from file
                     i_frame += 1
-                    if i_frame > self.n_frames_in_file:                        
+                    if i_frame > self.n_frames_in_file:
                         print("\033[36m\n" + 20 * ' ' + "'end-of-file - type <ret> to terminate")
                         break
                     frame2d = self.fdata[i_frame - 1]
@@ -1248,35 +1250,36 @@ class runDAQ:
                 cluster_summary = frameAnalyzer.get_cluster_summary(pixel_clusters)
                 self.mpixvis(frame2d, cluster_summary, dt_alive)
 
-                # heart-beat for console
-                print(f"  #{i_frame}", end="\r")
-
                 if not self.kbdQ.empty():
-                    cmd = self.kbdQ.get()
-                    if cmd == 'E':
+                    if self.kbdQ.get() == 'E':
                         self.ACTIVE = False
-                        if self.read_filename is None:
-                            self.daq.cmdQ.put("e")
-                        # self.mpixvis.mpl_active = False
-                        print("\033[36m\n" + 20 * ' ' + "'E'nd command received - type <ret> to terminate")
+                #    # heart-beat for console
+                dt_active = time.time() - t_start
+                print(f"  #{i_frame}  {dt_active:.0f}s", end="\r")
 
         except KeyboardInterrupt:
-            self.ACTIVE = False
+            print("\n keyboard interrupt ")
         except Exception as e:
-            print("Excpetion in daq loop: ", str(e))
+            print("\n excpetion in daq loop: ", str(e))
 
         finally:
+            # end daq loop, print reason for end and clean up
+            if not self.ACTIVE:
+                print("\033[36m\n" + 20 * ' ' + "'E'nd command received", end='')
+            elif not self.mpixvis.mpl_active:
+                print("\033[36m\n" + 20 * ' ' + " Graphics window closed", end='')
+            elif dt_active > self.run_time:
+                print("\033[36m\n" + 20 * ' ' + f"end after {dt_active:.1f} s", end='')
+
             self.ACTIVE = False
-            # end daq loop
+            if self.read_filename is None:
+                self.daq.cmdQ.put("e")
             if self.csvfile is not None:
                 self.csvfile.flush()
                 self.csvfile.close()
             if self.read_filename is None:
-                self.daq.cmdQ.put("e")
-            if not self.mpixvis.mpl_active:
-                print("\33[0m" + 25 * ' ' + " Graphics window closed, ending" + 20 * ' ' + "\n")
-            if self.read_filename is None:
                 pypixet.exit()
+            print(10 * ' ' + "  - type <ret> to terminate ->> ", end='')
 
 
 if __name__ == "__main__":  # -  - - - - - - - - - -
