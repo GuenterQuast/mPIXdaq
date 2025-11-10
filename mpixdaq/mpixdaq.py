@@ -315,11 +315,12 @@ class frameAnalyzer:
 
         Returns:
 
-          - pixel_list: list of pixel coordinates for each cluster,
-            single pixels collected in pixel_list[self.n_clusters];
-            number of clusters, n_clusters,  is len(pixel_list) - 1,
-            list of unclustered pixels is pixel_list[n_clusters],
-            the number of single pixels is len(pixel_list[n_clusters]).
+          - pixel_list: list of pixel coordinates for each cluster
+            
+            single pixels are collected in last list item (i.e. pixel_list[n_clusters]), where 
+            n_clusters, the number of clusters with 2 or more pixels,  is len(pixel_list) - 1;
+            the list of unclustered pixels is pixel_list[n_clusters], and the number of 
+            single pixels is len(pixel_list[n_clusters]).
         """
 
         # initialize results lists, separating clusters fom single hits
