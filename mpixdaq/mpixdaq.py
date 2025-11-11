@@ -689,7 +689,7 @@ class miniPIXvis:
         self.axh2 = self.fig.add_subplot(gs[6:10, -4:])
         nbins2 = 50
         min2 = 5  # 5keV
-        max2 = 15000  # 15 MeV
+        max2 = 11999  # 12.5 MeV
         # be2 = np.linspace(min2, max2, nbins2 + 1, endpoint=True)
         be2 = np.geomspace(min2, max2, nbins2 + 1, endpoint=True)
         self.bhist2 = bhist(
@@ -706,8 +706,8 @@ class miniPIXvis:
 
         # - scatter plot: cluster energies & sizes
         self.ax3 = self.fig.add_subplot(gs[11:15, -4:])
-        mxx = 10000
-        bex = np.linspace(0.0, mxx, 250, endpoint=True)
+        mxx = 11999
+        bex = np.linspace(0.0, mxx, 300, endpoint=True)
         mxy = 55
         bey = np.linspace(0.0, mxy, mxy, endpoint=True)
         # initialize for 3 classes of ([x],[y]) pairs
