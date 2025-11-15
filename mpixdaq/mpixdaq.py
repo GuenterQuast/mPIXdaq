@@ -577,7 +577,7 @@ class miniPIXvis:
         """call-back for matplotlib 'close_event'"""
         self.mpl_active = False
 
-    def __init__(self, npix=256, nover=10, unit='keV', circ=0.5,flat = 0.5, acq_time=1.0, badpixels=None):
+    def __init__(self, npix=256, nover=10, unit='keV', circ=0.5, flat=0.5, acq_time=1.0, badpixels=None):
         """initialize figure with pixel image, two histograms and a scatter plot
 
         Args:
@@ -621,13 +621,15 @@ class miniPIXvis:
         self.single_energies = np.array([])
 
         # - prepare a figure with subplots
-        self.fig = plt.figure('PIX data', figsize=(11.5, 8.5), facecolor="#1f1f1f")
+        self.fig = plt.figure('PIX data', figsize=(15.0, 10.0), facecolor="#1f1f1f")
         self.fig.suptitle("miniPiX Data Acquisition and Analysis", size="xx-large", color="cornsilk")
         self.fig.canvas.mpl_connect('close_event', self.on_mpl_close)
         self.mpl_active = True
-        self.fig.subplots_adjust(left=0.05, bottom=0.03, right=0.97, top=0.99, wspace=0.0, hspace=0.1)
+        self.fig.subplots_adjust(left=0.03, bottom=0.03, right=0.99, top=0.99, wspace=0.30, hspace=0.1)
         plt.tight_layout()
-        gs = self.fig.add_gridspec(nrows=16, ncols=16)
+        nrows = 16
+        col1, col2, col3 = 20, 24, 30
+        gs = self.fig.add_gridspec(nrows=nrows, ncols=col3 + 1)
 
         # - - 2d-display for pixel map
         #  hanling of bad pixels
@@ -639,7 +641,7 @@ class miniPIXvis:
             badpixel_map = np.ma.masked_where(bp == 1, bp).reshape((self.npx, self.npx))
             # badpixel_map = bp.reshape((self.npx, self.npx))
 
-        self.axim = self.fig.add_subplot(gs[:, :-4])
+        self.axim = self.fig.add_subplot(gs[:, :col1])
         self.axim.set_title("Pixel Energy Map " + self.unit, y=0.96, size="x-large")
         self.axim.set_xlabel("# x        ", loc="right")
         self.axim.set_ylabel("# y             ", loc="top")
@@ -647,8 +649,7 @@ class miniPIXvis:
         self.axim.set_frame_on(False)
         _rect = mpl.patches.Rectangle((0, 0), self.npx, self.npx, linewidth=1, edgecolor='gray', facecolor='none')
         self.axim.add_patch(_rect)
-        self.vmin = 0.5
-        vmax = 500
+        self.vmin, vmax = 0.5, 500
         if badpixels is not None:
             _ = self.axim.imshow(badpixel_map, origin="lower", cmap='gray', vmax=10.0)
         self.img = self.axim.imshow(np.zeros((self.npx, self.npx)), origin="lower", cmap='hot', norm=LogNorm(vmin=self.vmin, vmax=vmax))
@@ -662,11 +663,28 @@ class miniPIXvis:
             txt_overlay = f"integration time {acq_time * nover:.1f} s"
         else:
             txt_overlay = f"sum of {int(self.n_overlay)} frames"
-        self.axim.text(0.05, -0.055, txt_overlay, transform=self.axim.transAxes, color="royalblue")
-        self.im_text = self.axim.text(0.075, -0.08, "#", transform=self.axim.transAxes, color="r", alpha=0.75)
+        self.axim.text(0.01, -0.06, txt_overlay, transform=self.axim.transAxes, color="royalblue")
+        self.im_text = self.axim.text(0.02, -0.085, "#", transform=self.axim.transAxes, color="r", alpha=0.75)
+
+        # a (vertical) rate display
+        self.axRate = self.fig.add_subplot(gs[2 : nrows - 1, col1 : col2 - 1])
+        pos = self.axRate.get_position()
+        self.axRate.set_position([0.985 * pos.x0, pos.y0, pos.width, pos.height])
+        self.axRate.xaxis.set_label_position('top')
+        self.axRate.set_ylabel('History [frame #]', rotation=-90, labelpad=15.0)
+        self.axRate.set_xlabel('objects/frame')
+        self.axRate.grid(linestyle='dotted', which='both')
+        self.num_history_points = 300
+        self.axRate.set_ylim(-self.num_history_points, 0.0)
+        self.hrates = self.num_history_points * [None]
+        _yplt = np.linspace(-self.num_history_points, 0.0, self.num_history_points)
+        (self.line_rate,) = self.axRate.plot(self.hrates, _yplt, '.--', lw=1, markersize=4, color="#F0F0FC", mec="orange")
+        self.line_avrate = self.axRate.axvline(0.0, linestyle='--', lw=1, color="red")
+        self.rate_mx = 5
+        self.axRate.set_xlim(-0.25, self.rate_mx)
 
         #  - histogram of pixel energies
-        self.axh1 = self.fig.add_subplot(gs[1:5, -4:])
+        self.axh1 = self.fig.add_subplot(gs[1:5, col2:])
         nbins1 = 45
         min1 = 5
         max1 = 1300
@@ -686,7 +704,7 @@ class miniPIXvis:
         )
 
         # - histogram of cluster energies
-        self.axh2 = self.fig.add_subplot(gs[6:10, -4:])
+        self.axh2 = self.fig.add_subplot(gs[6:10, col2:])
         nbins2 = 50
         min2 = 5  # 5keV
         max2 = 11999  # 12.5 MeV
@@ -705,7 +723,7 @@ class miniPIXvis:
         )
 
         # - scatter plot: cluster energies & sizes
-        self.ax3 = self.fig.add_subplot(gs[11:15, -4:])
+        self.ax3 = self.fig.add_subplot(gs[11:15, col2:])
         mxx = 11999
         bex = np.linspace(0.0, mxx, 300, endpoint=True)
         mxy = 55
@@ -772,8 +790,8 @@ class miniPIXvis:
         self.scpl.add([(xlin, ylin), (xcir, ycir), ([self.E_unass], [self.np_unass])])
 
     def __call__(self, frame2d, cluster_summary, dt_alive):
-        """update cumulative pixel image, analyze data and
-        update histograms, scatter plot and status text
+        """update cumulative pixel image and rate, analyze data
+        and update histograms, scatter plot and status text
         """
         self.dt_alive = dt_alive
         self.i_frame += 1
@@ -786,12 +804,28 @@ class miniPIXvis:
         # add resp. concatenate information on cluster properties
         if cluster_summary is not None:
             n_clusters, n_cpixels, circularity, flatness, cluster_energies, single_energies = cluster_summary
+            n_objects = n_clusters + n_cpixels[n_clusters]
             self.n_clusters += n_clusters
             self.n_cpixels = np.concatenate((self.n_cpixels, n_cpixels))
             self.circularity = np.concatenate((self.circularity, circularity))
             self.flatness = np.concatenate((self.flatness, flatness))
             self.cluster_energies = np.concatenate((self.cluster_energies, cluster_energies))
             self.single_energies = np.concatenate((self.single_energies, single_energies))
+        else:
+            n_objects = 0
+            n_clusters = 0
+
+        # update rate plot
+        if n_objects > self.rate_mx:
+            self.rate_mx = n_objects
+            self.axRate.set_xlim(0.25, 1.05 * self.rate_mx)
+        self.hrates[(self.i_frame - 1) % self.num_history_points] = np.float32(n_objects)
+        k = self.i_frame % self.num_history_points
+        self.line_rate.set_xdata(np.concatenate((self.hrates[k + 1 :], self.hrates[: k + 1])))
+        # elf.axRate.relim()
+        # elf.axRate.autoscale_view()
+        _n = min(self.num_history_points, self.i_frame)
+        self.line_avrate.set_xdata([np.asarray(self.hrates)[:_n].mean()])
 
         if self.i_buf < self.n_overlay - 1:
             self.i_buf += 1
