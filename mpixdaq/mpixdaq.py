@@ -570,7 +570,7 @@ class miniPIXvis:
     """display of miniPIX frames and histograms for low-rate scenarios
     where on-line analysis is possible and animated graphs are meaningful
 
-    Animated graph of (overlayed) pixel images and histograms cluster properties
+    Animated graph of (overlayed) pixel images, number of clusters per frame and histograms of cluster properties
     """
 
     def on_mpl_close(self, event):
@@ -578,7 +578,7 @@ class miniPIXvis:
         self.mpl_active = False
 
     def __init__(self, npix=256, nover=10, unit='keV', circ=0.5, flat=0.5, acq_time=1.0, badpixels=None):
-        """initialize figure with pixel image, two histograms and a scatter plot
+        """initialize figure with pixel image, rate history and two histograms and a scatter plot
 
         Args:
            - npix: number of pixels per axis (256)
@@ -623,16 +623,17 @@ class miniPIXvis:
         # - prepare a figure with subplots
         self.fig = plt.figure('PIX data', figsize=(15.0, 10.0), facecolor="#1f1f1f")
         self.fig.suptitle("miniPiX Data Acquisition and Analysis", size="xx-large", color="cornsilk")
-        self.fig.canvas.mpl_connect('close_event', self.on_mpl_close)
-        self.mpl_active = True
         self.fig.subplots_adjust(left=0.03, bottom=0.03, right=0.99, top=0.99, wspace=0.30, hspace=0.1)
-        plt.tight_layout()
         nrows = 16
         col1, col2, col3 = 20, 24, 30
-        gs = self.fig.add_gridspec(nrows=nrows, ncols=col3 + 1)
+        ncols = col3 + 1
+        gs = self.fig.add_gridspec(nrows=nrows, ncols=ncols)
+        plt.tight_layout()
+        self.fig.canvas.mpl_connect('close_event', self.on_mpl_close)
+        self.mpl_active = True
 
-        # - - 2d-display for pixel map
-        #  hanling of bad pixels
+        # - - 2D display for pixel map
+        #  bad-pixel map for hanling of bad pixels
         if badpixels is None:
             self.badpixel_map = None
         else:  # create bad-pixel map as masked array
@@ -640,7 +641,7 @@ class miniPIXvis:
             bp[badpixels] = 1.0
             badpixel_map = np.ma.masked_where(bp == 1, bp).reshape((self.npx, self.npx))
             # badpixel_map = bp.reshape((self.npx, self.npx))
-
+        # pixel image
         self.axim = self.fig.add_subplot(gs[:, :col1])
         self.axim.set_title("Pixel Energy Map " + self.unit, y=0.96, size="x-large")
         self.axim.set_xlabel("# x        ", loc="right")
@@ -793,7 +794,6 @@ class miniPIXvis:
         """update cumulative pixel image and rate, analyze data
         and update histograms, scatter plot and status text
         """
-        self.dt_alive = dt_alive
         self.i_frame += 1
         # subtract oldest frame ...
         self.cimage -= self.framebuf[self.i_buf]
@@ -822,8 +822,8 @@ class miniPIXvis:
         self.hrates[(self.i_frame - 1) % self.num_history_points] = np.float32(n_objects)
         k = self.i_frame % self.num_history_points
         self.line_rate.set_xdata(np.concatenate((self.hrates[k + 1 :], self.hrates[: k + 1])))
-        # elf.axRate.relim()
-        # elf.axRate.autoscale_view()
+        # self.axRate.relim()
+        # self.axRate.autoscale_view()
         _n = min(self.num_history_points, self.i_frame)
         self.line_avrate.set_xdata([np.asarray(self.hrates)[:_n].mean()])
 
@@ -845,7 +845,7 @@ class miniPIXvis:
         dt_active = time.time() - self.t_start
         # update, redraw and show all subplots in figure
         if dt_active - self.dt_last_plot > 0.08:  # limit number of graphics updates
-            dead_time_fraction = 1.0 - dt_alive / dt_active
+            # dead_time_fraction = 1.0 - dt_alive / dt_active
             status = (
                 f"#{self.i_frame}   active {dt_active:.0f}s   alive {dt_alive:.0f}s "
                 + f"  clusters = {self.N_clusters:.0f} / {self.Energy:.0f}keV "
