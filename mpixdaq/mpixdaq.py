@@ -648,35 +648,37 @@ class miniPIXvis:
         self.axim.set_ylabel("# y             ", loc="top")
         # no default frame around graph, but show detector boundary
         self.axim.set_frame_on(False)
-        _rect = mpl.patches.Rectangle((0, 0), self.npx, self.npx, linewidth=1, edgecolor='gray', facecolor='none')
-        self.axim.add_patch(_rect)
- 
+
         if badpixels is not None:
             _ = self.axim.imshow(badpixel_map, origin="lower", cmap='gray', vmax=10.0)
         self.vmin, vmax = 0.5, 500
         self.img = self.axim.imshow(np.zeros((self.npx, self.npx)), origin="lower", cmap='hot', norm=LogNorm(vmin=self.vmin, vmax=vmax))
-        cbar = self.fig.colorbar(self.img, shrink=0.6, aspect=40, pad=-0.04)
+        cbar = self.fig.colorbar(self.img, shrink=0.6, aspect=40, pad=-0.0375)
         self.img.set_clim(vmin=self.vmin, vmax=vmax)
         # cbar.set_label("Energy " + unit, loc="top", labelpad=-5 )
         if self.acq_time is not None and self.acq_time > 0.0:
             txt_overlay = f"integration time {acq_time * nover:.1f} s"
         else:
-            txt_overlay = f"sum of {int(self.n_overlay)} frames"
+            txt_overlay = f"overlay of {int(self.n_overlay)} frames"
         self.axim.text(0.01, -0.06, txt_overlay, transform=self.axim.transAxes, color="royalblue")
         self.im_text = self.axim.text(0.02, -0.085, "#", transform=self.axim.transAxes, color="r", alpha=0.75)
+        # detector geometry
+        col_geom = "gray"
+        _rect = mpl.patches.Rectangle((0, 0), self.npx, self.npx, linewidth=1, edgecolor=col_geom, facecolor='none')
+        self.axim.add_patch(_rect)
         # blue arrow showing detector dimension in mm
-        self.axim.arrow(146, 261.0, 110.0, 0, length_includes_head=True, width=1.5, color="b")
-        self.axim.arrow(110, 261.0, -110.0, 0, length_includes_head=True, width=1.5, color="b")
+        self.axim.arrow(146, 261.0, 110.0, 0, length_includes_head=True, width=1.5, color=col_geom)
+        self.axim.arrow(110, 261.0, -110.0, 0, length_includes_head=True, width=1.5, color=col_geom)
         self.axim.text(115.0, 259, "14 mm")
         # 2nd x-axis in mm
         pitch = 0.055  # pixel size
         px2x = lambda x: x * pitch
         x2px = lambda x: x / pitch
-        axim_x2 = self.axim.secondary_xaxis(0.935, functions = (px2x, x2px))
+        axim_x2 = self.axim.secondary_xaxis(0.935, functions=(px2x, x2px))
         axim_x2.set_frame_on(False)
-        axim_x2.set_xlabel('Position [mm]', loc='right', color='b')
-        axim_x2.set_xlim((0., 14.08))
-        axim_x2.tick_params(colors='b')
+        axim_x2.set_xlabel('Position [mm]', loc='right', color=col_geom)
+        axim_x2.set_xlim((0.0, 14.08))
+        axim_x2.tick_params(colors=col_geom)
 
         # a (vertical) rate display
         self.axRate = self.fig.add_subplot(gs[2 : nrows - 1, col1 : col2 - 1])
