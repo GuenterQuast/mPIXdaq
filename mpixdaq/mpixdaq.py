@@ -621,9 +621,9 @@ class miniPIXvis:
         self.single_energies = np.array([])
 
         # - prepare a figure with subplots
-        self.fig = plt.figure('PIX data', figsize=(15.0, 10.0), facecolor="#1f1f1f")
+        self.fig = plt.figure('PIX data', figsize=(12.0, 8.5), facecolor="#1f1f1f")
         self.fig.suptitle("miniPiX Data Acquisition and Analysis", size="xx-large", color="cornsilk")
-        self.fig.subplots_adjust(left=0.03, bottom=0.03, right=0.99, top=0.99, wspace=0.30, hspace=0.1)
+        self.fig.subplots_adjust(left=0.05, bottom=0.03, right=0.99, top=0.99, wspace=0.30, hspace=0.1)
         nrows = 16
         col1, col2, col3 = 20, 24, 30
         ncols = col3 + 1
@@ -643,36 +643,47 @@ class miniPIXvis:
             # badpixel_map = bp.reshape((self.npx, self.npx))
         # pixel image
         self.axim = self.fig.add_subplot(gs[:, :col1])
-        self.axim.set_title("Pixel Energy Map " + self.unit, y=0.96, size="x-large")
+        self.axim.set_title("Pixel Energy Map " + self.unit, y=0.975, size="x-large")
         self.axim.set_xlabel("# x        ", loc="right")
         self.axim.set_ylabel("# y             ", loc="top")
-        # no default frame around graph
+        # no default frame around graph, but show detector boundary
         self.axim.set_frame_on(False)
         _rect = mpl.patches.Rectangle((0, 0), self.npx, self.npx, linewidth=1, edgecolor='gray', facecolor='none')
         self.axim.add_patch(_rect)
-        self.vmin, vmax = 0.5, 500
+ 
         if badpixels is not None:
             _ = self.axim.imshow(badpixel_map, origin="lower", cmap='gray', vmax=10.0)
+        self.vmin, vmax = 0.5, 500
         self.img = self.axim.imshow(np.zeros((self.npx, self.npx)), origin="lower", cmap='hot', norm=LogNorm(vmin=self.vmin, vmax=vmax))
         cbar = self.fig.colorbar(self.img, shrink=0.6, aspect=40, pad=-0.04)
         self.img.set_clim(vmin=self.vmin, vmax=vmax)
         # cbar.set_label("Energy " + unit, loc="top", labelpad=-5 )
-        self.axim.arrow(146, 261.0, 110.0, 0, length_includes_head=True, width=1.5, color="b")
-        self.axim.arrow(110, 261.0, -110.0, 0, length_includes_head=True, width=1.5, color="b")
-        self.axim.text(115.0, 259, "14 mm")
         if self.acq_time is not None and self.acq_time > 0.0:
             txt_overlay = f"integration time {acq_time * nover:.1f} s"
         else:
             txt_overlay = f"sum of {int(self.n_overlay)} frames"
         self.axim.text(0.01, -0.06, txt_overlay, transform=self.axim.transAxes, color="royalblue")
         self.im_text = self.axim.text(0.02, -0.085, "#", transform=self.axim.transAxes, color="r", alpha=0.75)
+        # blue arrow showing detector dimension in mm
+        self.axim.arrow(146, 261.0, 110.0, 0, length_includes_head=True, width=1.5, color="b")
+        self.axim.arrow(110, 261.0, -110.0, 0, length_includes_head=True, width=1.5, color="b")
+        self.axim.text(115.0, 259, "14 mm")
+        # 2nd x-axis in mm
+        pitch = 0.055  # pixel size
+        px2x = lambda x: x * pitch
+        x2px = lambda x: x / pitch
+        axim_x2 = self.axim.secondary_xaxis(0.935, functions = (px2x, x2px))
+        axim_x2.set_frame_on(False)
+        axim_x2.set_xlabel('Position [mm]', loc='right', color='b')
+        axim_x2.set_xlim((0., 14.08))
+        axim_x2.tick_params(colors='b')
 
         # a (vertical) rate display
         self.axRate = self.fig.add_subplot(gs[2 : nrows - 1, col1 : col2 - 1])
         pos = self.axRate.get_position()
         self.axRate.set_position([0.985 * pos.x0, pos.y0, pos.width, pos.height])
         self.axRate.xaxis.set_label_position('top')
-        self.axRate.set_ylabel('History [frame #]', rotation=-90, labelpad=15.0)
+        # self.axRate.set_ylabel('History [frame #]', rotation=-90, labelpad=15.0)
         self.axRate.set_xlabel('objects/frame')
         self.axRate.grid(linestyle='dotted', which='both')
         self.num_history_points = 300
@@ -1044,7 +1055,7 @@ class scatterplot:
             _xidx, _yidx = np.nonzero(self.H2d[_ic])
             _x = self.bcntx[_xidx]
             _y = self.bcnty[_yidx]
-            (_gr,) = ax.plot(_x, _y, label=labels[_ic], color=colors[_ic], marker='.', markersize=1, ls='', alpha=0.75)
+            (_gr,) = ax.plot(_x, _y, label=labels[_ic], color=colors[_ic], marker='o', markersize=0.5, ls='', alpha=0.75)
             self.gr.append(_gr)
         self.ax.set_xlim(self.bex[0], self.bex[-1])
         self.ax.set_ylim(self.bey[0], self.bey[-1])
