@@ -27,6 +27,7 @@ import os
 import pathlib
 import gzip
 import time
+import yaml
 import numpy as np
 from queue import Queue
 from threading import Thread
@@ -154,10 +155,12 @@ class miniPIXdaq:
         # ring buffer for data collection
         self.Nbuf = 8
         self.fBuffer = np.zeros((self.Nbuf, self.npx * self.npx), dtype=np.float32)
-        self.widx = 0
+        self._w_idx = 0
 
         # Queues for communication and synchronization
-        self.dataQ = Queue(self.Nbuf)
+        #    1. a Queue with less slots than buffers to enforce blocking if no buffer space left
+        self.dataQ = Queue(self.Nbuf - 2)
+        #    2. a Queue to terminate the process
         self.cmdQ = Queue(1)
 
     def device_info(self):
@@ -211,13 +214,27 @@ class miniPIXdaq:
                 print("!!! miniPIX device readout error: ", self.dev.lastError())
                 self.dataQ.put(None)
             # get frame and store in ring buffer
-
-            self.fBuffer[self.widx, :] = np.asarray(self.dev.lastAcqFrameRefInc().data())
+            self.fBuffer[self._w_idx, :] = np.asarray(self.dev.lastAcqFrameRefInc().data())
             # remove noisy pixels from (linear) data frame based on bad-pixel list
             if self.bad_pixels is not None:
-                self.fBuffer[self.widx][self.bad_pixels] = -1
-            self.dataQ.put(self.widx)
-            self.widx = self.widx + 1 if self.widx < self.Nbuf - 1 else 0
+                self.fBuffer[self._w_idx][self.bad_pixels] = -1
+            self.dataQ.put(self._w_idx)
+            self._w_idx = self._w_idx + 1 if self._w_idx < self.Nbuf - 1 else 0
+
+    def get_linear_framedata(self, r_idx):
+        """return frame data in compact ascii format "[[i0, b[i0]], ..., [iN,b[iN]]"
+
+        Args:
+          - r_idx: buffer index with frame data of interest
+
+        Returns:
+          - stacked array with indices and non-zero values;
+            output as ascii via yaml.dump(np.column_stack(idx, b[idx]).tolist(), default_flow_style=True)
+        """
+
+        b = self.fBuffer(r_idx)
+        idx = np.argwhere(b > 0)
+        return np.column_stack(idx, b[idx])
 
     def __del__(self):
         pypixet.exit()
