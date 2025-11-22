@@ -15,6 +15,7 @@ authors = [
 ]
 dependencies = [
     "NumPy",
+    "pyyaml",
     "npy_append_array",
     "matplotlib",
     "Scipy",
