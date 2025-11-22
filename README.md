@@ -141,6 +141,14 @@ with the pixel indices to be ignored. The default file name is *badpixels.txt*
 in the working directory; alternatively a file name may be specified using
 the `-b` or `--badpixels` option. 
 
+Collected frame data may be directly witten to disk, if a filename is given
+using the `-f`or `--file` option. Two formats are foreseen at present, storage
+of the two-dimensional frames as numpy-arrays (file extension `.npy`) or as
+lists of pairs if pixel indices and energy values in *yaml*-format (file extension `.yml`). To save space, the resulting output files may be compressed
+with *zip' or *gzip*. The same formats are recognized when reading back files
+using the `-r` resp. `--readfile` options. If no suffix for the filename is
+given, the default behavior is writing a *.yml* file.  
+
 Data analysis consists of clustering of pixels in each overlay-frame and
 determination of cluster parameters, like the number of pixels, energy
 and circularity. The threshold on circularity is controlled by the
@@ -161,6 +169,8 @@ in the clusters. For α particles, this distribution peaks at the centre and
 steeply falls off towards the boundary, leading to a very small variance.
 A small ratio of the variances of the energy distribution and of the area
 covered by pixels is therefore a very prominent signature of α particles.
+The cut separating flat and peaking signature is controlled by the parameter
+`flatness` with values between 0 and 1. 
 
 Properties of clusters are optionally written to a file in *.csv* format
 for later off-line analysis. A *Jupyter* notebook, 

@@ -25,9 +25,10 @@ import argparse
 import sys
 import os
 import pathlib
-import gzip
 import time
 import yaml
+import zipfile
+import gzip
 import numpy as np
 from queue import Queue
 from threading import Thread
@@ -673,10 +674,9 @@ class miniPIXvis:
         cbar = self.fig.colorbar(self.img, shrink=0.6, aspect=40, pad=-0.0375)
         self.img.set_clim(vmin=self.vmin, vmax=vmax)
         # cbar.set_label("Energy " + unit, loc="top", labelpad=-5 )
+        txt_overlay = f"overlay of {int(self.n_overlay)} frames"
         if self.acq_time is not None and self.acq_time > 0.0:
-            txt_overlay = f"integration time {acq_time * nover:.1f} s"
-        else:
-            txt_overlay = f"overlay of {int(self.n_overlay)} frames"
+            txt_overlay = txt_overlay + f", acquisition time {self.acq_time} s per frame"
         self.axim.text(0.01, -0.06, txt_overlay, transform=self.axim.transAxes, color="royalblue")
         self.im_text = self.axim.text(0.02, -0.085, "#", transform=self.axim.transAxes, color="r", alpha=0.75)
         # detector geometry
@@ -1150,7 +1150,10 @@ class runDAQ:
 
         # set options
         self.verbosity = args.verbosity
-        self.out_filename = args.file + '_' + timestamp + '.npy' if args.file != '' else None
+        if args.file == '':
+            self.out_filename = None
+        else:
+            self.out_filename = pathlib.Path(args.file).stem + '_' + timestamp + pathlib.Path(args.file).suffix
         self.read_filename = args.readfile if args.readfile != '' else None
         self.csv_filename = args.writefile if args.writefile != '' else None
         self.fname_badpixels = args.badpixels
@@ -1160,6 +1163,7 @@ class runDAQ:
         self.circularity_cut = args.circularity_cut
         self.flatness_cut = args.flatness_cut
         self.run_time = args.time
+        self.write_mode = "list"  # write pixel list, alternadive "2d"
 
         if self.verbosity > 0:
             print(f"\n*==* script {sys.argv[0]} executing in working directory {self.wd_path}")
@@ -1211,42 +1215,101 @@ class runDAQ:
         # set path to working directory where all output goes
         os.chdir(self.wd_path)
 
+        # prepare reading from file
+        #     frame data from .npy, .npy.zip or .npy.gz
+        #     pixel values from .yml, .yml.zip or .yml.gz
+        self.read_mode = None
         if self.read_filename is not None:
             # read from file if requested
             if self.verbosity > 0:
                 print("*==* data from file " + self.read_filename)
             suffix = pathlib.Path(self.read_filename).suffix
-            if suffix == ".gz":
-                f = gzip.GzipFile(self.read_filename, mode='r')
-                self.fdata = np.load(f)
-            elif suffix == ".npy":
-                self.fdata = np.load(self.read_filename, mmap_mode="r")
+            name = pathlib.Path(self.read_filename).stem
+            suffix2 = pathlib.Path(name).suffix
+            if suffix == '.yml' or suffix2 == '.yml':
+                self.read_mode = 'list'
+            elif suffix == '.npy' or suffix2 == '.npy':
+                self.read_mode = '2d'
             else:
-                exit(" Exit - unknown file extension " + suffix)
-            # assume data is 256x256 pixels in keV per pixel
-            shape = self.fdata.shape
-            if len(shape) < 3 or shape[1] != 256:
-                exit(f"unexpected shape {shape} of array, expected 256x256")
-            elif shape[1] != 256:
-                exit(f"unexpected shape {shape} of array, expected 256x256")
-            self.n_frames_in_file = shape[0]
-            self.npx = shape[1]
-            self.unit = "(keV)"
-            self.acq_time = 0.0  # acquitition time unknown, as not stored in file
-            self.tot_acq_time = self.acq_count * self.acq_time
+                exit(" Exit - unknown file extension " + suffix2 + suffix)
+            if self.verbosity > 0:
+                print("    loading data ...")
+            if suffix == ".npy":
+                self.fdata = np.load(self.read_filename, mmap_mode="r")
+            elif suffix == ".yml":
+                d = yaml.load(open(self.read_filename, 'r'), Loader=yaml.CLoader)  # assume one .yml file in archive
+                self.mdata = d["meta_data"]
+                self.fdata = d["frame_data"]
+            elif suffix == ".gz":
+                if suffix2 == '.npy':
+                    self.fdata = np.load(gzip.GzipFile(self.read_filename, mode='r'))
+                elif suffix2 == '.yml':
+                    d = yaml.load(gzip.GzipFile(self.read_filename, mode='r'), Loader=yaml.CLoader)
+                    self.mdata = d["meta_data"]
+                    self.fdata = d["frame_data"]
+            elif suffix == ".zip":
+                zf = zipfile.ZipFile(self.read_filename, 'r')
+                fnam = zf.namelist()[0]
+                if suffix2 == '.yml':
+                    d = yaml.load(zf.read(fnam), Loader=yaml.CLoader)  # assume one .yml file in archive
+                    self.mdata = d["meta_data"]
+                    self.fdata = d["frame_data"]
+                else:
+                    self.fdata = np.load(zf.read(fnam))
+            #   extract data
+            if self.read_mode == '2d':  # assume data is 256x256 pixels in keV per pixel
+                shape = self.fdata.shape
+                if len(shape) < 3 or shape[1] != 256:
+                    exit(f"unexpected shape {shape} of array, expected 256x256")
+                elif shape[1] != 256:
+                    exit(f"unexpected shape {shape} of array, expected 256x256")
+                self.n_frames_in_file = shape[0]
+                self.npx = shape[1]
+                self.unit = "(keV)"
+                self.acq_time = 0.0  # acquitition time unknown, as not stored in npy file
+                self.tot_acq_time = self.acq_count * self.acq_time
+            else:  # assume list of pixel number and energy value pairs
+                self.n_frames_in_file = len(self.fdata)
+                self.acq_time = self.mdata['acq_time']
+                self.acq_count = self.mdata['acq_count']
+                self.npx = self.mdata['npixels_x']
+                self.unit = "(keV)"
+                self.tot_acq_time = self.acq_count * self.acq_time
 
             if self.verbosity > 0:
                 print(f" found {self.n_frames_in_file} pixel frames in file")
 
+        # cluster data from processed frames to disk
         self.csvfile = None
         if self.csv_filename is not None:
             fn = self.csv_filename + ".csv"
             self.csvfile = open(fn, "w", buffering=100)
             if self.verbosity > 0:
                 print("*==* writing clusters to file " + fn)
-
         # set-up frame analyzer
         self.frameAna = frameAnalyzer(csv=self.csvfile)
+
+        # output frame data to disk
+        self.out_file_yml = None
+        self.out_file_npy = None
+        if self.out_filename is not None:
+            write_suffix = pathlib.Path(self.out_filename).suffix
+            if write_suffix == '.npy':
+                self.write_mode = "2d"
+                self.out_file_npy = self.out_filename
+            else:
+                self.write_mode = "list"
+                if write_suffix == '':
+                    self.out_filename = self.out_filename + ".yml"
+                self.out_file_yml = open(self.out_filename, "w", buffering=10)
+                print("--- #frame data", file=self.out_file_yml)  # header line
+                meta_data = dict(
+                    meta_data=dict(acq_time=self.acq_time, acq_count=self.acq_count, npixels_x=self.npx, npixels_y=self.npx, time=time.asctime())
+                )
+                print(yaml.dump(meta_data), file=self.out_file_yml)
+                print("frame_data:", file=self.out_file_yml)
+            if self.verbosity > 0:
+                print("*==* writing raw frames to file " + self.out_filename)
 
         # finally, initialize visualizer
         self.mpixvis = miniPIXvis(
@@ -1274,7 +1337,8 @@ class runDAQ:
         # set up daq
         dt_alive = 0.0
         dt_active = 0.0
-        frame2d = np.zeros((self.npx, self.npx), dtype=np.float32)
+        frame = np.zeros((self.npx * self.npx), dtype=np.int32)
+        frame2d = np.zeros((self.npx, self.npx), dtype=np.int32)
         i_frame = 0
         # start daq as a Thread
         if self.read_filename is None:
@@ -1288,7 +1352,8 @@ class runDAQ:
                 if self.read_filename is None:
                     _idx = self.daq.dataQ.get()
                     # data as 2d pixel array
-                    frame2d[:, :] = self.daq.fBuffer[_idx].reshape(self.npx, self.npx)
+                    frame[:] = self.daq.fBuffer[_idx]
+                    frame2d = frame.reshape(self.npx, self.npx)
                     dt_alive += self.acq_count * self.acq_time
                     i_frame += 1
                 else:  # from file
@@ -1296,13 +1361,31 @@ class runDAQ:
                     if i_frame > self.n_frames_in_file:
                         print("\033[36m\n" + 20 * ' ' + "'end-of-file - type <ret> to terminate")
                         break
-                    frame2d = self.fdata[i_frame - 1]
-                    ##!time.sleep(1.0)
+                    if self.read_mode == 'list':
+                        # read_mode "list"
+                        frame[:] = 0
+                        pixel_list = np.asarray(self.fdata[i_frame - 1])
+                        if len(pixel_list) > 0:
+                            frame[pixel_list[:, 0]] = pixel_list[:, 1]
+                        frame2d = frame.reshape(self.npx, self.npx)
+                    else:
+                        # frame mode
+                        frame2d = self.fdata[i_frame - 1]
+                        # !!! for test of file-I/O from old data format
+                        frame = np.int32(frame2d.reshape(self.npx * self.npx))
+                        # !!!
+                        ##!time.sleep(1.0)
                     time.sleep(0.2)
 
-                # write frame to file ?
-                if self.out_filename is not None:
-                    with NpyAppendArray(self.out_filename) as npa:
+                if self.out_file_yml is not None:
+                    pixel_idxs = np.argwhere(frame > 0)
+                    print(
+                        '  - ' + yaml.dump(np.column_stack((pixel_idxs, frame[pixel_idxs])).tolist(), default_flow_style=True),
+                        file=self.out_file_yml,
+                    )
+                elif self.out_file_npy is not None:
+                    # write 2d frame to file in .npy format
+                    with NpyAppendArray(self.out_file_npy) as npa:
                         npa.append(np.array([frame2d]))
 
                 # analyze frame and retrieve result
@@ -1338,6 +1421,10 @@ class runDAQ:
             self.ACTIVE = False
             if self.read_filename is None:
                 self.daq.cmdQ.put("e")
+            if self.out_file_yml is not None:
+                print("... #end", file=self.out_file_yml)  # footer line
+                self.out_file_yml.flush()
+                self.out_file_yml.close()
             if self.csvfile is not None:
                 self.csvfile.flush()
                 self.csvfile.close()
