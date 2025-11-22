@@ -10,6 +10,7 @@
 # special requirements
 argparse
 pathlib
+pyyaml
 npy_append_array
 numpy
 matplotlib
