@@ -1,7 +1,7 @@
 ## mPIXdaq: Data acquisition for *miniPIX (EDU)* pixel detector 
 ----------------------------------------------------------------  
 
-                                            Vers. 0.9.4, November 2025
+                                            Vers. 1.0.0b, November 2025
 
 The [miniPIX EDU](https://advacam.com/camera/minipix-edu) is a camera
 for radiation based on the [Timepix](https://home.cern/tags/timepix) 

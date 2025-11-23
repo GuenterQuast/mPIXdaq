@@ -6,10 +6,10 @@
 .. moduleauthor:: Guenter Quast <guenter.quast@online.de>
 """
 
-major = 0
-minor = 9
-revision = 4
-suffix = "rc0"  # for suffixes such as 'rc' or 'beta' or 'alpha'
+major = 1
+minor = 0
+revision = 0
+suffix = "beta"  # for suffixes such as 'rc' or 'beta' or 'alpha'
 
 
 def _get_version_tuple():
