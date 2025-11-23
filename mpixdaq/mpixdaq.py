@@ -1196,7 +1196,7 @@ class runDAQ:
                 _a = input("  Problem with miniPIX device - read data from file ? (y/n) > ")
                 if _a in {'y', 'Y', 'j', 'J'}:
                     path = os.path.dirname(os.path.realpath(__file__)) + '/'
-                    self.read_filename = path + "data/BlackForestStone.npy.gz"
+                    self.read_filename = path + "data/BlackForestStone.yml.gz"
                     badpixel_list = None
                 else:
                     exit("Exiting")
@@ -1216,7 +1216,7 @@ class runDAQ:
         os.chdir(self.wd_path)
 
         # prepare reading from file
-        #     frame data from .npy, .npy.zip or .npy.gz
+        #     full frame data from .npy, .npy.zip or .npy.gz or
         #     pixel values from .yml, .yml.zip or .yml.gz
         self.read_mode = None
         if self.read_filename is not None:
