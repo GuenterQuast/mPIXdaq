@@ -884,9 +884,10 @@ class miniPIXvis:
             )
             self.img.set(data=self.cimage)
             self.im_text.set_text(status)
-            # self.fig.canvas.start_event_loop(0.001)  # better than plt.pause(), which would steal the focus
-            self.fig.canvas.update()
-            self.fig.canvas.flush_events()
+            self.fig.canvas.start_event_loop(0.001)  # better than plt.pause(), which would steal the focus
+            # the following code for re-drawing does not work with TkAgg
+            # self.fig.canvas.update()
+            # self.fig.canvas.flush_events()
             self.dt_last_plot = dt_active
 
 
