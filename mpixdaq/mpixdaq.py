@@ -23,7 +23,7 @@ key learning objectives.
 LICENSE
 
     Data acquisition, visualisation and analysis for the miniPIX (EDU) device by ADVACAM
-    Copyright (C) 2026, Günter Quast 
+    Copyright (C) 2026, Günter Quast
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -308,39 +308,6 @@ class frameAnalyzer:
         self.cluster_pxl_lst = []  # result of find_connected()
         self.cluster_summary = None  # result of static method get_cluster_summary(pixel_clusters)
 
-    def covmat_2d(self, x, y, vals):
-        """Covariance matrix of a sampled 2d distribution
-
-        Args:
-          - x:  x-index _ix of array vals
-          - y:  y-index _iy of array vals
-          - vals: 2d array vals[_ix, _iy]
-
-        Returns:
-          mean: mean_x and mean_y of distribution
-          covmat: covariance matrix of distribution
-
-        (this is probably not the most efficient implementation ...)
-        """
-
-        xy_x, xy_y = np.meshgrid(x, y)
-        _sum = vals[xy_x, xy_y].sum()
-        _sumx = np.matmul(vals[xy_x, xy_y], x).sum()
-        _sumx2 = np.matmul(vals[xy_x, xy_y], x * x).sum()
-        _sumy = np.matmul(y, vals[xy_x, xy_y]).sum()
-        _sumy2 = np.matmul(y * y, vals[xy_x, xy_y]).sum()
-        _sumxy = np.matmul(y, np.matmul(vals[xy_x, xy_y], x))
-
-        meanx = _sumx / _sum
-        varx = _sumx2 / _sum - meanx * meanx
-        meany = _sumy / _sum
-        vary = _sumy2 / _sum - meany * meany
-        cov = _sumxy / _sum - meanx * meany
-        #
-        mean = np.array([meanx, meany])
-        covmat = np.array([[varx, cov], [cov, vary]])
-        return (mean, covmat)
-
     def find_connected(self, f):
         """find connected areas in pixel image using label() from scipy.ndimage
 
@@ -420,15 +387,18 @@ class frameAnalyzer:
 
         npix = len(pl)
         if npix > 1:
+            _x = pl[:, 0]
+            _y = pl[:, 1]
+            _v = f[_x, _y]
             # energy in cluster
-            energy = f[pl[:, 0], pl[:, 1]].sum()
+            energy = _v.sum()
             #  - mean values of x and y and covariance matrix of pixel area
-            x_mean = pl[:, 0].mean(dtype=np.float32)
-            y_mean = pl[:, 1].mean(dtype=np.float32)
+            x_mean = _x.mean(dtype=np.float32)
+            y_mean = _y.mean(dtype=np.float32)
 
             # analyze cluster shape
             # - covariance matrix of cluster area
-            _evals, _evecs = np.linalg.eigh(np.cov(pl[:, 0], pl[:, 1], dtype=np.float32))
+            _evals, _evecs = np.linalg.eigh(np.cov(_x, _y, ddof=0, dtype=np.float32))
             _idmx = 0 if _evals[0] > _evals[1] else 1
             var_mx, var_mn = _evals[_idmx], _evals[1 - _idmx]
             # orientation of cluster
@@ -437,9 +407,10 @@ class frameAnalyzer:
                 angle -= np.pi
             elif angle < -np.pi / 2.0:
                 angle += np.pi
-
             # - covariance matrix of energy distribution
-            (xEm, yEm), covmat = self.covmat_2d(pl[:, 0], pl[:, 1], f)
+            xEm = np.average(_x, weights=_v)
+            yEm = np.average(_y, weights=_v)
+            covmat = np.cov(_x, _y, aweights=_v, ddof=0, dtype=np.float32)
             # calculate eigenvalues and orientation
             _evals, _evecs = np.linalg.eigh(covmat)
             _idmx = 0 if _evals[0] > _evals[1] else 1
