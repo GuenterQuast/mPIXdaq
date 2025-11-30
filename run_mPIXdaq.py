@@ -1,4 +1,8 @@
 #!/usr/bin/env python
+#
+# script run_mPIXdaq.py
+#  run mpixdaq example with data acquisition, on-line analysis and visualization
+#  of pixel frames and histogramming
 
 import os, platform, sys
 

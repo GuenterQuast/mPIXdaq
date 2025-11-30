@@ -22,7 +22,7 @@ key learning objectives.
 
 LICENSE
 
-    Data acquisition, visualisation and analysis for the miniPIX (EDU) device by ADVACAM
+    Data acquisition, visualization and analysis for the miniPIX (EDU) device by ADVACAM
     Copyright (C) 2026, Günter Quast
 
     This program is free software: you can redistribute it and/or modify
@@ -372,7 +372,7 @@ class frameAnalyzer:
             - total energy of cluster,
             - eigenvalues of covariance matrix and orientation (angle in range [-pi/2, pi/2])
             - mean x and y of energy distribution
-            - minimal and maximal eigenvalues of the covariance matrix of the energy distribution:
+            - minimal and maximal eigenvalues of the covariance matrix of the energy distribution
 
         Args:
 
@@ -523,10 +523,11 @@ class frameAnalyzer:
             eigenvalues of the covariance matrix of the energy distribution. The format is:
             ( (x, y), n_pix, energy, (var_mx, var_mn), angle, (xEm, yEm), (varE_mx, varE_mn) )
 
-          - self.cluster_pxl_lst is a list of dimension n_clusters + 1 and contains the pixel indices
-            contributing to each of the clusters. self.cluster_pxl_lst[-1] contains the list of single pixels
+          - self.cluster_pxl_lst is a list of dimension n_clusters + 1 and contains the pixel
+            indices contributing to each of the clusters. self.cluster_pxl_lst[-1] contains
+            the list of single pixels
 
-        A static method, get_cluster_summary(pixel_clusters), provides summary infomation
+        A static method, get_cluster_summary(pixel_clusters), provides summary information
 
           - n_pixels: number of pixels with energy > 0
           - n_clusters: number of clusters  with >= 2 pixels
@@ -578,7 +579,8 @@ class miniPIXvis:
     """display of miniPIX frames and histograms for low-rate scenarios
     where on-line analysis is possible and animated graphs are meaningful
 
-    Animated graph of (overlayed) pixel images, number of clusters per frame and histograms of cluster properties
+    Animated graph of (overlayed) pixel images, number of clusters per frame
+    and histograms of cluster properties
     """
 
     def on_mpl_close(self, event):
@@ -593,7 +595,7 @@ class miniPIXvis:
            - nover: number of frames to overlay
            - unit: unit of energy measurement ("keV" or "µs ToT")
            - circ: circularity of "round" clusters (0. - 1.)
-           - flat: flatness of enery distrbituion of pixels in clusters (0. - 1.)
+           - flat: flatness of energy distribution of pixels in clusters (0. - 1.)
            - acq_time: accumulation time per read-out frame
         """
 
@@ -1359,10 +1361,7 @@ class runDAQ:
                     else:
                         # frame mode
                         frame2d = self.fdata[i_frame - 1]
-                        # !!! for test of file-I/O from old data format
                         frame = np.int32(frame2d.reshape(self.npx * self.npx))
-                        # !!!
-                        ##!time.sleep(1.0)
                     time.sleep(0.2)
 
                 if self.out_file_yml is not None:

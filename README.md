@@ -50,7 +50,7 @@ directory in the *pypixet* *Python* interface.
 
 To get started, follow the steps below: 
 
- - Get the code from gitlab @ KIT or from github  
+ - Get the code from gitlab@KIT or from github  
    ``git clone https://gitlab.kit.edu/Guenter.Quast/mPIXdaq`` or    
    ``git clone https://github.com/GuenterQuast/mPIXdaq``.
 
@@ -141,20 +141,26 @@ with the pixel indices to be ignored. The default file name is *badpixels.txt*
 in the working directory; alternatively a file name may be specified using
 the `-b` or `--badpixels` option. 
 
-Collected frame data may be directly witten to disk, if a filename is given
-using the `-f`or `--file` option. Two formats are foreseen at present, storage
-of the two-dimensional frames as numpy-arrays (file extension `.npy`) or as
-lists of pairs if pixel indices and energy values in *yaml*-format (file extension `.yml`). To save space, the resulting output files may be compressed
-with *zip' or *gzip*. The same formats are recognized when reading back files
-using the `-r` resp. `--readfile` options. If no suffix for the filename is
-given, the default behavior is writing a *.yml* file.  
+Collected frame data may be directly written to disk, if a filename is
+given using the `-f`or `--file` option. Two formats are foreseen at present,
+storage of the two-dimensional frames as numpy-arrays (file extension `.npy`) 
+or as lists pixel indices and energy values in *yaml*-format (file extension
+`.yml`). To save space, the resulting output files may be compressed with
+*zip' or *gzip*. If no suffix for the filename is given, the default behavior 
+is writing a *.yml* file.  
+The same formats are recognized when reading back files
+using the `-r` resp. `--readfile` options. 
 
 Data analysis consists of clustering of pixels in each overlay-frame and
 determination of cluster parameters, like the number of pixels, energy
-and circularity. The threshold on circularity is controlled by the
-parameter `circularity_cut` ranging from 0. for perfectly linear 
+of clusters, and the shapes of the cluster areas and of the energy 
+distribution over the pixels in the clusters.
+
+The shape of the cluster area is encoded in a quantity called circularity. 
+For discrimination between linear and round clusters, a cut is controlled 
+by the parameter `circularity_cut` ranging from 0. for perfectly linear 
 to 1. for perfectly circular clusters. Technically, the covariance
-matrix of the clusters is calculated, and the circularity is defined 
+matrix of the cluster area is calculated, and the circularity is defined 
 as the ratio of the smaller and the larger of the two eigenvalues of the
 covariance matrix. This simple procedure already provides a good
 separation of α and β particles and of isolated pixels not assigned
@@ -169,7 +175,7 @@ in the clusters. For α particles, this distribution peaks at the centre and
 steeply falls off towards the boundary, leading to a very small variance.
 A small ratio of the variances of the energy distribution and of the area
 covered by pixels is therefore a very prominent signature of α particles.
-The cut separating flat and peaking signature is controlled by the parameter
+The cut separating flat and peaking signatures is controlled by the parameter
 `flatness` with values between 0 and 1. 
 
 Properties of clusters are optionally written to a file in *.csv* format
@@ -179,7 +185,7 @@ analysis.
 
 To test the software without access to a miniPIX device or without
 a radioactive source, a file with recorded data is provided. Use the
-option `--readfile data/BlackForestStone.npy.gz` to start a demonstration.
+option `--readfile data/BlackForestStone.yml.gz` to start a demonstration.
 Note that the analysis of the recorded pixel frames is done in real
 time and may take some time on slow computers. 
 
@@ -223,16 +229,15 @@ for convenience.
 ## Data Analysis
 
 The analysis shown in this example is intentionally very simple and based 
-on standard libraries and functions. clustering of pixels is performed by
+on standard libraries and functions. Clustering of pixels is performed by
 finding connected regions in the pixel image with *scipy.ndimage.label()*.
 The shape of the clusters is determined from the ratio of the smaller 
 and the larger one of the two eigenvalues of the covariance matrix 
-calculated from the *x* and *y* coordinates of the pixels in a cluster. 
-For circular clusters, as typically produced by α radiation, this ratio 
-is close to one, while it is almost zero for the longer traces from
-β radiation. In addition, she shape of the energy distribution is 
-considered, which shows a sharp maximum at the center for α particles
-but is flat otherwise.
+calculated from the *x* and *y* coordinates of the pixels in a cluster 
+using *numpy.cov()*. For circular clusters, as typically produced by 
+α radiation, this ratio  is close to one, while it is almost zero for 
+the longer traces from β radiation. In addition, she shape of the energy distribution is considered, which shows a sharp maximum at the center for
+α particles but is rather flat otherwise.
 
 The figure below shows the graphical display with a pixel image and 
 the typical distributions of the pixel and cluster energies and the 
@@ -244,7 +249,7 @@ corner shows how well the cluster types discriminate different types
 of radiation: α rays in the green band with relatively low numbers 
 of pixels per cluster, electrons (β) as long tracks with large numbers
 of pixels per cluster and rather low energies. Single pixels not 
-associated to clusters originate from 𝛾 rays. Some of the electron 
+associated to clusters mostly originate from 𝛾 rays. Some of the electron 
 tracks  with typically low energies also stem from photon interactions 
 in the detector material (via the Compton process).
 
@@ -292,14 +297,14 @@ which is optionally applied to obtain pixel readings in units of keV.
 The calibration is reliable up to pixel energies of one MeV. 
 Higher pixel  energies may result when frames with short acquisition 
 time are summed up. For details, see the article by J. Jakubek, 
-*Precise energy calibration of pixel detector working in time-over-threshold mode*, 
-NIM A 633 (2011), 5262-5265*.
+*Precise energy calibration of pixel detector working in time-over-threshold
+mode*, NIM A 633 (2011), 5262-5265*.
 
 
 ## Package Structure
 
 This package consists of one *Python* file with several classes providing 
-the base functionality. As mentioned above, it relies on 
+the base functionality. As mentioned above, it relies on
 [ADVACAM libraries](https://wiki.advacam.cz/wiki/Python_API)
 for setting-up and reading the sensor. 
 Other dependencies are well-known libraries from the "Python" eco-system 
@@ -364,21 +369,25 @@ class frameAnalyzer:
     Args of __call__() method:  a 2d-frame from the miniPIX
 
     Returns:
+     
+    - self.pixel_clusters: list of tuples with properties per cluster: mean of x and y
+      coordinates, the number of pixels, energy, eigenvalues of covariance matrix and
+      their orientation as an angle in range [-pi/2, pi/2] and the minimal and maximal
+      eigenvalues of the covariance matrix of the energy distribution. The format is:
+      ( (x, y), n_pix, energy, (var_mx, var_mn), angle, (xEm, yEm), (varE_mx, varE_mn) )
+
+    - self.cluster_pxl_lst is a list of dimension n_clusters + 1 and contains the pixel
+      indices contributing to each of the clusters. self.cluster_pxl_lst[-1] contains 
+      the list of single pixels
+
+    A static method, get_cluster_summary(pixel_clusters), provides summary information
 
     - n_pixels: number of pixels with energy > 0
-    - n_clusters: number of clusters
+    - n_clusters: number of clusters  with >= 2 pixels
     - n_cpixels: number of pixels per cluster
     - circularity: circularity per cluster (0. for linear, 1. for circular)
     - cluster_energies: energy per cluster
-    - single_energies: energies in single pixels
-
-    - self.clusters is a tuple with properties per cluster with mean of x and y coordinates,
-      number of pixels, energy, eigenvalues of covariance matrix and orientation ([-pi/2, pi/2])
-      and the minimal and maximal eigenvalues of the covariance matrix of the energy distribution:
-        
-        format of the tuple:  
-            
-            ( (x, y), n_pix, energy, (var_mx, var_mn), angle, (xEm, yEm), (varE_mx, varE_mn) )
+    - single_energies: energies in single pixels  
   """
 ```
 
@@ -394,7 +403,7 @@ class frameAnalyzer:
     - nover: number of frames to overlay
     - unit: unit of energy measurement ("keV" or "µs ToT")
     - circ: circularity of "round" clusters (0. - 1.)
-    - flat: flatness of enery distrbituion of pixels in clusters (0. - 1.)
+    - flat: flatness of energy distribution of pixels in clusters (0. - 1.)
     - acq_time: accumulation time per read-out frame
   """
 
@@ -465,45 +474,42 @@ variable `LD_LIBRAREY_PATH` is needed to ensure that all libraries
 are loaded and the *miniPIX* is correctly initialized. 
 
 ```
-#!/usr/bin/env python3
-import os, sys
+#!/usr/bin/env python
+#
+# script run_mPIXdaq.py
+#  run mpixdaq example with data acquisition, on-line analysis and visualization
+#  of pixel frames and histogramming
 
-# pypixet requires '.' in LD_LIBRARY_PATH so that al neccessary C-libratreis are found
+import os, platform, sys
+
+# on some Linux systems, pypixet requires '.' in LD_LIBRARY_PATH to find C-libraries
 #  - add current directory to LD-LIBRARY_PATH
 #  - and restart python script for changes to take effect
 
 path_modified = False
-
-if 'LD_LIBRARY_PATH' not in os.environ:
+if 'LD_LIBRARY_PATH' not in os.environ and platform.system() != 'Windows':
     os.environ['LD_LIBRARY_PATH'] = '.'
     path_modified = True
-elif not '.' in os.environ['LD_LIBRARY_PATH']:
-    os.environ['LD_LIBRARY_PATH'] += ':.'
-    path_modified = True
-
-if path_modified:
-    print(" ! added '.' to LD_LIBRARY_PATH")
+    print(" ! temporarily added '.' to LD_LIBRARY_PATH !")
+    # restart script in modified environment
     try:
         os.execv(sys.argv[0], sys.argv)
     except Exception as e:
-        sys.exit('EXCEPTION: Failed to Execute under modified environment, ' + e)
-else:  # restart python script for setting to take effect
-    # get current working directory before importing minipix libraries
-    wd = os.getcwd()
-    from mpixdaq import mpixdaq  # this changes the working directory!
+        sys.exit('!!! run_mPIXdaq: Failed to Execute under modified environment: ' + str(e))
 
-    rD = mpixdaq.runDAQ(wd)  # start daq in working directory
-    rD()
-```
+# get current working directory (before importing minipix libraries)
+wd = os.getcwd()
 
-Note that *Python* 3.7.9 is required to run under Microsoft Windows.
-Changing the environment does not work either under Windows, and therefore
-a simplified version of the run-script must be used:
+if os.name == 'nt':
+    # special hack for windows python 3.7: load pypixet and DLLs
+    import mpixdaq.advacam_win64.pypixet as pypixet
 
-```
-from mpixdaq import mpixdaq 
-rD = mpixdaq.runDAQ() 
+from mpixdaq import mpixdaq  # this may change the working directory, depending on system
+
+# start daq in working directory
+rD = mpixdaq.runDAQ(wd)
 rD()
+
 ```
 It is also possible to start the script as a *Python* module:
 
