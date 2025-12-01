@@ -1171,7 +1171,7 @@ class runDAQ:
             fname = "badpixels.txt"  # check default bad-pixel file
             if self.read_filename is None and os.path.exists(fname):
                 badpixel_list = np.loadtxt(fname, dtype=np.int32).tolist()
-                print("*==* list of bad pixels from file ", fname)
+                print(f"*==* list of {len(badpixel_list)} bad pixels from file {fname}")
         else:
             badpixel_list = np.loadtxt(self.fname_badpixels, dtype=np.int32).tolist()
             print("*==* list of bad pixels from file ", self.fname_badpixels)

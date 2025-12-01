@@ -10,15 +10,20 @@ import os, platform, sys
 #  - add current directory to LD-LIBRARY_PATH
 #  - and restart python script for changes to take effect
 
+modified_path = False
 if platform.system != 'Windows':
     _ldp = os.environ.get("LD_LIBRARY_PATH")
     if _ldp:
-        if ':.' not in _ldp or _ldp != '.':
+        if ':.' not in _ldp and _ldp != '.':
             os.environ["LD_LIBRARY_PATH"] = _ldp + ':.'
+            modified_path = True
     else:
         os.environ['LD_LIBRARY_PATH'] = '.'
-        print(" ! temporarily added '.' to LD_LIBRARY_PATH !")
+        modified_path = True
+
     # restart script in modified environment
+    if modified_path:     
+        print(" ! temporarily added '.' to LD_LIBRARY_PATH !")
         try:
             os.execv(sys.argv[0], sys.argv)
         except Exception as e:
