@@ -41,8 +41,8 @@ LICENSE
 """
 
 import argparse
-import sys
 import os
+import sys
 import pathlib
 import time
 import yaml
@@ -231,7 +231,7 @@ class miniPIXdaq:
         while self.cmdQ.empty():
             rc = self.dev.doSimpleIntegralAcquisition(self.ac_count, self.ac_time, self.pixet.PX_FTYPE_AUTODETECT, "")
             if rc != 0:
-                print("!!! miniPIX device readout error: ", self.dev.lastError())
+                print("!!! miniPIX Acquisition error, return code ", rc)
                 self.dataQ.put(None)
             # get frame and store in ring buffer
             self.fBuffer[self._w_idx, :] = np.asarray(self.dev.lastAcqFrameRefInc().data())
@@ -803,7 +803,7 @@ class miniPIXvis:
         #    protect because of large memory need of scatter plot
         if self.i_frame > self.max_n_frames_for_scatter_plot:
             if not self.warning_issued:
-                print(f"!!! anaviz: stop updating scatter plot due to large number of frames")
+                print("!!! anaviz: stop updating scatter plot due to large number of frames")
                 self.warning_issued = True
             return
         xlin = cluster_energies[:n_clusters][~is_alpha]
@@ -902,7 +902,7 @@ class bhist:
     def __init__(self, ax=None, data=None, binedges=None, xlabel="x", ylabel="freqeuency", yscale="log", xscale="linear", labels=None, colors=None):
         # ### own implementation of one-dimensional histogram (numpy + pyplot bar) ###
 
-        if type(data) != type((1,)):
+        if type(data) is not type((1,)):
             print("! bhist requires a tuple as input, not ", type(data))
 
         self.n_classes = len(data)
@@ -1018,7 +1018,7 @@ class scatterplot:
     def __init__(self, ax=None, data=None, binedges=None, xlabel="x", ylabel="y", labels=None, colors=None):
         #  own implementation of 2d scatter plot (numpy + pyplot.plot() ###
 
-        if type(data) != type((1,)):
+        if type(data) is not type((1,)):
             print("! scatterplot requires a tuple as input, not", type(data))
 
         self.n_classes = len(data)
