@@ -79,5 +79,5 @@ line-ending = "lf"
 [tool.ruff.lint.per-file-ignores]
 # allow imports not at top - needed for conditinal imports
 "__init__.py" = ["E402"]
-"mpixdaq.py" = ["E402"]
+"mpixdaq.py" = ["E402", "E731"]
 "nun_mPIXdaq.py" = ["E402"]

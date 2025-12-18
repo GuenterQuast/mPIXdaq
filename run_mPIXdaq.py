@@ -4,7 +4,9 @@
 #  run mpixdaq example with data acquisition, on-line analysis and visualization
 #  of pixel frames and histogramming
 
-import os, platform, sys
+import os
+import platform
+import sys
 
 # on some Linux systems, pypixet requires '.' in LD_LIBRARY_PATH to find C-libraries
 #  - add current directory to LD-LIBRARY_PATH
