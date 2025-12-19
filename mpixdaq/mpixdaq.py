@@ -96,8 +96,8 @@ def import_npy_append_array():
 #
 
 
-class taskControl:
-    "queues and events to control threads"
+class mpixControl:
+    "Provides Queues and Events to control threads"
 
     mpixActive = Event()  # mPIX daq active
     endEvent = Event()  # end signal for all processes
@@ -106,13 +106,13 @@ class taskControl:
 
     @staticmethod
     def keyboard_input():
-        """Read keyboard input and send to Queue, running as background-thread to avoid blocking"""
-        while taskControl.mpixActive.is_set():
-            taskControl.kbdQ.put(input())
+        """Read keyboard input and send to Queue, running as background thread to avoid blocking"""
+        while mpixControl.mpixActive.is_set():
+            mpixControl.kbdQ.put(input())
 
     def __init__(self):
         # background task to check for keyboard input
-        self.kbdthread = Thread(name="kbdInput", target=taskControl.keyboard_input).start()
+        self.kbdthread = Thread(name="kbdInput", target=mpixControl.keyboard_input).start()
 
 
 # - handling the miniPIX device
@@ -245,7 +245,7 @@ class miniPIXdaq:
         """Read *ac_count* frames with *ac_time* accumulation time each and add all up;
         return pointer to buffer data via Queue
         """
-        while not taskControl.endEvent.is_set():
+        while not mpixControl.endEvent.is_set():
             rc = self.dev.doSimpleIntegralAcquisition(self.ac_count, self.ac_time, self.pixet.PX_FTYPE_AUTODETECT, "")
             if rc != 0:
                 print("!!! miniPIX Acquisition error, return code ", rc)
@@ -602,7 +602,7 @@ class miniPIXvis:
 
     def on_mpl_close(self, event):
         """call-back for matplotlib 'close_event'"""
-        taskControl.mplActive.clear()
+        mpixControl.mplActive.clear()
 
     def __init__(self, npix=256, nover=10, unit='keV', circ=0.5, flat=0.5, acq_time=1.0, badpixels=None):
         """initialize figure with pixel image, rate history and two histograms and a scatter plot
@@ -657,7 +657,7 @@ class miniPIXvis:
         gs = self.fig.add_gridspec(nrows=nrows, ncols=ncols)
         plt.tight_layout()
         self.fig.canvas.mpl_connect('close_event', self.on_mpl_close)
-        taskControl.mplActive.set()
+        mpixControl.mplActive.set()
 
         # - - 2D display for pixel map
         #  bad-pixel map for hanling of bad pixels
@@ -688,15 +688,15 @@ class miniPIXvis:
             txt_overlay = txt_overlay + f", acquisition time {self.acq_time} s per frame"
         self.axim.text(0.01, -0.06, txt_overlay, transform=self.axim.transAxes, color="royalblue")
         self.im_text = self.axim.text(0.02, -0.085, "#", transform=self.axim.transAxes, color="r", alpha=0.75)
-        # detector geometry
+        # show detector geometry
         col_geom = "gray"
         _rect = mpl.patches.Rectangle((0, 0), self.npx, self.npx, linewidth=1, edgecolor=col_geom, facecolor='none')
         self.axim.add_patch(_rect)
-        # blue arrow showing detector dimension in mm
+        #   show detector dimension in mm
         self.axim.arrow(146, 261.0, 110.0, 0, length_includes_head=True, width=1.5, color=col_geom)
         self.axim.arrow(110, 261.0, -110.0, 0, length_includes_head=True, width=1.5, color=col_geom)
         self.axim.text(115.0, 259, "14 mm")
-        # 2nd x-axis in mm
+        #    2nd x-axis in mm
         pitch = 0.055  # pixel size
         px2x = lambda x: x * pitch
         x2px = lambda x: x / pitch
@@ -1286,7 +1286,7 @@ class runDAQ:
             if self.verbosity > 0:
                 print(f" found {self.n_frames_in_file} pixel frames in file")
 
-        # cluster data from processed frames to disk
+        # fitl to save cluster data from processed frames
         self.csvfile = None
         if self.csv_filename is not None:
             fn = self.csv_filename + ".csv"
@@ -1296,7 +1296,7 @@ class runDAQ:
         # set-up frame analyzer
         self.frameAna = frameAnalyzer(csv=self.csvfile)
 
-        # output frame data to disk
+        # file for raw frame data
         self.out_file_yml = None
         self.out_file_npy = None
         if self.out_filename is not None:
@@ -1318,7 +1318,7 @@ class runDAQ:
             if self.verbosity > 0:
                 print("*==* writing raw frames to file " + self.out_filename)
 
-        # finally, initialize visualizer
+        # initialize visualizer
         self.mpixvis = miniPIXvis(
             npix=self.npx,
             nover=self.n_overlay,
@@ -1332,9 +1332,9 @@ class runDAQ:
         """run daq loop"""
 
         # set flag indicating that runDAQ is in active state
-        taskControl.mpixActive.set()
+        mpixControl.mpixActive.set()
 
-        _ = taskControl()
+        _ = mpixControl()
 
         # set up daq
         dt_alive = 0.0
@@ -1350,7 +1350,7 @@ class runDAQ:
         t_start = time.time()
         print("\n" + 15 * ' ' + "\033[36m type 'E<ret>' or close graphics window to end" + "\033[31m", end='\r')
         try:
-            while (dt_active < self.run_time) and taskControl.mplActive.is_set() and taskControl.mpixActive.is_set():
+            while (dt_active < self.run_time) and mpixControl.mplActive.is_set() and mpixControl.mpixActive.is_set():
                 if self.read_filename is None:
                     _idx = self.daq.dataQ.get()
                     # data as 2d pixel array
@@ -1396,9 +1396,9 @@ class runDAQ:
                 cluster_summary = frameAnalyzer.get_cluster_summary(pixel_clusters)
                 self.mpixvis(frame2d, cluster_summary, dt_alive)
 
-                if not taskControl.kbdQ.empty():
-                    if taskControl.kbdQ.get() == 'E':
-                        taskControl.mpixActive.clear()
+                if not mpixControl.kbdQ.empty():
+                    if mpixControl.kbdQ.get() == 'E':
+                        mpixControl.mpixActive.clear()
                 #    # heart-beat for console
                 dt_active = time.time() - t_start
                 print(f"  #{i_frame}  {dt_active:.0f}s", end="\r")
@@ -1410,16 +1410,16 @@ class runDAQ:
 
         finally:
             # end daq loop, print reason for end and clean up
-            if not taskControl.mpixActive.is_set():
+            if not mpixControl.mpixActive.is_set():
                 print("\033[36m\n" + 20 * ' ' + "'E'nd command received", end='')
-            elif not taskControl.mplActive.is_set():
+            elif not mpixControl.mplActive.is_set():
                 print("\033[36m\n" + 20 * ' ' + " Graphics window closed", end='')
             elif dt_active > self.run_time:
                 print("\033[36m\n" + 20 * ' ' + f"end after {dt_active:.1f} s", end='')
 
-            taskControl.mpixActive.clear()
+            mpixControl.mpixActive.clear()
             if self.read_filename is None:
-                taskControl.endEvent.set()
+                mpixControl.endEvent.set()
             if self.out_file_yml is not None:
                 print("... #end", file=self.out_file_yml)  # footer line
                 self.out_file_yml.flush()
