@@ -616,7 +616,14 @@ class miniPIXvis:
            - acq_time: accumulation time per read-out frame
         """
 
+        # sensor properties
         self.npx = npix
+        pitch = 0.055  # pixel size in mm
+        size = pitch * self.npx
+        # functions for transformations pixel number n <-> position x
+        px2x = lambda n: n * pitch
+        x2px = lambda x: x / pitch
+
         self.n_overlay = nover
         self.circularity_cut = circ
         self.flatness_cut = flat
@@ -659,8 +666,8 @@ class miniPIXvis:
         self.fig.canvas.mpl_connect('close_event', self.on_mpl_close)
         mpixControl.mplActive.set()
 
-        # - - 2D display for pixel map
-        #  bad-pixel map for hanling of bad pixels
+        # - 2d display for pixel map
+        #  bad-pixel map for handling of bad pixels
         if badpixels is None:
             self.badpixel_map = None
         else:  # create bad-pixel map as masked array
@@ -668,14 +675,12 @@ class miniPIXvis:
             bp[badpixels] = 1.0
             badpixel_map = np.ma.masked_where(bp == 1, bp).reshape((self.npx, self.npx))
             # badpixel_map = bp.reshape((self.npx, self.npx))
-        # pixel image
+        #  pixel image
         self.axim = self.fig.add_subplot(gs[:, :col1])
         self.axim.set_title("Pixel Energy Map " + self.unit, y=0.975, size="x-large")
         self.axim.set_xlabel("# x        ", loc="right")
         self.axim.set_ylabel("# y             ", loc="top")
-        # no default frame around graph, but show detector boundary
-        self.axim.set_frame_on(False)
-
+        self.axim.set_frame_on(False)  # no default frame around graph
         if badpixels is not None:
             _ = self.axim.imshow(badpixel_map, origin="lower", cmap='gray', vmax=10.0)
         self.vmin, vmax = 0.5, 500
@@ -688,25 +693,22 @@ class miniPIXvis:
             txt_overlay = txt_overlay + f", acquisition time {self.acq_time} s per frame"
         self.axim.text(0.01, -0.06, txt_overlay, transform=self.axim.transAxes, color="royalblue")
         self.im_text = self.axim.text(0.02, -0.085, "#", transform=self.axim.transAxes, color="r", alpha=0.75)
-        # show detector geometry
+        #  show detector geometry
         col_geom = "gray"
         _rect = mpl.patches.Rectangle((0, 0), self.npx, self.npx, linewidth=1, edgecolor=col_geom, facecolor='none')
         self.axim.add_patch(_rect)
-        #   show detector dimension in mm
+        #  show detector dimension in mm
         self.axim.arrow(146, 261.0, 110.0, 0, length_includes_head=True, width=1.5, color=col_geom)
         self.axim.arrow(110, 261.0, -110.0, 0, length_includes_head=True, width=1.5, color=col_geom)
-        self.axim.text(115.0, 259, "14 mm")
+        self.axim.text(113.0, 259, f"{size:.2f} mm")
         #    2nd x-axis in mm
-        pitch = 0.055  # pixel size
-        px2x = lambda x: x * pitch
-        x2px = lambda x: x / pitch
         axim_x2 = self.axim.secondary_xaxis(0.935, functions=(px2x, x2px))
         axim_x2.set_frame_on(False)
         axim_x2.set_xlabel('Position [mm]', loc='right', color=col_geom)
-        axim_x2.set_xlim((0.0, 14.08))
+        axim_x2.set_xlim((0.0, size))
         axim_x2.tick_params(colors=col_geom)
 
-        # a (vertical) rate display
+        # - a (vertical) rate display
         self.axRate = self.fig.add_subplot(gs[2 : nrows - 1, col1 : col2 - 1])
         pos = self.axRate.get_position()
         self.axRate.set_position([0.985 * pos.x0, pos.y0, pos.width, pos.height])
