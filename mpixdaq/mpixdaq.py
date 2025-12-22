@@ -104,6 +104,8 @@ class mpixControl:
     mplActive = Event()  # set while interactive plotting is active
     kbdQ = Queue()  #  keyboard input
 
+    deviceInfo = {"name": "eduMiniPIX", "pitch": 0.055, "width": 256, "height": 256}
+
     @staticmethod
     def keyboard_input():
         """Read keyboard input and send to Queue, running as background thread to avoid blocking"""
@@ -172,7 +174,8 @@ class miniPIXdaq:
         self.id = 0
         self.dev = devs[self.id]
         print("*==* found device " + self.dev.parameters().get("DeviceName").getString())
-        self.npx = self.dev.width()
+        self.get_device_info()
+        self.npx = self.deviceInfo["width"]
         # options for data acquisition
         # OPMs = ["PX_TPXMODE_MEDIPIX", "PX_TPXMODE_TOT", "PX_TPXMODE_1HIT", "PX_TPXMODE_TIMEPIX"]
         # device initialization
@@ -200,21 +203,31 @@ class miniPIXdaq:
         #    1. a Queue with less slots than buffers to enforce blocking if no buffer space left
         self.dataQ = Queue(self.Nbuf - 2)
 
-    def device_info(self):
+    def get_device_info(self):
+        """get and store device parameters in dictionary"""
+        self.deviceInfo = {}
+
+        self.deviceInfo["frq"] = self.dev.timepixClock()
+        self.deviceInfo["type"] = self.dev.sensorType(self.id)
+        self.deviceInfo["pitch"] = self.dev.sensorPitch(self.id)
+        self.deviceInfo["thickness"] = self.dev.sensorThickness(self.id)
+        self.deviceInfo["width"] = self.dev.width(self.id)
+        self.deviceInfo["height"] = self.dev.height(self.id)
         pars = self.dev.parameters()
-        dn = pars.get("DeviceName").getString()
-        fw = pars.get("Firmware").getString()
-        temp = pars.get("Temperature").getDouble()
-        bias = pars.get("BiasSense").getDouble()
-        frq = self.dev.timepixClock()
+        self.deviceInfo["dn"] = pars.get("DeviceName").getString()
+        self.deviceInfo["fw"] = pars.get("Firmware").getString()
+        self.deviceInfo["temp"] = pars.get("Temperature").getDouble()
+        self.deviceInfo["bias"] = pars.get("BiasSense").getDouble()
+
+    def print_device_info(self):
         print("miniPIX device info:")
-        print(f"   {dn}, Firmware: {fw}")
-        print(f"   Temp: {temp:.1f}, Bias: {bias:.1f}, frequency: {frq:.2f} MHz")
+        print(f"   {self.deviceInfo['dn']}, Firmware: {self.deviceInfo['fw']}")
+        print(f"   Temp: {self.deviceInfo['temp']:.1f}, Bias: {self.deviceInfo['bias']:.1f}, frequency: {self.deviceInfo['frq']:.2f} MHz")
         print(
-            f"   sensor type: {self.dev.sensorType(self.id)}"
-            + f"  pitch: {self.dev.sensorPitch(self.id)} µm"
-            + f"  thickness: {self.dev.sensorThickness(self.id)} µm"
-            + f"  width {self.npx}  height: {self.dev.height()}"
+            f"   sensor type: {self.deviceInfo['type']}"
+            + f"  pitch: {self.deviceInfo['pitch']} µm"
+            + f"  thickness: {self.deviceInfo['thickness']} µm"
+            + f"  width {self.deviceInfo['width']}  height: {self.deviceInfo['height']}"
         )
         rc, n_good, n_bad, frame = self.dev.doDigitalTest()
         print(f"   good pixels {n_good},  bad pixels {n_bad}") if rc == 0 else print("  Digital test failed")
@@ -618,8 +631,8 @@ class miniPIXvis:
 
         # sensor properties
         self.npx = npix
-        pitch = 0.055  # pixel size in mm
-        size = pitch * self.npx
+        pitch = mpixControl.deviceInfo["pitch"]  # pixel size in mm
+        size = pitch * mpixControl.deviceInfo["width"]
         # functions for transformations pixel number n <-> position x
         px2x = lambda n: n * pitch
         x2px = lambda x: x / pitch
@@ -1210,12 +1223,12 @@ class runDAQ:
                 else:
                     exit("Exiting")
             else:  # library and device are ok
+                mpixControl.sensorInfo = self.daq.deviceInfo  # overwrite default sensor info
                 if self.verbosity > 0:
                     print(f"     * overlaying {self.n_overlay} frames with {self.tot_acq_time} s")
                     print(f"     * readout {self.acq_count} x {self.acq_time} s")
                 if self.verbosity > 1:
-                    self.show_DeviceInfo = True
-                    self.daq.device_info()
+                    self.daq.print_device_info()
                 self.npx = self.daq.npx
                 self.unit = "(keV)" if self.daq.dev.isUsingCalibration() else "ToT (µs)"
 
