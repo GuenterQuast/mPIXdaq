@@ -1325,10 +1325,12 @@ class runDAQ:
                     self.out_filename = self.out_filename + ".yml"
                 self.out_file_yml = open(self.out_filename, "w", buffering=10)
                 print("--- #frame data", file=self.out_file_yml)  # header line
-                meta_data = dict(
+                meta_dict = dict(
                     meta_data=dict(acq_time=self.acq_time, acq_count=self.acq_count, npixels_x=self.npx, npixels_y=self.npx, time=time.asctime())
                 )
-                print(yaml.dump(meta_data), file=self.out_file_yml)
+                print(yaml.dump(meta_dict), file=self.out_file_yml)
+                sensor_dict = dict(sensorInfo=mpixControl.sensorInfo)
+                print(yaml.dump(sensor_dict), file=self.out_file_yml)
                 print("frame_data:", file=self.out_file_yml)
             if self.verbosity > 0:
                 print("*==* writing raw frames to file " + self.out_filename)
