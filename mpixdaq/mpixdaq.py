@@ -97,14 +97,16 @@ def import_npy_append_array():
 
 
 class mpixControl:
-    "Provides Queues and Events to control threads"
+    """Provides Device Information and Queues and Events to control threads"""
 
     mpixActive = Event()  # mPIX daq active
     endEvent = Event()  # end signal for all processes
     mplActive = Event()  # set while interactive plotting is active
     kbdQ = Queue()  #  keyboard input
 
-    deviceInfo = {"name": "eduMiniPIX", "pitch": 0.055, "width": 256, "height": 256}
+    # set default device information (assuming a miniPIX EDU is connected)
+    #          overwritten when connecting a device or by deviceInfo block from input file
+    deviceInfo = {"name": "eduMiniPIX", "pitch": 55.0, "width": 256, "height": 256}
 
     @staticmethod
     def keyboard_input():
@@ -113,13 +115,11 @@ class mpixControl:
             mpixControl.kbdQ.put(input())
 
     def __init__(self):
-        # background task to check for keyboard input
+        # start a background task to check for keyboard input
         self.kbdthread = Thread(name="kbdInput", target=mpixControl.keyboard_input).start()
 
 
-# - handling the miniPIX device
-
-
+# - class handling the miniPIX device - - - - - - - - - -
 class miniPIXdaq:
     """Initialize and retrieve data fom miniPIX device
 
@@ -290,9 +290,7 @@ class miniPIXdaq:
         pypixet.exit()
 
 
-# - class and functions for data analysis
-
-
+# - class and functions for data analysis  - - - - - - - - - -
 class frameAnalyzer:
     def __init__(self, csv=None):
         """Analyze frame data and produce a list of cluster objects,
@@ -605,6 +603,7 @@ class frameAnalyzer:
         return self.pixel_clusters
 
 
+# - class and functions for visualization  - - - - - - - - - -
 class miniPIXvis:
     """display of miniPIX frames and histograms for low-rate scenarios
     where on-line analysis is possible and animated graphs are meaningful
@@ -631,7 +630,7 @@ class miniPIXvis:
 
         # sensor properties
         self.npx = npix
-        pitch = mpixControl.deviceInfo["pitch"]  # pixel size in mm
+        pitch = mpixControl.deviceInfo["pitch"] / 1000.0  # pixel size in mm
         size = pitch * mpixControl.deviceInfo["width"]
         # functions for transformations pixel number n <-> position x
         px2x = lambda n: n * pitch
@@ -915,7 +914,7 @@ class miniPIXvis:
             self.dt_last_plot = dt_active
 
 
-# helper classes and functions  - - - - -
+#   helper classes and functions for histogramming
 class bhist:
     """one-dimensional histogram for animation, based on bar graph
     supports multiple classes as stacked histogram
@@ -1129,6 +1128,7 @@ class scatterplot:
             self.gr[_ic].set(data=(self.bcntx[_xidx] + self.pofx[_ic], self.bcnty[_yidx] + self.pofy[_ic]))
 
 
+# - class tying all of the above together - - - - - - - - - -
 class runDAQ:
     """run miniPIX data acquisition, analysis and real-time graphics
 
@@ -1223,7 +1223,7 @@ class runDAQ:
                 else:
                     exit("Exiting")
             else:  # library and device are ok
-                mpixControl.sensorInfo = self.daq.deviceInfo  # overwrite default sensor info
+                mpixControl.deviceInfo = self.daq.deviceInfo  # overwrite default sensor info
                 if self.verbosity > 0:
                     print(f"     * overlaying {self.n_overlay} frames with {self.tot_acq_time} s")
                     print(f"     * readout {self.acq_count} x {self.acq_time} s")
@@ -1262,6 +1262,8 @@ class runDAQ:
                 d = yaml.load(open(self.read_filename, 'r'), Loader=yaml.CLoader)  # assume one .yml file in archive
                 self.mdata = d["meta_data"]
                 self.fdata = d["frame_data"]
+                if "deviceInfo" in d.keys():
+                    mpixControl.deviceInfo = d["deviceInfo"]
             elif suffix == ".gz":
                 if suffix2 == '.npy':
                     self.fdata = np.load(gzip.GzipFile(self.read_filename, mode='r'))
@@ -1269,6 +1271,9 @@ class runDAQ:
                     d = yaml.load(gzip.GzipFile(self.read_filename, mode='r'), Loader=yaml.CLoader)
                     self.mdata = d["meta_data"]
                     self.fdata = d["frame_data"]
+                    if "deviceInfo" in d.keys():
+                        mpixControl.deviceInfo = d["deviceInfo"]
+
             elif suffix == ".zip":
                 zf = zipfile.ZipFile(self.read_filename, 'r')
                 fnam = zf.namelist()[0]
@@ -1329,7 +1334,7 @@ class runDAQ:
                     meta_data=dict(acq_time=self.acq_time, acq_count=self.acq_count, npixels_x=self.npx, npixels_y=self.npx, time=time.asctime())
                 )
                 print(yaml.dump(meta_dict), file=self.out_file_yml)
-                sensor_dict = dict(sensorInfo=mpixControl.sensorInfo)
+                sensor_dict = dict(deviceqInfo=mpixControl.deviceInfo)
                 print(yaml.dump(sensor_dict), file=self.out_file_yml)
                 print("frame_data:", file=self.out_file_yml)
             if self.verbosity > 0:
