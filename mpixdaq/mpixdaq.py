@@ -1264,6 +1264,8 @@ class runDAQ:
                 self.fdata = d["frame_data"]
                 if "deviceInfo" in d.keys():
                     mpixControl.deviceInfo = d["deviceInfo"]
+                if "badPixels" in d.keys():
+                    badpixel_list = d["badPixels"]
             elif suffix == ".gz":
                 if suffix2 == '.npy':
                     self.fdata = np.load(gzip.GzipFile(self.read_filename, mode='r'))
@@ -1273,7 +1275,8 @@ class runDAQ:
                     self.fdata = d["frame_data"]
                     if "deviceInfo" in d.keys():
                         mpixControl.deviceInfo = d["deviceInfo"]
-
+                if "badPixels" in d.keys():
+                    badpixel_list = d["badPixels"]
             elif suffix == ".zip":
                 zf = zipfile.ZipFile(self.read_filename, 'r')
                 fnam = zf.namelist()[0]
@@ -1306,7 +1309,7 @@ class runDAQ:
             if self.verbosity > 0:
                 print(f" found {self.n_frames_in_file} pixel frames in file")
 
-        # fitl to save cluster data from processed frames
+        # file to save cluster data from processed frames
         self.csvfile = None
         if self.csv_filename is not None:
             fn = self.csv_filename + ".csv"
@@ -1336,6 +1339,8 @@ class runDAQ:
                 print(yaml.dump(meta_dict), file=self.out_file_yml)
                 sensor_dict = dict(deviceqInfo=mpixControl.deviceInfo)
                 print(yaml.dump(sensor_dict), file=self.out_file_yml)
+                if badpixel_list is not None:
+                    print("badPixels:\n", yaml.dump(badpixel_list, default_flow_style=True), file=self.out_file_yml)
                 print("frame_data:", file=self.out_file_yml)
             if self.verbosity > 0:
                 print("*==* writing raw frames to file " + self.out_filename)
