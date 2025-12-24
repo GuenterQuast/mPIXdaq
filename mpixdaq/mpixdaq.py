@@ -1129,26 +1129,29 @@ class scatterplot:
 
 
 # function to read frame data in advacam txt format
-def read_advacamFormat(fname):
-    """Read data in Advacam .txt format"""
+def read_AdvacamFormat(fname):
+    """Read data in (gzipped) Advacam .txt format"""
 
-    f = open(fname, 'r')
+    suffix = pathlib.Path(fname).suffix
+    if suffix == '.gz':
+        with gzip.open(fname, 'r') as f:
+            lines = f.readlines()
+        lines = [_l.decode('utf-8') for _l in lines]
+    else:
+        with open(fname, 'r') as f:
+            lines = f.readlines()
 
     frames = []
     frame = []
-    while True:
-        _l = f.readline()
+    for _l in lines:
         if _l == '#\n':
             frames.append(frame)
             frame = []
-            continue
-        if not _l:
-            frames.append(frame)
-            break
-        # pixel number and value
-        frame.append([int(_l.split('\t')[0]), int(_l.split('\t')[1])])
+        else:
+            # pixel number and value
+            frame.append([int(_l.split('\t')[0]), int(_l.split('\t')[1])])
+    frames.append(frame)
 
-    f.close()
     return frames
 
 
@@ -1269,17 +1272,17 @@ class runDAQ:
             # read from file if requested
             if self.verbosity > 0:
                 print("*==* data from file " + self.read_filename)
+            # support .npy, .yaml and .txt formats, either raw, zipped or gzipped
             suffix = pathlib.Path(self.read_filename).suffix
             name = pathlib.Path(self.read_filename).stem
             suffix2 = pathlib.Path(name).suffix
-            if suffix == '.yml' or suffix2 == '.yml':
+            if suffix == '.yml' or suffix2 == '.yml' or suffix == '.txt' or suffix2 == '.txt':
                 self.read_mode = 'list'
             elif suffix == '.npy' or suffix2 == '.npy':
                 self.read_mode = '2d'
-            elif suffix == '.txt' or suffix2 == '.txt':
-                self.read_mode = 'list'
             else:
                 exit(" Exit - unknown file extension " + suffix2 + suffix)
+            #
             if self.verbosity > 0:
                 print("    loading data ...")
             if suffix == ".npy":
@@ -1293,7 +1296,7 @@ class runDAQ:
                 if "badPixels" in d.keys():
                     badpixel_list = d["badPixels"]
             elif suffix == ".txt":
-                self.fdata = read_advacamFormat(self.read_filename)
+                self.fdata = read_AdvacamFormat(self.read_filename)
             elif suffix == ".gz":
                 if suffix2 == '.npy':
                     self.fdata = np.load(gzip.GzipFile(self.read_filename, mode='r'))
@@ -1303,8 +1306,10 @@ class runDAQ:
                     self.fdata = d["frame_data"]
                     if "deviceInfo" in d.keys():
                         mpixControl.deviceInfo = d["deviceInfo"]
-                if "badPixels" in d.keys():
-                    badpixel_list = d["badPixels"]
+                    if "badPixels" in d.keys():
+                        badpixel_list = d["badPixels"]
+                elif suffix2 == '.txt':
+                    self.fdata = read_AdvacamFormat(self.read_filename)
             elif suffix == ".zip":
                 zf = zipfile.ZipFile(self.read_filename, 'r')
                 fnam = zf.namelist()[0]
@@ -1312,6 +1317,10 @@ class runDAQ:
                     d = yaml.load(zf.read(fnam), Loader=yaml.CLoader)  # assume one .yml file in archive
                     self.mdata = d["meta_data"]
                     self.fdata = d["frame_data"]
+                    if "badPixels" in d.keys():
+                        badpixel_list = d["badPixels"]
+                elif suffix2 == '.txt':
+                    self.fdata = read_AdvacamFormat(fnam)
                 else:
                     self.fdata = np.load(zf.read(fnam))
             #   extract data
