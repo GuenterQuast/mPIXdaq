@@ -1276,7 +1276,7 @@ class runDAQ:
                 self.read_mode = 'list'
             elif suffix == '.npy' or suffix2 == '.npy':
                 self.read_mode = '2d'
-            if suffix == '.txt' or suffix2 == '.txt':
+            elif suffix == '.txt' or suffix2 == '.txt':
                 self.read_mode = 'list'
             else:
                 exit(" Exit - unknown file extension " + suffix2 + suffix)
