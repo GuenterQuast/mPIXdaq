@@ -1337,10 +1337,11 @@ class runDAQ:
                     meta_data=dict(acq_time=self.acq_time, acq_count=self.acq_count, npixels_x=self.npx, npixels_y=self.npx, time=time.asctime())
                 )
                 print(yaml.dump(meta_dict), file=self.out_file_yml)
-                sensor_dict = dict(deviceqInfo=mpixControl.deviceInfo)
+                sensor_dict = dict(deviceInfo=mpixControl.deviceInfo)
                 print(yaml.dump(sensor_dict), file=self.out_file_yml)
                 if badpixel_list is not None:
                     print("badPixels:\n", yaml.dump(badpixel_list, default_flow_style=True), file=self.out_file_yml)
+                # tag for data blocks
                 print("frame_data:", file=self.out_file_yml)
             if self.verbosity > 0:
                 print("*==* writing raw frames to file " + self.out_filename)
