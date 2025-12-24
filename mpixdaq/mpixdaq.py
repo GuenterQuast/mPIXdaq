@@ -1128,6 +1128,30 @@ class scatterplot:
             self.gr[_ic].set(data=(self.bcntx[_xidx] + self.pofx[_ic], self.bcnty[_yidx] + self.pofy[_ic]))
 
 
+# function to read frame data in advacam txt format
+def read_advacamFormat(fname):
+    """Read data in Advacam .txt format"""
+
+    f = open(fname, 'r')
+
+    frames = []
+    frame = []
+    while True:
+        _l = f.readline()
+        if _l == '#\n':
+            frames.append(frame)
+            frame = []
+            continue
+        if not _l:
+            frames.append(frame)
+            break
+        # pixel number and value
+        frame.append([int(_l.split('\t')[0]), int(_l.split('\t')[1])])
+
+    f.close()
+    return frames
+
+
 # - class tying all of the above together - - - - - - - - - -
 class runDAQ:
     """run miniPIX data acquisition, analysis and real-time graphics
@@ -1252,6 +1276,8 @@ class runDAQ:
                 self.read_mode = 'list'
             elif suffix == '.npy' or suffix2 == '.npy':
                 self.read_mode = '2d'
+            if suffix == '.txt' or suffix2 == '.txt':
+                self.read_mode = 'list'
             else:
                 exit(" Exit - unknown file extension " + suffix2 + suffix)
             if self.verbosity > 0:
@@ -1266,6 +1292,8 @@ class runDAQ:
                     mpixControl.deviceInfo = d["deviceInfo"]
                 if "badPixels" in d.keys():
                     badpixel_list = d["badPixels"]
+            elif suffix == ".txt":
+                self.fdata = read_advacamFormat(self.read_filename)
             elif suffix == ".gz":
                 if suffix2 == '.npy':
                     self.fdata = np.load(gzip.GzipFile(self.read_filename, mode='r'))
@@ -1298,7 +1326,13 @@ class runDAQ:
                 self.unit = "(keV)"
                 self.acq_time = 0.0  # acquitition time unknown, as not stored in npy file
                 self.tot_acq_time = self.acq_count * self.acq_time
-            else:  # assume list of pixel number and energy value pairs
+            elif suffix == '.txt' or suffix2 == ".txt":
+                self.n_frames_in_file = len(self.fdata)
+                self.npx = 256
+                self.unit = "(keV)"
+                self.acq_time = 0.0  # acquitition time unknown, as not stored in .txt file
+                self.tot_acq_time = self.acq_time
+            else:  # assume list of pixel number and energy value pairs + meta data
                 self.n_frames_in_file = len(self.fdata)
                 self.acq_time = self.mdata['acq_time']
                 self.acq_count = self.mdata['acq_count']
