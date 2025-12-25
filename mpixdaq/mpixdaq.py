@@ -1131,29 +1131,33 @@ class scatterplot:
 
 
 # function to read frame data in advacam txt format
-def read_AdvacamFormat(fname):
-    """Read data in (gzipped) Advacam .txt format"""
+def decode_AdvacamFormat(file):
+    """Read data in (gzipped) Advacam .txt format
 
-    suffix = pathlib.Path(fname).suffix
-    if suffix == '.gz':
-        with gzip.open(fname, 'r') as f:
-            lines = f.readlines()
-        lines = [_l.decode('utf-8') for _l in lines]
-    else:
-        with open(fname, 'r') as f:
-            lines = f.readlines()
+    Args:
+
+    - file: file handle
+
+    A frame contains lines with pairs of numbers pixel numver and pixel value;
+    a frame is terminated by a line containinf a line with a '#'
+    """
+
+    lines = file.readlines()
 
     frames = []
     frame = []
     for _l in lines:
-        if _l == '#\n':
-            frames.append(frame)
+        if isinstance(_l, bytes):
+            _l = _l.decode()  # needed for gzip returninb bytes objects
+        if _l == '#\n':  # end of frame
+            frames.append(frame)  # append completed frame to list of frames
             frame = []
         else:
-            # pixel number and value
+            # add pixel number and value to current pixel list
             frame.append([int(_l.split('\t')[0]), int(_l.split('\t')[1])])
-    frames.append(frame)
+    frames.append(frame)  # append last frame
 
+    file.close()
     return frames
 
 
@@ -1361,23 +1365,26 @@ class runDAQ:
         elif suffix == ".yml":
             self.decode_yml(yaml.load(open(self.read_filename, 'r'), Loader=yaml.CLoader))
         elif suffix == ".txt":
-            self.fdata = read_AdvacamFormat(self.read_filename)
+            self.fdata = decode_AdvacamFormat(open(self.read_filename, 'r'))
         elif suffix == ".gz":
+            _file = gzip.GzipFile(self.read_filename, mode='r')
             if suffix2 == '.npy':
-                self.fdata = np.load(gzip.GzipFile(self.read_filename, mode='r'))
+                self.fdata = np.load(_file)
             elif suffix2 == '.yml':
-                self.decode_yml(yaml.load(gzip.GzipFile(self.read_filename, mode='r'), Loader=yaml.CLoader))
+                self.decode_yml(yaml.load(_file, Loader=yaml.CLoader))
             elif suffix2 == '.txt':
-                self.fdata = read_AdvacamFormat(self.read_filename)
+                self.fdata = decode_AdvacamFormat(_file)
         elif suffix == ".zip":
             zf = zipfile.ZipFile(self.read_filename, 'r')
             fnam = zf.namelist()[0]
+            # _file = zf.read(fnam)
+            _file = open(fnam, 'r')
             if suffix2 == '.yml':
-                self.decode_yml(yaml.load(zf.read(fnam), Loader=yaml.CLoader))  # assume one .yml file in archive
+                self.decode_yml(yaml.load(_file, Loader=yaml.CLoader))  # assume one .yml file in archive
             elif suffix2 == '.txt':
-                self.fdata = read_AdvacamFormat(fnam)
+                self.fdata = decode_AdvacamFormat(_file)
             else:
-                self.fdata = np.load(zf.read(fnam))
+                self.fdata = np.load(_file)
         #
         # determine meta-data
         if self.read_mode == '2d':  # assume data is 256x256 pixels in keV per pixel
