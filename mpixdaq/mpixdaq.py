@@ -108,6 +108,9 @@ class mpixControl:
     #          overwritten when connecting a device or by deviceInfo block from input file
     deviceInfo = {"name": "eduMiniPIX", "pitch": 55.0, "width": 256, "height": 256}
 
+    # assume sensor has no bad pixels (overwritten in runDAQ)
+    badpixel_list = None
+
     @staticmethod
     def keyboard_input():
         """Read keyboard input and send to Queue, running as background thread to avoid blocking"""
@@ -119,7 +122,7 @@ class mpixControl:
         self.kbdthread = Thread(name="kbdInput", target=mpixControl.keyboard_input).start()
 
 
-# - class handling the miniPIX device - - - - - - - - - -
+# - class handling data acquisition from the miniPIX device - - - - - - - - - -
 class miniPIXdaq:
     """Initialize and retrieve data fom miniPIX device
 
@@ -143,7 +146,7 @@ class miniPIXdaq:
 
     """
 
-    def __init__(self, ac_count=10, ac_time=0.1, bad_pixels=None):
+    def __init__(self, ac_count=10, ac_time=0.1):
         """initialize miniPIX device and set up data acquisition"""
 
         # no device yet
@@ -192,7 +195,6 @@ class miniPIXdaq:
         #     if ac_count>1: frame data is available only from last frame
         self.ac_count = ac_count
         self.ac_time = ac_time
-        self.bad_pixels = bad_pixels
 
         # ring buffer for data collection
         self.Nbuf = 8
@@ -266,8 +268,8 @@ class miniPIXdaq:
             # get frame and store in ring buffer
             self.fBuffer[self._w_idx, :] = np.asarray(self.dev.lastAcqFrameRefInc().data())
             # remove noisy pixels from (linear) data frame based on bad-pixel list
-            if self.bad_pixels is not None:
-                self.fBuffer[self._w_idx][self.bad_pixels] = -1
+            if mpixControl.badpixel_list is not None:
+                self.fBuffer[self._w_idx][mpixControl.badpixel_list] = -1
             self.dataQ.put(self._w_idx)
             self._w_idx = self._w_idx + 1 if self._w_idx < self.Nbuf - 1 else 0
 
@@ -616,7 +618,7 @@ class miniPIXvis:
         """call-back for matplotlib 'close_event'"""
         mpixControl.mplActive.clear()
 
-    def __init__(self, npix=256, nover=10, unit='keV', circ=0.5, flat=0.5, acq_time=1.0, badpixels=None):
+    def __init__(self, npix=256, nover=10, unit='keV', circ=0.5, flat=0.5, acq_time=1.0):
         """initialize figure with pixel image, rate history and two histograms and a scatter plot
 
         Args:
@@ -680,11 +682,11 @@ class miniPIXvis:
 
         # - 2d display for pixel map
         #  bad-pixel map for handling of bad pixels
-        if badpixels is None:
-            self.badpixel_map = None
+        if mpixControl.badpixel_list is None:
+            badpixel_map = None
         else:  # create bad-pixel map as masked array
             bp = np.zeros(self.npx * self.npx)
-            bp[badpixels] = 1.0
+            bp[mpixControl.badpixel_list] = 1.0
             badpixel_map = np.ma.masked_where(bp == 1, bp).reshape((self.npx, self.npx))
             # badpixel_map = bp.reshape((self.npx, self.npx))
         #  pixel image
@@ -693,7 +695,7 @@ class miniPIXvis:
         self.axim.set_xlabel("# x        ", loc="right")
         self.axim.set_ylabel("# y             ", loc="top")
         self.axim.set_frame_on(False)  # no default frame around graph
-        if badpixels is not None:
+        if badpixel_map is not None:
             _ = self.axim.imshow(badpixel_map, origin="lower", cmap='gray', vmax=10.0)
         self.vmin, vmax = 0.5, 500
         self.img = self.axim.imshow(np.zeros((self.npx, self.npx)), origin="lower", cmap='hot', norm=LogNorm(vmin=self.vmin, vmax=vmax))
@@ -1234,13 +1236,12 @@ class runDAQ:
         else:
             badpixel_list = np.loadtxt(self.fname_badpixels, dtype=np.int32).tolist()
             print("*==* list of bad pixels from file ", self.fname_badpixels)
-        # print(self.badpixel_list)
 
         # try to load pypixet library and connect to miniPIX
         if self.read_filename is None:
             self.tot_acq_time = self.acq_count * self.acq_time
             # initialize data acquisition object
-            self.daq = miniPIXdaq(self.acq_count, self.acq_time, bad_pixels=badpixel_list)
+            self.daq = miniPIXdaq(self.acq_count, self.acq_time)
             if self.daq.dev is None:
                 _a = input("  Problem with miniPIX device - read data from file ? (y/n) > ")
                 if _a in {'y', 'Y', 'j', 'J'}:
@@ -1258,6 +1259,8 @@ class runDAQ:
                     self.daq.print_device_info()
                 self.npx = self.daq.npx
                 self.unit = "(keV)" if self.daq.dev.isUsingCalibration() else "ToT (µs)"
+        #
+        mpixControl.badpixel_list = badpixel_list
 
         #  end device initialization ---
 
@@ -1265,90 +1268,9 @@ class runDAQ:
         os.chdir(self.wd_path)
 
         # prepare reading from file
-        #     full frame data from .npy, .npy.zip or .npy.gz or
-        #     pixel values from .yml, .yml.zip or .yml.gz
-        self.read_mode = None
         if self.read_filename is not None:
-            # read from file if requested
-            if self.verbosity > 0:
-                print("*==* data from file " + self.read_filename)
-            # support .npy, .yaml and .txt formats, either raw, zipped or gzipped
-            suffix = pathlib.Path(self.read_filename).suffix
-            name = pathlib.Path(self.read_filename).stem
-            suffix2 = pathlib.Path(name).suffix
-            if suffix == '.yml' or suffix2 == '.yml' or suffix == '.txt' or suffix2 == '.txt':
-                self.read_mode = 'list'
-            elif suffix == '.npy' or suffix2 == '.npy':
-                self.read_mode = '2d'
-            else:
-                exit(" Exit - unknown file extension " + suffix2 + suffix)
-            #
-            if self.verbosity > 0:
-                print("    loading data ...")
-            if suffix == ".npy":
-                self.fdata = np.load(self.read_filename, mmap_mode="r")
-            elif suffix == ".yml":
-                d = yaml.load(open(self.read_filename, 'r'), Loader=yaml.CLoader)  # assume one .yml file in archive
-                self.mdata = d["meta_data"]
-                self.fdata = d["frame_data"]
-                if "deviceInfo" in d.keys():
-                    mpixControl.deviceInfo = d["deviceInfo"]
-                if "badPixels" in d.keys():
-                    badpixel_list = d["badPixels"]
-            elif suffix == ".txt":
-                self.fdata = read_AdvacamFormat(self.read_filename)
-            elif suffix == ".gz":
-                if suffix2 == '.npy':
-                    self.fdata = np.load(gzip.GzipFile(self.read_filename, mode='r'))
-                elif suffix2 == '.yml':
-                    d = yaml.load(gzip.GzipFile(self.read_filename, mode='r'), Loader=yaml.CLoader)
-                    self.mdata = d["meta_data"]
-                    self.fdata = d["frame_data"]
-                    if "deviceInfo" in d.keys():
-                        mpixControl.deviceInfo = d["deviceInfo"]
-                    if "badPixels" in d.keys():
-                        badpixel_list = d["badPixels"]
-                elif suffix2 == '.txt':
-                    self.fdata = read_AdvacamFormat(self.read_filename)
-            elif suffix == ".zip":
-                zf = zipfile.ZipFile(self.read_filename, 'r')
-                fnam = zf.namelist()[0]
-                if suffix2 == '.yml':
-                    d = yaml.load(zf.read(fnam), Loader=yaml.CLoader)  # assume one .yml file in archive
-                    self.mdata = d["meta_data"]
-                    self.fdata = d["frame_data"]
-                    if "badPixels" in d.keys():
-                        badpixel_list = d["badPixels"]
-                elif suffix2 == '.txt':
-                    self.fdata = read_AdvacamFormat(fnam)
-                else:
-                    self.fdata = np.load(zf.read(fnam))
-            #   extract data
-            if self.read_mode == '2d':  # assume data is 256x256 pixels in keV per pixel
-                shape = self.fdata.shape
-                if len(shape) < 3 or shape[1] != 256:
-                    exit(f"unexpected shape {shape} of array, expected 256x256")
-                elif shape[1] != 256:
-                    exit(f"unexpected shape {shape} of array, expected 256x256")
-                self.n_frames_in_file = shape[0]
-                self.npx = shape[1]
-                self.unit = "(keV)"
-                self.acq_time = 0.0  # acquitition time unknown, as not stored in npy file
-                self.tot_acq_time = self.acq_count * self.acq_time
-            elif suffix == '.txt' or suffix2 == ".txt":
-                self.n_frames_in_file = len(self.fdata)
-                self.npx = 256
-                self.unit = "(keV)"
-                self.acq_time = 0.0  # acquitition time unknown, as not stored in .txt file
-                self.tot_acq_time = self.acq_time
-            else:  # assume list of pixel number and energy value pairs + meta data
-                self.n_frames_in_file = len(self.fdata)
-                self.acq_time = self.mdata['acq_time']
-                self.acq_count = self.mdata['acq_count']
-                self.npx = self.mdata['npixels_x']
-                self.unit = "(keV)"
-                self.tot_acq_time = self.acq_count * self.acq_time
-
+            self.read_frames()
+            self.n_frames_in_file = len(self.fdata)
             if self.verbosity > 0:
                 print(f" found {self.n_frames_in_file} pixel frames in file")
 
@@ -1359,10 +1281,11 @@ class runDAQ:
             self.csvfile = open(fn, "w", buffering=100)
             if self.verbosity > 0:
                 print("*==* writing clusters to file " + fn)
+
         # set-up frame analyzer
         self.frameAna = frameAnalyzer(csv=self.csvfile)
 
-        # file for raw frame data
+        # file to save raw frame data
         self.out_file_yml = None
         self.out_file_npy = None
         if self.out_filename is not None:
@@ -1382,22 +1305,101 @@ class runDAQ:
                 print(yaml.dump(meta_dict), file=self.out_file_yml)
                 sensor_dict = dict(deviceInfo=mpixControl.deviceInfo)
                 print(yaml.dump(sensor_dict), file=self.out_file_yml)
-                if badpixel_list is not None:
-                    print("badPixels:\n", yaml.dump(badpixel_list, default_flow_style=True), file=self.out_file_yml)
+                if mpixControl.badpixel_list is not None:
+                    print("badPixels:\n", yaml.dump(mpixControl.badpixel_list, default_flow_style=True), file=self.out_file_yml)
                 # tag for data blocks
                 print("frame_data:", file=self.out_file_yml)
             if self.verbosity > 0:
                 print("*==* writing raw frames to file " + self.out_filename)
 
         # initialize visualizer
-        self.mpixvis = miniPIXvis(
-            npix=self.npx,
-            nover=self.n_overlay,
-            unit=self.unit,
-            circ=self.circularity_cut,
-            acq_time=self.tot_acq_time,
-            badpixels=badpixel_list,
-        )
+        self.mpixvis = miniPIXvis(npix=self.npx, nover=self.n_overlay, unit=self.unit, circ=self.circularity_cut, acq_time=self.tot_acq_time)
+
+    def decode_yml(self, d):
+        """Read data from yaml dictinary (the default file format of mPIXdaq)"""
+
+        self.mdata = d["meta_data"]
+        self.fdata = d["frame_data"]
+        if "deviceInfo" in d.keys():
+            mpixControl.deviceInfo = d["deviceInfo"]
+        if "badPixels" in d.keys():
+            mpixControl.badpixel_list = d["badPixels"]
+
+    def read_frames(self):
+        """Read frame data from file
+
+        supports .npy, .yaml and Advacam .txt formats, either raw, zipped or gzipped
+
+        - 2d frame data from .npy or
+        - pixel values from .yml or .txt
+
+        provides:
+
+        - fdata: 2d array or list of [pixel number, value]
+        - read_mode:  2d or list
+        - meta-data (daq params, device info and bad pixels) if inpt is yaml
+        """
+
+        if self.verbosity > 0:
+            print("*==* data from file " + self.read_filename)
+
+        suffix = pathlib.Path(self.read_filename).suffix
+        name = pathlib.Path(self.read_filename).stem
+        suffix2 = pathlib.Path(name).suffix
+        if suffix == '.yml' or suffix2 == '.yml' or suffix == '.txt' or suffix2 == '.txt':
+            self.read_mode = 'list'
+        elif suffix == '.npy' or suffix2 == '.npy':
+            self.read_mode = '2d'
+        else:
+            exit(" Exit - unknown file extension " + suffix2 + suffix)
+
+        if self.verbosity > 0:
+            print("    loading data ...")
+
+        if suffix == ".npy":
+            self.fdata = np.load(self.read_filename, mmap_mode="r")
+        elif suffix == ".yml":
+            self.decode_yml(yaml.load(open(self.read_filename, 'r'), Loader=yaml.CLoader))
+        elif suffix == ".txt":
+            self.fdata = read_AdvacamFormat(self.read_filename)
+        elif suffix == ".gz":
+            if suffix2 == '.npy':
+                self.fdata = np.load(gzip.GzipFile(self.read_filename, mode='r'))
+            elif suffix2 == '.yml':
+                self.decode_yml(yaml.load(gzip.GzipFile(self.read_filename, mode='r'), Loader=yaml.CLoader))
+            elif suffix2 == '.txt':
+                self.fdata = read_AdvacamFormat(self.read_filename)
+        elif suffix == ".zip":
+            zf = zipfile.ZipFile(self.read_filename, 'r')
+            fnam = zf.namelist()[0]
+            if suffix2 == '.yml':
+                self.decode_yml(yaml.load(zf.read(fnam), Loader=yaml.CLoader))  # assume one .yml file in archive
+            elif suffix2 == '.txt':
+                self.fdata = read_AdvacamFormat(fnam)
+            else:
+                self.fdata = np.load(zf.read(fnam))
+        #
+        # determine meta-data
+        if self.read_mode == '2d':  # assume data is 256x256 pixels in keV per pixel
+            shape = self.fdata.shape
+            if len(shape) < 3 or shape[1] != 256:
+                exit(f"unexpected shape {shape} of array, expected 256x256")
+            elif shape[1] != 256:
+                exit(f"unexpected shape {shape} of array, expected 256x256")
+            self.npx = shape[1]
+            self.acq_time = 0.0  # acquitition time unknown (not stored in npy file)
+            self.tot_acq_time = 0.0
+        elif suffix == '.txt' or suffix2 == ".txt":
+            self.npx = 256
+            self.acq_time = 0.0  # acquitition time unknown (not stored in .txt file)
+            self.tot_acq_time = 0.0
+        else:  # assume list of pixel number and energy value pairs + meta data
+            self.acq_time = self.mdata['acq_time']
+            self.acq_count = self.mdata['acq_count']
+            self.npx = self.mdata['npixels_x']
+            self.tot_acq_time = self.acq_count * self.acq_time
+        self.unit = "(keV)"
+        return
 
     def __call__(self):
         """run daq loop"""
