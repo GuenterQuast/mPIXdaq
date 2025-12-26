@@ -1132,21 +1132,22 @@ class scatterplot:
 
 # function to read frame data in advacam txt format
 def decode_AdvacamFormat(file):
-    """Read data in (gzipped) Advacam .txt format
+    """Read data in Advacam .txt format and return list of pixel frames
+
+    A frame contains lines with pairs of pixel number and pixel value;
+    frames are separated by a line containing a '#'
 
     Args:
-
     - file: file handle
-
-    A frame contains lines with pairs of numbers pixel numver and pixel value;
-    a frame is terminated by a line containinf a line with a '#'
     """
-
-    lines = file.readlines()
 
     frames = []
     frame = []
-    for _l in lines:
+
+    while True:
+        _l = file.readline()
+        if not _l:
+            break
         if isinstance(_l, bytes):
             _l = _l.decode()  # needed for gzip returninb bytes objects
         if _l == '#\n':  # end of frame
@@ -1273,7 +1274,7 @@ class runDAQ:
 
         # prepare reading from file
         if self.read_filename is not None:
-            self.read_frames()
+            self.read_frames_from_file()
             self.n_frames_in_file = len(self.fdata)
             if self.verbosity > 0:
                 print(f" found {self.n_frames_in_file} pixel frames in file")
@@ -1329,7 +1330,7 @@ class runDAQ:
         if "badPixels" in d.keys():
             mpixControl.badpixel_list = d["badPixels"]
 
-    def read_frames(self):
+    def read_frames_from_file(self):
         """Read frame data from file
 
         supports .npy, .yaml and Advacam .txt formats, either raw, zipped or gzipped
@@ -1360,12 +1361,16 @@ class runDAQ:
         if self.verbosity > 0:
             print("    loading data ...")
 
+        # read uncompressed file formats
         if suffix == ".npy":
             self.fdata = np.load(self.read_filename, mmap_mode="r")
         elif suffix == ".yml":
-            self.decode_yml(yaml.load(open(self.read_filename, 'r'), Loader=yaml.CLoader))
+            with open(self.read_filename, 'r') as _f:
+                self.decode_yml(yaml.load(_f, Loader=yaml.CLoader))
         elif suffix == ".txt":
-            self.fdata = decode_AdvacamFormat(open(self.read_filename, 'r'))
+            with open(self.read_filename, 'r') as _f:
+                self.fdata = decode_AdvacamFormat(_f)
+        # read compressed input files
         elif suffix == ".gz":
             _file = gzip.GzipFile(self.read_filename, mode='r')
             if suffix2 == '.npy':
@@ -1433,25 +1438,23 @@ class runDAQ:
             while (dt_active < self.run_time) and mpixControl.mplActive.is_set() and mpixControl.mpixActive.is_set():
                 if self.read_filename is None:
                     _idx = self.daq.dataQ.get()
-                    # data as 2d pixel array
                     frame[:] = self.daq.fBuffer[_idx]
                     frame2d = frame.reshape(self.npx, self.npx)
                     dt_alive += self.acq_count * self.acq_time
                     i_frame += 1
-                else:  # from file
+                else:  # from array in memory (as read from file)
                     i_frame += 1
                     if i_frame > self.n_frames_in_file:
                         print("\033[36m\n" + 20 * ' ' + "'end-of-file - type <ret> to terminate")
                         break
                     if self.read_mode == 'list':
-                        # read_mode "list"
                         frame[:] = 0
                         pixel_list = np.asarray(self.fdata[i_frame - 1])
                         if len(pixel_list) > 0:
                             frame[pixel_list[:, 0]] = pixel_list[:, 1]
                         frame2d = frame.reshape(self.npx, self.npx)
                     else:
-                        # frame mode
+                        # 2d-frames as input
                         frame2d = self.fdata[i_frame - 1]
                         frame = np.int32(frame2d.reshape(self.npx * self.npx))
                     time.sleep(0.2)
