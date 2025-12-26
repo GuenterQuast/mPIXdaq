@@ -38,8 +38,8 @@ their own studies.
 
 This code has been tested on *Ubuntu*, *openSuse*, *Fedora*, on
 Windows 64bit with *Python3.7.9* and on *Raspberry Pi* for the 
-32- and 64-bit versions of *OS12*. Other Linux distribution should
-not pose any unsurmountable problems.  
+32- and 64-bit versions of *OS12* and *OS13*. Other Linux distributions 
+should not pose any unsurmountable problems.  
 On MS Windows, the libraries provided by the vendor only support
 *Python* vers. 3.7.9; such a rather historic version can be set up
 using e.g. the *miniconda* framework. 
@@ -55,8 +55,9 @@ To get started, follow the steps below:
    ``git clone https://github.com/GuenterQuast/mPIXdaq``.
 
    This repository includes the *Python* code and a minimalistic set
-   of libraries provided by ADVACAM. `cd` to the `mPIXdaq` directory
-   you just downloaded.
+   of libraries provided by ADVACAM.
+
+ - Next, `cd` to the `mPIXdaq` directory you just downloaded.
 
  - Set up the USB interface of your computer to recognize the miniPIX EDU:  
    ``sudo install_driver_rules.sh`` (to be done only once),
@@ -144,12 +145,17 @@ the `-b` or `--badpixels` option.
 Collected frame data may be directly written to disk, if a filename is
 given using the `-f`or `--file` option. Two formats are foreseen at present,
 storage of the two-dimensional frames as numpy-arrays (file extension `.npy`) 
-or as lists pixel indices and energy values in *yaml*-format (file extension
+or as lists of pixel indices and energy values in *yaml*-format (file extension
 `.yml`). To save space, the resulting output files may be compressed with
 *zip' or *gzip*. If no suffix for the filename is given, the default behavior 
-is writing a *.yml* file.  
+is writing a *.yml* file. The `.yml` format also permits storing meta data
+like parameters of the data acquisition, the properties of the sensor and
+the list of bad pixels.
+
 The same formats are recognized when reading back files
 using the `-r` resp. `--readfile` options. 
+In addition, `.txt` files written with the *Pixet* program of Advacam
+can be used as an input. 
 
 Data analysis consists of clustering of pixels in each overlay-frame and
 determination of cluster parameters, like the number of pixels, energy
