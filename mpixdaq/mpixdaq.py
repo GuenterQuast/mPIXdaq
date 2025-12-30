@@ -1491,7 +1491,7 @@ class runDAQ:
                     if self.csvfile is not None:
                         self.frameAna.write_csv(clusters)
                     # list of pixels per cluster
-                    #for _i, _l in enumerate(clustered_pixels):
+                    # for _i, _l in enumerate(clustered_pixels):
                     #    print(
                     #        clusters[_i][1],
                     #        yaml.dump(np.column_stack((_l, frame[_l])).tolist(), default_flow_style=True),
