@@ -317,6 +317,8 @@ class frameAnalyzer:
             - single_energies: energies in single pixels
         """
 
+        self.npx_x = mpixControl.deviceInfo["width"]
+
         self.csvfile = csv
         if csv is not None:
             self.write_csvheader()
@@ -410,16 +412,18 @@ class frameAnalyzer:
             - pl: list of pixels contributing to cluster
 
         Returns:
-            clusters: tuple of format
+            pixel_indices: list of pixel indices contributing to cluster
+            cluster_properties: tuple with cluster properties; format
             (x, y), n_pix, energy, (var_mx, var_mn), angle, (xEm, yEm), (varE_mx, varE_mn) )
 
         """
 
         npix = len(pl)
         if npix > 1:
-            _x = pl[:, 0]
-            _y = pl[:, 1]
-            _v = f[_x, _y]
+            _y = pl[:, 0]  # row index =
+            _x = pl[:, 1]  # column index = x
+            pixel_indices = _x + self.npx_x * _y
+            _v = f[_y, _x]
             # energy in cluster
             energy = _v.sum()
             #  - mean values of x and y and covariance matrix of pixel area
@@ -446,7 +450,8 @@ class frameAnalyzer:
             _idmx = 0 if _evals[0] > _evals[1] else 1
             varE_mx, varE_mn = _evals[_idmx], _evals[1 - _idmx]
         else:  # single-pixel object
-            _x, _y = pl[0]
+            _y, _x = pl[0]
+            pixel_indices = np.asarray([_x + self.npx_x * _y])
             x_mean = _x
             y_mean = _y
             energy = f[_x, _y]
@@ -454,7 +459,9 @@ class frameAnalyzer:
             angle = 0.0
             xEm, yEm = _x, _y
             varE_mx, varE_mn = (0, 0)
-        return ((x_mean, y_mean), npix, energy, (var_mx, var_mn), angle, (xEm, yEm), (varE_mx, varE_mn))
+
+        pixel_properties = ((x_mean, y_mean), npix, energy, (var_mx, var_mn), angle, (xEm, yEm), (varE_mx, varE_mn))
+        return pixel_indices, pixel_properties
 
     def write_csvheader(self):
         """Write csv header line to file"""
@@ -553,9 +560,12 @@ class frameAnalyzer:
             eigenvalues of the covariance matrix of the energy distribution. The format is:
             ( (x, y), n_pix, energy, (var_mx, var_mn), angle, (xEm, yEm), (varE_mx, varE_mn) )
 
-          - self.cluster_pxl_lst is a list of dimension n_clusters + 1 and contains the pixel
-            indices contributing to each of the clusters. self.cluster_pxl_lst[-1] contains
-            the list of single pixels
+          - self.pixel_lists: list of pixel indices contributing to each cluster, where
+             pixel index is x + y
+
+        self.cluster_pxl_lst is a list of dimension n_clusters + 1 and contains the pixel
+        indices contributing to each of the clusters. self.cluster_pxl_lst[-1] contains
+        the list of single pixels
 
         A static method, get_cluster_summary(pixel_clusters), provides summary information
 
@@ -568,12 +578,13 @@ class frameAnalyzer:
         """
 
         # clear output while processing new data
+        self.pixel_lists = []
         self.pixel_clusters = []
 
         # find clusters (lines,  circular  and unassigned = single pixels)
         self.n_pixels = (f > 0).sum()
         if self.n_pixels == 0:
-            return None
+            return None, None
 
         # timing
         if self.t_start is None:
@@ -593,16 +604,20 @@ class frameAnalyzer:
         #      ( (x,y), n_pix, energy, (var_mx, var_mn), angle, (xE, yE), (varE_mx, VarE_mn))
         # loop over clusters ...
         for _i in range(self.n_clusters):
-            # number of pixels in cluster
+            # pixels in cluster
             pl = self.cluster_pxl_lst[_i]
-            self.pixel_clusters.append(self.cluster_properties(f, pl))
+            pixel_idxs, cluster_props = self.cluster_properties(f, pl)
+            self.pixel_lists.append(pixel_idxs)
+            self.pixel_clusters.append(cluster_props)
         # and single pixels
         for _is in range(self.n_single):
-            self.pixel_clusters.append(self.cluster_properties(f, [self.cluster_pxl_lst[self.n_clusters][_is]]))
+            pixel_idxs, cluster_props = self.cluster_properties(f, [self.cluster_pxl_lst[self.n_clusters][_is]])
+            self.pixel_lists.append(pixel_idxs)
+            self.pixel_clusters.append(cluster_props)
 
         #     calculate summary of clusters in frame
         #        self.cluster_summary = self.get_cluster_summary(self.pixel_clusters)
-        return self.pixel_clusters
+        return self.pixel_clusters, self.pixel_lists
 
 
 # - class and functions for visualization  - - - - - - - - - -
@@ -1471,15 +1486,23 @@ class runDAQ:
                         npa.append(np.array([frame2d]))
 
                 # analyze frame and retrieve result
-                pixel_clusters = self.frameAna(frame2d)
-                if pixel_clusters is not None:
+                clusters, clustered_pixels = self.frameAna(frame2d)
+                if clusters is not None:
                     if self.csvfile is not None:
-                        self.frameAna.write_csv(pixel_clusters)
+                        self.frameAna.write_csv(clusters)
+                    # list of pixels per cluster
+                    #for _i, _l in enumerate(clustered_pixels):
+                    #    print(
+                    #        clusters[_i][1],
+                    #        yaml.dump(np.column_stack((_l, frame[_l])).tolist(), default_flow_style=True),
+                    #    )
+
                 # animated visualization
-                cluster_summary = frameAnalyzer.get_cluster_summary(pixel_clusters)
+                cluster_summary = frameAnalyzer.get_cluster_summary(clusters)
                 self.mpixvis(frame2d, cluster_summary, dt_alive)
 
                 if not mpixControl.kbdQ.empty():
+                    # decode keyboard input
                     if mpixControl.kbdQ.get() == 'E':
                         mpixControl.mpixActive.clear()
                 #    # heart-beat for console
