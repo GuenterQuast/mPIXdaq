@@ -7,7 +7,7 @@ see https://wiki.advacam.cz/wiki/Python_API
 This code depends on standard libraries from Python's scientific ecosystem
 
   - numpy
-  - matplotlib,
+  - matplotlib
   - scipy.ndimage
   - numpy.cov
   - numpy.linalg.eig
@@ -273,55 +273,37 @@ class miniPIXdaq:
             self.dataQ.put(self._w_idx)
             self._w_idx = self._w_idx + 1 if self._w_idx < self.Nbuf - 1 else 0
 
-    def get_linear_framedata(self, r_idx):
-        """return frame data in compact ascii format "[[i0, b[i0]], ..., [iN,b[iN]]"
-
-        Args:
-          - r_idx: buffer index with frame data of interest
-
-        Returns:
-          - stacked array with indices and non-zero values;
-            output as ascii via yaml.dump(np.column_stack(idx, b[idx]).tolist(), default_flow_style=True)
-        """
-
-        b = self.fBuffer(r_idx)
-        idx = np.argwhere(b > 0)
-        return np.column_stack(idx, b[idx])
-
     def __del__(self):
         pypixet.exit()
 
 
 # - class and functions for data analysis  - - - - - - - - - -
 class frameAnalyzer:
-    def __init__(self, csv=None):
+    def __init__(self):
         """Analyze frame data and produce a list of cluster objects,
 
-        Args:
-
-           csv: file in text format (csv) to (optionally) write csv header and data
+        Args:  2d frame data, as obtained from miniPIXdaq.__call__()
 
         Output:
 
           pixel_clusters: a list of tuples of format
-            (x, y), n_pix, energy, (var_mx, var_mn), angle, (xEm, yEm), (varE_mx, varE_mn) )
+            (x, y), n_pix, energy, (var_mx, var_mn), angle, (xEm, yEm), (varE_mx, varE_mn)
           with cluster properties
 
-          A static method, cluster_summary, calculates a summary of the clusters
-          in a pixel frame, returning
+        Helper functions to store analysis results are include as static methods
+
+        Another static method, cluster_summary() is particularly useful for on-line
+        monitoring of incoming data and provides a summary of the properties
+        of clusters in a pixel frame, returning
             - n_clusters: number of multi-pixel clusters
             - n_cpixels: number of pixels per cluster
-            - circularity: circularity per cluster (0. for linear, 1. for circular)
+            - circularity: circularity per cluster (ranging from 0. for linear, 1. for circular)
             - flatness:  ratio of maximum variances of pixel and energy distributions in clusters
             - cluster_energies: energy per cluster
             - single_energies: energies in single pixels
         """
 
         self.npx_x = mpixControl.deviceInfo["width"]
-
-        self.csvfile = csv
-        if csv is not None:
-            self.write_csvheader()
 
         # set parameters for analysis
         # - structure for connecting pixels in scipy.ndimage.label
@@ -463,22 +445,70 @@ class frameAnalyzer:
         pixel_properties = ((x_mean, y_mean), npix, energy, (var_mx, var_mn), angle, (xEm, yEm), (varE_mx, varE_mn))
         return pixel_indices, pixel_properties
 
-    def write_csvheader(self):
-        """Write csv header line to file"""
-        csvHeader = "time,x_mean,y_mean,n_pix,energy,var_mx,var_mn,angle,xE_mean,yE_mean,varE_mx,varE_mn"
-        self.csvfile.write(csvHeader + '\n')
-
-    def write_csv(self, pixel_clusters):
-        """Write cluster data to csv file"""
-        for _xym, _npix, _energy, _var, _angle, _xyEm, _varE in pixel_clusters:
+    # helper functions to store analyis results
+    @staticmethod
+    def write_csv(file, timestamp, clusters):
+        """Write properites of all clusters in frame to csv file"""
+        for _xym, _npix, _energy, _var, _angle, _xyEm, _varE in clusters:
             if _npix == 0:
                 return
             print(
-                f"{self.t_frame:.3f}, {_xym[0]:.2f}, {_xym[1]:.2f}, {_npix}, {_energy:.1f}"
-                + f", {_var[0]:.2f}, {_var[1]:.2f}, {_angle:.2f}"
+                f"{timestamp:.3f}, {_xym[0]:.2f}, {_xym[1]:.2f}, {_npix}, {_energy:.1f}"
+                + f", {_var[0]:.3f}, {_var[1]:.3f}, {_angle:.3f}"
                 + f", {_xyEm[0]:.2f}, {_xyEm[1]:.2f}, {_varE[0]:.3f}, {_varE[1]:.3f}",
-                file=self.csvfile,
+                file=file,
             )
+
+    @staticmethod
+    def write_clusters(file, timestamp, frame, clusters, clustered_pixels):
+        """Write properites of clusters in frame including pixel indices
+
+        Args:
+          file: file handle
+          timestamp: recording time of frame
+          fram: 1d numpy array with frame data
+          clusters: cluster properties
+          clustered_pixes:  list of list with indices of pixels belonging to each cluster
+
+        Output:
+          a yaml record per cluster
+            [[list of cluster propertes ], [list of [pixel index, energy] pairs belonging to cluster]
+          written to output file
+        """
+        for _i, _l in enumerate(clustered_pixels):
+            _xym, _npix, _energy, _var, _angle, _xyEm, _varE = clusters[_i]
+            if _npix == 0:
+                continue
+            # create list of cluster properties
+            _c_props = [
+                round(timestamp, 3),
+                round(float(_xym[0]), 2),
+                round(float(_xym[1]), 2),
+                _npix,
+                round(float(_energy), 1),
+                round(float(_var[0]), 3),
+                round(float(_var[1]), 3),
+                round(float(_angle), 3),
+                round(float(_xyEm[0]), 2),
+                round(float(_xyEm[1]), 2),
+                round(float(_varE[0]), 3),
+                round(float(_varE[1]), 3),
+            ]
+            # concatenate cluster properties and list with [pixel, energy] values
+            print(' - ' + yaml.dump([_c_props] + [np.column_stack((_l, frame[_l])).tolist()], default_flow_style=True), file=file)
+
+    @staticmethod
+    def write_csvheader(file):
+        """Write csv header line to file"""
+        csvHeader = "time,x_mean,y_mean,n_pix,energy,var_mx,var_mn,angle,xE_mean,yE_mean,varE_mx,varE_mn"
+        file.write(csvHeader + '\n')
+
+    @staticmethod
+    def write_clusterheader(file):
+        """Write header for cluster data to file"""
+        print("# format of list entry with cluster properties:", file=file)
+        keylist = ["time", "x_mean", "y_mean", "n_pix", "energy", "var_mx", "var_mn", "angle", "xE_mean", "yE_mean", "varE_mx", "varE_mn"]
+        print("keys: ", yaml.dump(keylist, default_flow_style=True), file=file)
 
     @staticmethod
     def get_cluster_summary(pixel_clusters):
@@ -546,7 +576,6 @@ class frameAnalyzer:
           - compute covariance matrix of the energy distribution
           - analyze cluster shape (using eigenvalues of covariance matrix)
           - construct a tuple with cluster properties
-          - optionally write cluster data to a file in csv format
 
         Note: this algorithm only works if clusters do not overlap!
 
@@ -586,11 +615,6 @@ class frameAnalyzer:
         if self.n_pixels == 0:
             return None, None
 
-        # timing
-        if self.t_start is None:
-            self.t_start = time.time()
-        self.t_frame = time.time() - self.t_start
-
         # find connected pixel areas ("clusters") in frame
         self.cluster_pxl_lst = self.find_connected(f)
         n_objects = len(self.cluster_pxl_lst)
@@ -622,7 +646,7 @@ class frameAnalyzer:
 
 # - class and functions for visualization  - - - - - - - - - -
 class miniPIXvis:
-    """display of miniPIX frames and histograms for low-rate scenarios
+    """Display of miniPIX frames and histograms for low-rate scenarios
     where on-line analysis is possible and animated graphs are meaningful
 
     Animated graph of (overlayed) pixel images, number of clusters per frame
@@ -1229,7 +1253,7 @@ class runDAQ:
         else:
             self.out_filename = pathlib.Path(args.file).stem + '_' + timestamp + pathlib.Path(args.file).suffix
         self.read_filename = args.readfile if args.readfile != '' else None
-        self.csv_filename = args.writefile if args.writefile != '' else None
+        self.cluster_filename = args.writefile if args.writefile != '' else None
         self.fname_badpixels = args.badpixels
         self.acq_time = args.acq_time
         self.acq_count = args.acq_count
@@ -1296,14 +1320,35 @@ class runDAQ:
 
         # file to save cluster data from processed frames
         self.csvfile = None
-        if self.csv_filename is not None:
-            fn = self.csv_filename + ".csv"
-            self.csvfile = open(fn, "w", buffering=100)
+        self.clusterfile = None
+        if self.cluster_filename is not None:
+            _suffix = pathlib.Path(self.cluster_filename).suffix
+            if _suffix == '' or _suffix == '.yml':
+                fn = self.cluster_filename + '.yml' if _suffix == '' else self.cluster_filename
+                self.clusterfile = open(fn, "w", buffering=100)
+                print("--- #cluster data", file=self.clusterfile)  # header line
+                frameAnalyzer.write_clusterheader(self.clusterfile)
+                meta_dict = dict(
+                    meta_data=dict(acq_time=self.acq_time, acq_count=self.acq_count, npixels_x=self.npx, npixels_y=self.npx, time=time.asctime())
+                )
+                print(yaml.dump(meta_dict), file=self.clusterfile)
+                sensor_dict = dict(deviceInfo=mpixControl.deviceInfo)
+                print(yaml.dump(sensor_dict), file=self.clusterfile)
+                if mpixControl.badpixel_list is not None:
+                    print("badPixels:\n", yaml.dump(mpixControl.badpixel_list, default_flow_style=True), file=self.clusterfile)
+                # tag for data blocks
+                print("cluster_data:", file=self.clusterfile)
+            elif _suffix == '.csv':
+                fn = self.cluster_filename
+                self.csvfile = open(fn, "w", buffering=100)
+                frameAnalyzer.write_csvheader(self.csvfile)
+            else:
+                print("!!! unkown file format to store cluster data", _suffix)
             if self.verbosity > 0:
                 print("*==* writing clusters to file " + fn)
 
         # set-up frame analyzer
-        self.frameAna = frameAnalyzer(csv=self.csvfile)
+        self.frameAna = frameAnalyzer()
 
         # file to save raw frame data
         self.out_file_yml = None
@@ -1336,7 +1381,7 @@ class runDAQ:
         self.mpixvis = miniPIXvis(npix=self.npx, nover=self.n_overlay, unit=self.unit, circ=self.circularity_cut, acq_time=self.tot_acq_time)
 
     def decode_yml(self, d):
-        """Read data from yaml dictinary (the default file format of mPIXdaq)"""
+        """Read data from yaml dictionary (the default file format of mPIXdaq)"""
 
         self.mdata = d["meta_data"]
         self.fdata = d["frame_data"]
@@ -1453,11 +1498,13 @@ class runDAQ:
             while (dt_active < self.run_time) and mpixControl.mplActive.is_set() and mpixControl.mpixActive.is_set():
                 if self.read_filename is None:
                     _idx = self.daq.dataQ.get()
+                    timestamp = time.time() - self.t_start
                     frame[:] = self.daq.fBuffer[_idx]
                     frame2d = frame.reshape(self.npx, self.npx)
                     dt_alive += self.acq_count * self.acq_time
                     i_frame += 1
                 else:  # from array in memory (as read from file)
+                    timestamp = i_frame * self.tot_acq_time
                     i_frame += 1
                     if i_frame > self.n_frames_in_file:
                         print("\033[36m\n" + 20 * ' ' + "'end-of-file - type <ret> to terminate")
@@ -1487,15 +1534,13 @@ class runDAQ:
 
                 # analyze frame and retrieve result
                 clusters, clustered_pixels = self.frameAna(frame2d)
+
+                # store analysis results (if requested)
                 if clusters is not None:
                     if self.csvfile is not None:
-                        self.frameAna.write_csv(clusters)
-                    # list of pixels per cluster
-                    # for _i, _l in enumerate(clustered_pixels):
-                    #    print(
-                    #        clusters[_i][1],
-                    #        yaml.dump(np.column_stack((_l, frame[_l])).tolist(), default_flow_style=True),
-                    #    )
+                        self.frameAna.write_csv(self.csvfile, timestamp, clusters)
+                    if self.clusterfile is not None:
+                        self.frameAna.write_clusters(self.clusterfile, timestamp, frame, clusters, clustered_pixels)
 
                 # animated visualization
                 cluster_summary = frameAnalyzer.get_cluster_summary(clusters)

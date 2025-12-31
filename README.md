@@ -184,10 +184,12 @@ covered by pixels is therefore a very prominent signature of α particles.
 The cut separating flat and peaking signatures is controlled by the parameter
 `flatness` with values between 0 and 1. 
 
-Properties of clusters are optionally written to a file in *.csv* format
-for later off-line analysis. A *Jupyter* notebook, 
-*analyze_mPIXclusters.ipynb*, is provided which illustrates an example 
-analysis. 
+Properties of clusters, including a list of contributing pixels and
+their energy values,  are optionally written to a file in *yaml* format
+(file extension `.yml`) for later off-line analysis. A version in *.csv* 
+format containing just the cluster properties is also available. 
+A *Jupyter* notebook, *analyze_mPIXclusters.ipynb*, is provided which 
+illustrates an example analysis. 
 
 To test the software without access to a miniPIX device or without
 a radioactive source, a file with recorded data is provided. Use the
@@ -317,7 +319,7 @@ Other dependencies are well-known libraries from the "Python" eco-system
 for data analysis:
 
   - `numpy`
-  - `matplotlib`,
+  - `matplotlib`
   - `scipy.ndimage.label`
   - `numpy.cov`
   - `numpy.linalg.eig`
@@ -362,48 +364,37 @@ class miniPIXdaq:
 
 ```
 class frameAnalyzer:
-  """Analyze frame data
-    - find clusters
-    - compute cluster energies
-    - compute position and covariance matrix of x- and y-coordinates
-    - analyze cluster shape (using eigenvalues of covariance matrix)
-    - construct a tuple with cluster properties
-    - optionally write cluster data to a file in csv format 
+    """Analyze frame data and produce a list of cluster objects,
 
-    Note: this algorithm only works if clusters do not overlap!
+    Args:  2d frame data, as obtained from miniPIXdaq.__call__()
 
-    Args of __call__() method:  a 2d-frame from the miniPIX
+    Output:
 
-    Returns:
-     
-    - self.pixel_clusters: list of tuples with properties per cluster: mean of x and y
-      coordinates, the number of pixels, energy, eigenvalues of covariance matrix and
-      their orientation as an angle in range [-pi/2, pi/2] and the minimal and maximal
-      eigenvalues of the covariance matrix of the energy distribution. The format is:
-      ( (x, y), n_pix, energy, (var_mx, var_mn), angle, (xEm, yEm), (varE_mx, varE_mn) )
+      pixel_clusters: a list of tuples of format
+        (x, y), n_pix, energy, (var_mx, var_mn), angle, (xEm, yEm), (varE_mx, varE_mn) 
+      with cluster properties
 
-    - self.cluster_pxl_lst is a list of dimension n_clusters + 1 and contains the pixel
-      indices contributing to each of the clusters. self.cluster_pxl_lst[-1] contains 
-      the list of single pixels
+    Helper functions to store analysis results are include as static methods
 
-    A static method, get_cluster_summary(pixel_clusters), provides summary information
-
-    - n_pixels: number of pixels with energy > 0
-    - n_clusters: number of clusters  with >= 2 pixels
-    - n_cpixels: number of pixels per cluster
-    - circularity: circularity per cluster (0. for linear, 1. for circular)
-    - cluster_energies: energy per cluster
-    - single_energies: energies in single pixels  
-  """
+    Another static method, cluster_summary() is particularly useful for on-line
+    monitoring of incoming data and provides a summary of the properties
+    of clusters in a pixel frame, returning
+      - n_clusters: number of multi-pixel clusters
+      - n_cpixels: number of pixels per cluster
+      - circularity: circularity per cluster (ranging from 0. for linear, 1. for circular)
+      - flatness:  ratio of maximum variances of pixel and energy distributions in clusters
+      - cluster_energies: energy per cluster
+      - single_energies: energies in single pixels
 ```
 
 ``` 
  class miniPIXvis:
-  """Analysis of miniPIX frames for low-rate scenarios,
+  """Display of miniPIX frames and histograms for low-rate scenarios,
   where on-line analysis is possible and animated graphs are meaningful
 
-    Animated graph of (overlayed) pixel images and cluster properties
-
+  Animated graph of (overlayed) pixel images, number of clusters per frame
+  and histograms of cluster properties
+    
     Args:
     - npix: number of pixels per axis (256)
     - nover: number of frames to overlay
@@ -415,27 +406,26 @@ class frameAnalyzer:
 
 ``` 
 
-Objects of these classes are instantiated by the class `runDAQ`. 
+Objects of these classes are instantiated by the class `runDAQ`.  
 This class also accepts the command-line arguments to set various options, 
 as already described above. 
 
-
 ```
   class runDAQ:
-    """run miniPIX data acquisition and analysis
+     """run miniPIX data acquisition, analysis and real-time graphics
 
-    class to handle:
+  class to handle:
 
-        - command-line arguments
-        - event loop controlling data acquisition and data output to file
-        - instantiates classes and calls corresponding methods for
-          - initialization of miniPIX device
-          - real-time analysis of data frames
-          - animated figures to show a live view of incoming data
+    - command-line arguments
+    - initialization of miniPIX device of input file
+    - real-time analysis of data frames
+    - animated figures to show a live view of incoming data
+    - event loop controlling data acquisition, data output to file
+      and graphical display
     """
 ```
 
-Two helper classes implement 1d and 2d histogramming functionality for
+Two helper classes implement 1d and 2d histogram functionality for
 efficient and fast animation using methods from `matplotlib.pyplot`.
 
 ```
@@ -473,11 +463,11 @@ class scatterplot:
 
 A package script `run_mPIXdaq` is provided as an example to tie 
 everything together in a running program. 
-Because the ADVACAM *Python* interface (`pypixet.so`) expects 
-C-libraries and configuration files in the very same directory 
-as *pypixet.so* itself, some tricky manipulation of the environment 
-variable `LD_LIBRAREY_PATH` is needed to ensure that all libraries
-are loaded and the *miniPIX* is correctly initialized. 
+Because the ADVACAM *Python* interface (`pypixet.so`) expects C-libraries 
+and configuration files in the very same directory as the Python interface 
+*pypixet.so* itself, some tricky manipulation of the environment variable
+`LD_LIBRAREY_PATH` is needed to ensure that all libraries are loaded and 
+the *miniPIX* is correctly initialized. 
 
 ```
 #!/usr/bin/env python
