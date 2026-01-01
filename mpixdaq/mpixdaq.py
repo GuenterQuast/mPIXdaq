@@ -117,6 +117,11 @@ class mpixControl:
         while mpixControl.mpixActive.is_set():
             mpixControl.kbdQ.put(input())
 
+    @staticmethod
+    def get_serial_number():
+        dn = mpixControl.deviceInfo["dn"]
+        return int(dn.split('sn:')[1]) if 'sn:' in dn else None
+
     def __init__(self):
         # start a background task to check for keyboard input
         self.kbdthread = Thread(name="kbdInput", target=mpixControl.keyboard_input).start()
@@ -1268,14 +1273,8 @@ class runDAQ:
             import_npy_append_array()
 
         # handling of bad pixels
-        badpixel_list = None
-        if self.fname_badpixels == '':
-            fname = "badpixels.txt"  # check default bad-pixel file
-            if self.read_filename is None and os.path.exists(fname):
-                badpixel_list = np.loadtxt(fname, dtype=np.int32).tolist()
-                print(f"*==* list of {len(badpixel_list)} bad pixels from file {fname}")
-        else:
-            badpixel_list = np.loadtxt(self.fname_badpixels, dtype=np.int32).tolist()
+        if self.fname_badpixels != '':
+            mpixControl.badpixel_list = np.loadtxt(self.fname_badpixels, dtype=np.int32).tolist()
             print("*==* list of bad pixels from file ", self.fname_badpixels)
 
         # try to load pypixet library and connect to miniPIX
@@ -1288,27 +1287,28 @@ class runDAQ:
                 if _a in {'y', 'Y', 'j', 'J'}:
                     path = os.path.dirname(os.path.realpath(__file__)) + '/'
                     self.read_filename = path + "data/BlackForestStone.yml.gz"
-                    badpixel_list = None
                 else:
                     exit("Exiting")
             else:  # library and device are ok
                 mpixControl.deviceInfo = self.daq.deviceInfo  # overwrite default sensor info
-                if self.verbosity > 0:
-                    print(f"     * overlaying {self.n_overlay} frames with {self.tot_acq_time} s")
-                    print(f"     * readout {self.acq_count} x {self.acq_time} s")
-                if self.verbosity > 1:
-                    self.daq.print_device_info()
+                # check for bad-pixels file
+                bpix_fn = f"sn{mpixControl.get_serial_number()}_badpixels.txt"
+                if mpixControl.badpixel_list is None and os.path.exists(bpix_fn):
+                    mpixControl.badpixel_list = np.loadtxt(bpix_fn, dtype=np.int32).tolist()
+                    print(f"*==* list of {len(badpixel_list)} bad pixels from file {bpix_fn}")
                 self.npx = self.daq.npx
                 self.unit = "(keV)" if self.daq.dev.isUsingCalibration() else "ToT (µs)"
-        #
-        mpixControl.badpixel_list = badpixel_list
+                if self.verbosity > 1:
+                    self.daq.print_device_info()
+                if self.verbosity > 0:
+                    print(f"     * readout {self.acq_count} x {self.acq_time} s")
+                    print(f"     * overlaying {self.n_overlay} frames with {self.tot_acq_time} s")
+        #  - end device initialization
 
-        #  end device initialization ---
-
-        # set path to working directory where all output goes
+        # now path to working directory where all output goes
         os.chdir(self.wd_path)
 
-        # prepare reading from file
+        # else prepare reading from file
         if self.read_filename is not None:
             self.read_frames_from_file()
             self.n_frames_in_file = len(self.fdata)

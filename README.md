@@ -136,15 +136,15 @@ overlaid, leading to a total integration time of 5 s.
 These images represent a two-dimensional pixel map with a color code 
 indicating the energy measured in each pixel. 
 
-The miniPIX EDU version, in particular, may suffer from a large number of
-dead or noisy pixels, and therefore they should be masked by providing a file
-with the pixel indices to be ignored. The default file name is *badpixels.txt*
-in the working directory; alternatively a file name may be specified using
-the `-b` or `--badpixels` option. 
+The miniPIX EDU version, in particular, may suffer from a large number of dead
+or noisy pixels, and therefore they should be masked by providing a file with 
+the pixel indices to be ignored. The default file name is *snxxxx_badpixels.txt*
+in the working directory, where xxxx is the serial number of the miniPIX device. 
+Alternatively a file name may be specified using the `-b` or `--badpixels` option. 
 
 Collected frame data may be directly written to disk, if a filename is
 given using the `-f`or `--file` option. Two formats are foreseen at present,
-storage of the two-dimensional frames as numpy-arrays (file extension `.npy`) 
+storage of the two-dimensional frames as *numpy*-arrays (file extension `.npy`) 
 or as lists of pixel indices and energy values in *yaml*-format (file extension
 `.yml`). To save space, the resulting output files may be compressed with
 *zip' or *gzip*. If no suffix for the filename is given, the default behavior 
