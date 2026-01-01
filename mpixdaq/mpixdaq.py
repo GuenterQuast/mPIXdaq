@@ -106,7 +106,7 @@ class mpixControl:
 
     # set default device information (assuming a miniPIX EDU is connected)
     #          overwritten when connecting a device or by deviceInfo block from input file
-    deviceInfo = {"name": "eduMiniPIX", "pitch": 55.0, "width": 256, "height": 256}
+    deviceInfo = {"dn": "eduMiniPIX (?)", "pitch": 55.0, "width": 256, "height": 256}
 
     # assume sensor has no bad pixels (overwritten in runDAQ)
     badpixel_list = None
@@ -342,9 +342,6 @@ class frameAnalyzer:
         """
 
         # initialize results lists, separating clusters fom single hits
-        f_labeled, n_labels = ndimage.label(f > 0, structure=self.label_structure)
-
-        # separating clusters fom single hits
         pixel_list = []
         sngl_pxl_list = []
         f_labeled, n_labels = ndimage.label(f > 0, structure=self.label_structure)
@@ -1212,7 +1209,7 @@ class runDAQ:
         - real-time analysis of data frames
         - animated figures to show a live view of incoming data
         - event loop controlling data acquisition, data output to file
-          graphical display
+          and graphical display
     """
 
     def __init__(self, wd_path=None):
@@ -1317,6 +1314,8 @@ class runDAQ:
             self.n_frames_in_file = len(self.fdata)
             if self.verbosity > 0:
                 print(f" found {self.n_frames_in_file} pixel frames in file")
+            if self.verbosity > 1:
+                print(f"    Data recorded with device  {mpixControl.deviceInfo['dn']}")
 
         # file to save cluster data from processed frames
         self.csvfile = None
