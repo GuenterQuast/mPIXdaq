@@ -1226,13 +1226,13 @@ class runDAQ:
         - graphics display
         """
 
-        # write current directory if no path given
+        # - set current directory as working directory if no path given
         if wd_path is None:
             #    wd_path = os.getenv("HOME")
             wd_path = os.getcwd()
         self.wd_path = wd_path
 
-        # parse command line arguments
+        # - parse command line arguments
         parser = argparse.ArgumentParser(description="read, analyze, display and histogram data from miniPIX device")
         parser.add_argument('-v', '--verbosity', type=int, default=1, help='verbosity level (1)')
         parser.add_argument('-o', '--overlay', type=int, default=10, help='number of frames to overlay in graph (10)')
@@ -1249,7 +1249,7 @@ class runDAQ:
         args = parser.parse_args()
         timestamp = time.strftime('%y%m%d-%H%M', time.localtime())
 
-        # set options
+        # - set options
         self.verbosity = args.verbosity
         if args.file == '':
             self.out_filename = None
@@ -1273,12 +1273,7 @@ class runDAQ:
             # data recording with npy_append_array()
             import_npy_append_array()
 
-        # handling of bad pixels
-        if self.fname_badpixels != '':
-            mpixControl.badpixel_list = np.loadtxt(self.fname_badpixels, dtype=np.int32).tolist()
-            print("*==* list of bad pixels from file ", self.fname_badpixels)
-
-        # try to load pypixet library and connect to miniPIX
+        # - load pypixet library and connect to miniPIX
         if self.read_filename is None:
             self.tot_acq_time = self.acq_count * self.acq_time
             # initialize data acquisition object
@@ -1307,9 +1302,12 @@ class runDAQ:
                     print(f"     * readout {self.acq_count} x {self.acq_time} s")
                     print(f"     * overlaying {self.n_overlay} frames with {self.tot_acq_time} s")
 
+        # set path to working directory (relative path for input and output files)
+        os.chdir(self.wd_path)
+
+        # - set-up input and output files
+
         if self.read_filename is not None:  # prepare reading from file
-            # set path to working directory where all output goes
-            os.chdir(self.wd_path)
             self.read_frames_from_file()
             self.n_frames_in_file = len(self.fdata)
             if self.verbosity > 0:
@@ -1345,6 +1343,11 @@ class runDAQ:
                 print("!!! unkown file format to store cluster data", _suffix)
             if self.verbosity > 0:
                 print("*==* writing clusters to file " + fn)
+
+        # user-specified bad pixels (overrides all other input sources)
+        if self.fname_badpixels != '':
+            mpixControl.badpixel_list = np.loadtxt(self.fname_badpixels, dtype=np.int32).tolist()
+            print("*==* list of bad pixels from file ", self.fname_badpixels)
 
         # set-up frame analyzer
         self.frameAna = frameAnalyzer()
