@@ -11,5 +11,5 @@ PIXETDIR = os.path.dirname(os.path.realpath(__file__))
 print("advacam_win64: ", PIXETDIR)
 # add current file directory so that pypixet.so is found by python
 sys.path.append(PIXETDIR)
-# add to path so that pypixet.so finds its dependencies
+# change directory so that pypixet.so finds its dependencies
 os.chdir(PIXETDIR)
