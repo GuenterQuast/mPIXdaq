@@ -659,7 +659,7 @@ class miniPIXvis:
         """call-back for matplotlib 'close_event'"""
         mpixControl.mplActive.clear()
 
-    def __init__(self, npix=256, nover=10, unit='keV', circ=0.5, flat=0.5, acq_time=1.0):
+    def __init__(self, nover=10, unit='keV', circ=0.5, flat=0.5, acq_time=1.0):
         """initialize figure with pixel image, rate history and two histograms and a scatter plot
 
         Args:
@@ -672,7 +672,7 @@ class miniPIXvis:
         """
 
         # sensor properties
-        self.npx = npix
+        self.npx = mpixControl.deviceInfo["width"]
         pitch = mpixControl.deviceInfo["pitch"] / 1000.0  # pixel size in mm
         size = pitch * mpixControl.deviceInfo["width"]
         # functions for transformations pixel number n <-> position x
@@ -1305,7 +1305,8 @@ class runDAQ:
                 if self.verbosity > 0:
                     print(f"     * readout {self.acq_count} x {self.acq_time} s")
                     print(f"     * overlaying {self.n_overlay} frames with {self.tot_acq_time} s")
-        else:  # prepare reading from file
+
+        if self.read_filename is not None: # prepare reading from file
             # set path to working directory where all output goes
             os.chdir(self.wd_path)
             self.read_frames_from_file()
@@ -1375,7 +1376,7 @@ class runDAQ:
                 print("*==* writing raw frames to file " + self.out_filename)
 
         # initialize visualizer
-        self.mpixvis = miniPIXvis(npix=self.npx, nover=self.n_overlay, unit=self.unit, circ=self.circularity_cut, acq_time=self.tot_acq_time)
+        self.mpixvis = miniPIXvis(nover=self.n_overlay, unit=self.unit, circ=self.circularity_cut, acq_time=self.tot_acq_time)
 
     def decode_yml(self, d):
         """Read data from yaml dictionary (the default file format of mPIXdaq)"""
