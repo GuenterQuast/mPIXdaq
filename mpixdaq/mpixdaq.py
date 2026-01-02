@@ -1295,7 +1295,7 @@ class runDAQ:
                 bpix_fn = f"sn{mpixControl.get_serial_number()}_badpixels.txt"
                 if mpixControl.badpixel_list is None and os.path.exists(bpix_fn):
                     mpixControl.badpixel_list = np.loadtxt(bpix_fn, dtype=np.int32).tolist()
-                    print(f"*==* list of {len(badpixel_list)} bad pixels from file {bpix_fn}")
+                    print(f"*==* list of {len(mpixControl.badpixel_list)} bad pixels from file {bpix_fn}")
                 self.npx = self.daq.npx
                 self.unit = "(keV)" if self.daq.dev.isUsingCalibration() else "ToT (µs)"
                 if self.verbosity > 1:
@@ -1497,7 +1497,7 @@ class runDAQ:
             while (dt_active < self.run_time) and mpixControl.mplActive.is_set() and mpixControl.mpixActive.is_set():
                 if self.read_filename is None:
                     _idx = self.daq.dataQ.get()
-                    timestamp = time.time() - self.t_start
+                    timestamp = time.time() - t_start
                     frame[:] = self.daq.fBuffer[_idx]
                     frame2d = frame.reshape(self.npx, self.npx)
                     dt_alive += self.acq_count * self.acq_time
