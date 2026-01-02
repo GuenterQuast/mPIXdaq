@@ -83,6 +83,7 @@ def import_pixet():
             from .advacam_win64 import pypixet
     else:
         exit(" !!! pypixet not available for architecture " + mach + arch[0])
+    print(f"*==* loaded driver libraries for patform {mach}, architcture {arch} on system {syst}")
 
 
 # function for conditional import from npy_append_array
@@ -173,7 +174,7 @@ class miniPIXdaq:
             print("!!! pipixet did not start!")
             return
         self.pixet = pypixet.pixet
-        print("*==* loaded pypixet vers. ", self.pixet.pixetVersion())
+        print("*==*       pypixet vers. ", self.pixet.pixetVersion())
         devs = self.pixet.devicesByType(self.pixet.PX_DEVTYPE_MPX2)  # miniPIX uses the mediPIX 2 chip
         if len(devs) == 0:
             print("!!! no miniPIX device found")
@@ -438,7 +439,7 @@ class frameAnalyzer:
             pixel_indices = np.asarray([_x + self.npx_x * _y])
             x_mean = _x
             y_mean = _y
-            energy = f[_x, _y]
+            energy = f[_y, _x]
             var_mx, var_mn = (0, 0)
             angle = 0.0
             xEm, yEm = _x, _y
