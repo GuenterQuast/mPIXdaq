@@ -340,10 +340,11 @@ Details on the interfaces are given below.
 class miniPIXdaq:
     """Initialize, readout miniPIX device and store data
 
-    After initialization, data from the device is stored in a
-    ring buffer and the current buffer index is sent to the
-    calling process via a Queue in an infinite loop, which
-    ends when data is entered in a command Queue.
+    After initialization, the __call__() method of this class is executed
+    in an infinite loop, storing data from the device in a ring buffer.
+    The current buffer index is sent to the calling process via a Queue
+    (dataQ, an instance of threading.Queue()). The loop ends when the flag
+    endEvent (an instance of threading.Event() in class mpixControl) is set.
 
     Args:
 
