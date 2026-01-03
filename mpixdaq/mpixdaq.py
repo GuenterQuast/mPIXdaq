@@ -125,17 +125,18 @@ class mpixControl:
 
     def __init__(self):
         # start a background task to check for keyboard input
-        self.kbdthread = Thread(name="kbdInput", target=mpixControl.keyboard_input).start()
+        self.kbdthread = Thread(name="kbdInput", target=mpixControl.keyboard_input, daemon=True).start()
 
 
 # - class handling data acquisition from the miniPIX device - - - - - - - - - -
 class miniPIXdaq:
     """Initialize and retrieve data fom miniPIX device
 
-    After initialization, data from the device is stored in a
-    ring buffer and the current buffer index is sent to the
-    calling process via a Queue in an infinite loop, which
-    ends when data is entered in a command Queue.
+    After initialization, the __call__() method of this class is executed
+    in an infinite loop, storing data from the device in a ring buffer.
+    The current buffer index is sent to the calling process via a Queue
+    (dataQ, an instance of threading.Queue()). The loop ends when the flag
+    endEvent (an instance of threading.Event() in class mpixControl) is set.
 
     Args:
 
@@ -207,8 +208,8 @@ class miniPIXdaq:
         self.fBuffer = np.zeros((self.Nbuf, self.npx * self.npx), dtype=np.float32)
         self._w_idx = 0
 
-        # Queue for synchronization & data transfer from buffer
-        #    1. a Queue with less slots than buffers to enforce blocking if no buffer space left
+        # Queue for synchronization & data transfer from buffer,
+        #    with fewer slots than buffers to enforce blocking if no buffer space left
         self.dataQ = Queue(self.Nbuf - 2)
 
     def get_device_info(self):
@@ -1269,7 +1270,7 @@ class runDAQ:
         if self.verbosity > 0:
             print(f"\n*==* script {sys.argv[0]} executing in working directory {self.wd_path}")
 
-        if self.out_filename is not None:
+        if self.out_filename is not None and '.npy' in self.out_filename:
             # data recording with npy_append_array()
             import_npy_append_array()
 
@@ -1319,6 +1320,7 @@ class runDAQ:
         self.csvfile = None
         self.clusterfile = None
         if self.cluster_filename is not None:
+            fn = None
             _suffix = pathlib.Path(self.cluster_filename).suffix
             if _suffix == '' or _suffix == '.yml':
                 fn = self.cluster_filename + '.yml' if _suffix == '' else self.cluster_filename
@@ -1341,10 +1343,10 @@ class runDAQ:
                 frameAnalyzer.write_csvheader(self.csvfile)
             else:
                 print("!!! unkown file format to store cluster data", _suffix)
-            if self.verbosity > 0:
+            if fn is not None and self.verbosity > 0:
                 print("*==* writing clusters to file " + fn)
 
-        # user-specified bad pixels (overrides all other input sources)
+        # user-specified bad pixels (overrides other input sources)
         if self.fname_badpixels != '':
             mpixControl.badpixel_list = np.loadtxt(self.fname_badpixels, dtype=np.int32).tolist()
             print("*==* list of bad pixels from file ", self.fname_badpixels)
