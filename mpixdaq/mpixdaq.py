@@ -1078,11 +1078,11 @@ class bhist:
 
 class scatterplot:
     """two-dimensional scatter plot for animation, based on numpy.histogram2d
-    supports multiple classes of data, plots a '.' in the corresponding color
-    in every non-zero bin of a 2d-histogram
+    The code supports multiple classes of data and plots a '.' in a
+    corresponding color in every non-zero bin of a 2d-histogram
 
     Args:
-        * data: tuple of pairs of cordinates (([x], [y]), ([], []), ...)
+        * data: tuple of pairs of coordinates (([x], [y]), ([], []), ...)
           per class to be shown
         * binedges: 2 arrays of bin edges [[bex], [bey]]
         * xlabel: label for x-axis

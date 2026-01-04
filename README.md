@@ -1,7 +1,7 @@
-## mPIXdaq: Data acquisition for *miniPIX (EDU)* pixel detector 
-----------------------------------------------------------------  
+## mPIXdaq: Data acquisition and analysis for *miniPIX (EDU)* pixel detector 
+---
 
-                                            Vers. 1.0.0b, November 2025
+                                                    Vers. 1.0.0, January 2026
 
 The [miniPIX EDU](https://advacam.com/camera/minipix-edu) is a camera
 for radiation based on the [Timepix](https://home.cern/tags/timepix) 
@@ -9,11 +9,10 @@ pixel read-out chip with 256x256 radiation-sensitive pixels of 55x55µm²
 area and 300µm depth each. The chip is covered by a very thin foil to 
 permit α and β radiation to reach  the pixels. The device is enclosed 
 in an aluminum housing with a USB 2.0 interface. The sensor chip
-is covered by a thin foil and is very fragile; this area should be 
-covered with a protective material if not measuring α radiation. 
+is covered with a thin foil and is very fragile; this area should be 
+covered with protective cover if not measuring α radiation. 
 
-Other than single semi-conductor chips or simple Geiger counters, 
-this device provides two-dimensional images of particle traces in 
+The device provides two-dimensional images of particle traces in 
 the sensitive detector material. The high spatial resolution compared 
 to the typical range of particles in silicon is useful to distinguish 
 the different types of radiation and measure their deposited energies. 
@@ -27,11 +26,12 @@ The code provided here is a minimalist example to read out single
 frames, i.e. a full set of 256x256 measurements accumulated over a 
 given, fixed time interval. Each frame is displayed as an image with
 a logarithmic color scale representing the deposited energy. 
+
 The analysis of the recorded signals, i.e. clustering of pixels, energy
 determination and visualization, is achieved with standard open-source
-tools for data analysis. It is therefore well-suited to give high-school
-or university students detailed insights and to enable them to carry out
-their own studies.
+tools for data analysis. It is therefore well-suited to provide high-school
+or university students with detailed insights into principles of the interaction
+of radiation with matter and to enable them to carry out their own studies.
 
 
 ## Getting ready for data taking
@@ -51,11 +51,10 @@ directory in the *pypixet* *Python* interface.
 To get started, follow the steps below: 
 
  - Get the code from gitlab@KIT or from github  
-   ``git clone https://gitlab.kit.edu/Guenter.Quast/mPIXdaq`` or    
-   ``git clone https://github.com/GuenterQuast/mPIXdaq``.
+    ``git clone https://github.com/GuenterQuast/mPIXdaq``.
 
    This repository includes the *Python* code and a minimalistic set
-   of libraries provided by ADVACAM.
+   of libraries provided by Advacam.
 
  - Next, `cd` to the `mPIXdaq` directory you just downloaded.
 
@@ -76,20 +75,15 @@ program from any working directory by typing
 If you plan to record data, note that the path to the output file
 is relative to the current working directory. 
 
-*Note* that the *pypixet* initialization is set up to write log-files
+*Note* also that the *pypixet* initialization is set up to write log-files
 and configuration data to the directory */tmp/mPIX/*.
 
 It is also worth mentioning that on some systems the current directory,
-".", needs to be contained in the `LD_LIBRARY_PATH` so that the ADVACAM 
+".", needs to be contained in the `LD_LIBRARY_PATH` so that the Advacam 
 *Python* interface *pypixet* finds all its *C* libraries. This is also 
 done in the *Python* script ``run_mPIXdaq.py`` by temporarily modifying 
 the environment variable `LD_LIBRARY_PATH` if necessary and then restarting 
 to execute the *Python* code in the new environment.  
-Starting the *Python* code by a different mechanism may not work without 
-adjusting the environment variable `LD_LIBRARY_PATH`. In the *bash* shell, 
-this is achieved by `export LD_LIBRARY_PATH='.'` on the command line. 
-Note, however, that such a permanent change opens up a security gap on 
-your computer!
  
 
 ## Running the example script
@@ -146,18 +140,16 @@ Collected frame data may be directly written to disk, if a filename is
 given using the `-f`or `--file` option. Two formats are foreseen at present,
 storage of the two-dimensional frames as *numpy*-arrays (file extension `.npy`) 
 or as lists of pixel indices and energy values in *yaml*-format (file extension
-`.yml`). To save space, the resulting output files may be compressed with
-*zip' or *gzip*. If no suffix for the filename is given, the default behavior 
-is writing a *.yml* file. The `.yml` format also permits storing meta data
-like parameters of the data acquisition, the properties of the sensor and
-the list of bad pixels.
+`.yml`). If no suffix for the filename is given, the default behavior is writing 
+a *.yml* file. The `.yml` format also permits storing meta data like parameters 
+of the data acquisition, the properties of the sensor and the list of bad pixels.
+To save space, the output files may be compressed with *zip' or *gzip*. 
 
-The same formats are recognized when reading back files
-using the `-r` resp. `--readfile` options. 
+The same formats are recognized when reading back files using the `-r` resp. `--readfile` options.  
 In addition, `.txt` files written with the *Pixet* program of Advacam
 can be used as an input. 
 
-Data analysis consists of clustering of pixels in each overlay-frame and
+Data analysis consists of clustering of pixels in each frame and
 determination of cluster parameters, like the number of pixels, energy
 of clusters, and the shapes of the cluster areas and of the energy 
 distribution over the pixels in the clusters.
@@ -201,17 +193,15 @@ time and may take some time on slow computers.
 ## Implementation Details
 
 The default data acquisition is based on the function 
-*doSimpleIntegralAcquisition()* from  the *ADVACAM* *Python* API.
+*doSimpleIntegralAcquisition()* from  the *Advacam* *Python* API.
 A fixed number of frames (*acq_counts*) with an adjustable accumulation
 time (*acq_time*) are read from the miniPIX device and added up. 
 
 The chosen readout mode is *PX_TPXMODE_TOT*, where "ToT" means 
 "time over threshold". This quantity shows good proportionality to
-the deposited energy at high signal values, but exhibits a strong 
-non-linear behavior for small signals near the detection threshold 
-of the miniPIX. Calibration constants are stored on the miniPIX
-device for each pixel, which are used to provide deposited energies
-per pixel in units of keV. 
+the deposited energy at high signal values, but exhibits a non-linear 
+behavior for small signals near the detection threshold  of the miniPIX. Calibration constants are stored on the miniPIX device for each pixel, 
+which are used to provide deposited energies per pixel in units of keV. 
 
 The relevant libraries for device control are provided in directories
 `advacam_<arch>` for `x86_64` Linux, `arm32` and `arm64` and for 
@@ -227,7 +217,7 @@ typical directory is:
   factory/      # initialization constants 
 ```
 
-Note that the copyright of these libraries belongs to ADVACAM. 
+Note that the copyright of these libraries is held by Advacam. 
 The libraries may be downloaded from their web page, 
 [ADVACAM DWONLOADS](https://advacam.com/downloads/). 
 They are provided here as *Python* packages for some platforms
@@ -268,7 +258,7 @@ the analysis of natural radiation as emitted by minerals like
 Pitchblend (=Uraninit),  Columbit, Thorianit and others. Radon
 accumulated from the air in basement rooms on the surface
 of an electrostatically charged ballon also work fine. Therefore,
-the frame collection is chosen to be on the order of seconds, 
+the frame collection time is chosen to be on the order of seconds, 
 so that analysis results can be displayed in real-time on 
 a sufficiently fast computer including the Raspberry Pi 5.
 
@@ -303,7 +293,7 @@ $a$ = 1.6, $b$=23, $c$=23 and $t$=4.3.
 Each pixel has its individual calibration stored on the chip, 
 which is optionally applied to obtain pixel readings in units of keV.
 The calibration is reliable up to pixel energies of one MeV. 
-Higher pixel  energies may result when frames with short acquisition 
+Higher pixel energies may result when frames with short acquisition 
 time are summed up. For details, see the article by J. Jakubek, 
 *Precise energy calibration of pixel detector working in time-over-threshold
 mode*, NIM A 633 (2011), 5262-5265*.
@@ -313,7 +303,7 @@ mode*, NIM A 633 (2011), 5262-5265*.
 
 This package consists of one *Python* file with several classes providing 
 the base functionality. As mentioned above, it relies on
-[ADVACAM libraries](https://wiki.advacam.cz/wiki/Python_API)
+[Advacam libraries](https://wiki.advacam.cz/wiki/Python_API)
 for setting-up and reading the sensor. 
 Other dependencies are well-known libraries from the "Python" eco-system 
 for data analysis:
@@ -447,12 +437,11 @@ class bhist:
 
 ```
 class scatterplot:
-    """two-dimensional scatter plot for animation, based on numpy.histogram2d
-    supports multiple classes of data, plots a '.' in the corresponding color
-    in every non-zero bin of a 2d-histogram
+    """two-dimensional scatter plot for animation, based on numpy.histogram2d.
+    The code supports multiple classes of data and plots a '.' in the corresponding color in every non-zero bin of a 2d-histogram
 
     Args:
-        * data: tuple of pairs of cordinates  (([x], [y]), ([], []), ...)
+        * data: tuple of pairs of coordinates  (([x], [y]), ([], []), ...)
           per class to be shown
         * binedges: 2 arrays of bin edges ([bex], [bey])
         * xlabel: label for x-axis
@@ -462,13 +451,11 @@ class scatterplot:
     """
 ```
 
-A package script `run_mPIXdaq` is provided as an example to tie 
-everything together in a running program. 
-Because the ADVACAM *Python* interface (`pypixet.so`) expects C-libraries 
-and configuration files in the very same directory as the Python interface 
-*pypixet.so* itself, some tricky manipulation of the environment variable
-`LD_LIBRAREY_PATH` is needed to ensure that all libraries are loaded and 
-the *miniPIX* is correctly initialized. 
+A package script `run_mPIXdaq` is provided as an example to tie everything 
+together in a running program. Because the ADVACAM *Python* interface 
+(`pypixet.so`) expects C-libraries and configuration files in the very same directory as the Python interface *pypixet.so* itself, some tricky manipulation
+of the environment variable `LD_LIBRAREY_PATH` is needed to ensure that all
+libraries are loaded and the *miniPIX* is correctly initialized. 
 
 ```
 #!/usr/bin/env python
