@@ -112,15 +112,17 @@ options:
   -f FILE, --file FILE  file to store frame data
   -w WRITEFILE, --writefile WRITEFILE
                         csv file to write cluster data
-  -t TIME, --time TIME  run time in seconds
+  -t TIME, --time TIME  run time in seconds (36000)
   --circularity_cut CIRCULARITY_CUT
-                        cut on cicrularity for alpha detection
+                        cut on circularity for alpha detection
   --flatness_cut FLATNESS_CUT
                         cut on flatness for alpha detection
+  -p PRESCALE, --prescale PRESCALE
+                        prescaling factor for frame analysis
   -r READFILE, --readfile READFILE
                         file to read frame data
   -b BADPIXELS, --badpixels BADPIXELS
-                        file with bad pixels
+                        file with bad pixels to mask
 ```
 
 The default values are adjusted to situations with low rates, where
@@ -200,7 +202,8 @@ time (*acq_time*) are read from the miniPIX device and added up.
 The chosen readout mode is *PX_TPXMODE_TOT*, where "ToT" means 
 "time over threshold". This quantity shows good proportionality to
 the deposited energy at high signal values, but exhibits a non-linear 
-behavior for small signals near the detection threshold  of the miniPIX. Calibration constants are stored on the miniPIX device for each pixel, 
+behavior for small signals near the detection threshold  of the miniPIX. 
+Calibration constants are stored on the miniPIX device for each pixel, 
 which are used to provide deposited energies per pixel in units of keV. 
 
 The relevant libraries for device control are provided in directories
@@ -234,8 +237,9 @@ and the larger one of the two eigenvalues of the covariance matrix
 calculated from the *x* and *y* coordinates of the pixels in a cluster 
 using *numpy.cov()*. For circular clusters, as typically produced by 
 α radiation, this ratio  is close to one, while it is almost zero for 
-the longer traces from β radiation. In addition, she shape of the energy distribution is considered, which shows a sharp maximum at the center for
-α particles but is rather flat otherwise.
+the longer traces from β radiation. In addition, she shape of the energy
+distribution is considered, which shows a sharp maximum at the center 
+for α particles but is rather flat otherwise.
 
 The figure below shows the graphical display with a pixel image and 
 the typical distributions of the pixel and cluster energies and the 
@@ -264,7 +268,9 @@ a sufficiently fast computer including the Raspberry Pi 5.
 
 For applications at higher rates, the analysis may have to
 be done off-line by reading data from recorded files, or 
-multiple cores must be used for the analysis task.  
+multiple cores must be used for the analysis task. The option
+*--prescale* may be used to limit frame and cluster analysis
+to a subset of the recorded frames. 
 
 
 ## Sensor Details

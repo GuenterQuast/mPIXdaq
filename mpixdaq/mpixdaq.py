@@ -1242,11 +1242,11 @@ class runDAQ:
         parser.add_argument('-f', '--file', type=str, default='', help='file to store frame data')
         parser.add_argument('-w', '--writefile', type=str, default='', help='csv file to write cluster data')
         parser.add_argument('-t', '--time', type=int, default=36000, help='run time in seconds (36000)')
-        parser.add_argument('--circularity_cut', type=float, default=0.5, help='cut on cicrularity for alpha detetion')
+        parser.add_argument('--circularity_cut', type=float, default=0.5, help='cut on circularity for alpha detection')
         parser.add_argument('--flatness_cut', type=float, default=0.4, help='cut on flatness for alpha detection')
-
+        parser.add_argument('-p', '--prescale', type=int, default=1, help='prescaling factor for frame analysis')
         parser.add_argument('-r', '--readfile', type=str, default='', help='file to read frame data')
-        parser.add_argument('-b', '--badpixels', type=str, default='', help='file with bad pixels')
+        parser.add_argument('-b', '--badpixels', type=str, default='', help='file with bad pixels to mask')
         args = parser.parse_args()
         timestamp = time.strftime('%y%m%d-%H%M', time.localtime())
 
@@ -1265,14 +1265,21 @@ class runDAQ:
         self.circularity_cut = args.circularity_cut
         self.flatness_cut = args.flatness_cut
         self.run_time = args.time
+        self.prescale_analysis = args.prescale
         self.write_mode = "list"  # write pixel list, alternadive "2d"
+
+        # - conditional import
+        if self.out_filename is not None and '.npy' in self.out_filename:
+            # data recording with npy_append_array()
+            import_npy_append_array()
 
         if self.verbosity > 0:
             print(f"\n*==* script {sys.argv[0]} executing in working directory {self.wd_path}")
 
-        if self.out_filename is not None and '.npy' in self.out_filename:
-            # data recording with npy_append_array()
-            import_npy_append_array()
+        # - check (and fix) input consistency
+        if self.cluster_filename is not None and self.prescale_analysis != 1:
+            self.prescale_analysis = 1
+            print(f"!!! prescaling set to {self.prescale_analysis} to write cluster infomation for all frames")
 
         # - load pypixet library and connect to miniPIX
         if self.read_filename is None:
@@ -1523,8 +1530,9 @@ class runDAQ:
                         # 2d-frames as input
                         frame2d = self.fdata[i_frame - 1]
                         frame = np.int32(frame2d.reshape(self.npx * self.npx))
-                    time.sleep(0.2)
-
+                    if self.prescale_analysis == 1:
+                        time.sleep(0.2)  # gives less hectic impression in play-back mode
+ 
                 if self.out_file_yml is not None:
                     pixel_idxs = np.argwhere(frame > 0)
                     print(
@@ -1536,19 +1544,20 @@ class runDAQ:
                     with NpyAppendArray(self.out_file_npy) as npa:
                         npa.append(np.array([frame2d]))
 
-                # analyze frame and retrieve result
-                clusters, clustered_pixels = self.frameAna(frame2d)
-
-                # store analysis results (if requested)
-                if clusters is not None:
-                    if self.csvfile is not None:
-                        self.frameAna.write_csv(self.csvfile, timestamp, clusters)
-                    if self.clusterfile is not None:
-                        self.frameAna.write_clusters(self.clusterfile, timestamp, frame, clusters, clustered_pixels)
-
-                # animated visualization
-                cluster_summary = frameAnalyzer.get_cluster_summary(clusters)
-                self.mpixvis(frame2d, cluster_summary, dt_alive)
+                # further process (subset of) frames (given by prescaling factor)                 
+                if i_frame%self.prescale_analysis == 0:
+                    # analyze frame and retrieve result
+                    clusters, clustered_pixels = self.frameAna(frame2d)    
+                    # store analysis results (if requested)
+                    if clusters is not None:
+                        if self.csvfile is not None:
+                            self.frameAna.write_csv(self.csvfile, timestamp, clusters)
+                        if self.clusterfile is not None:
+                            self.frameAna.write_clusters(self.clusterfile, timestamp, frame, clusters, clustered_pixels)
+                    # animated visualization
+                    cluster_summary = frameAnalyzer.get_cluster_summary(clusters)
+                    self.mpixvis(frame2d, cluster_summary, dt_alive)
+                # -- endif  of analysis and visualization    
 
                 if not mpixControl.kbdQ.empty():
                     # decode keyboard input
