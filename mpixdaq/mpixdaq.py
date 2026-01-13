@@ -1323,6 +1323,33 @@ class runDAQ:
             if self.verbosity > 1:
                 print(f"    Data recorded with device  {mpixControl.deviceInfo['dn']}")
 
+        # file to save raw frame data
+        self.out_file_yml = None
+        self.out_file_npy = None
+        if self.out_filename is not None:
+            write_suffix = pathlib.Path(self.out_filename).suffix
+            if write_suffix == '.npy':
+                self.write_mode = "2d"
+                self.out_file_npy = self.out_filename
+            else:
+                self.write_mode = "list"
+                if write_suffix == '':
+                    self.out_filename = self.out_filename + ".yml"
+                self.out_file_yml = open(self.out_filename, "w", buffering=8192)
+                print("--- #frame data", file=self.out_file_yml)  # header line
+                meta_dict = dict(
+                    meta_data=dict(acq_time=self.acq_time, acq_count=self.acq_count, npixels_x=self.npx, npixels_y=self.npx, time=time.asctime())
+                )
+                print(yaml.dump(meta_dict), file=self.out_file_yml)
+                sensor_dict = dict(deviceInfo=mpixControl.deviceInfo)
+                print(yaml.dump(sensor_dict), file=self.out_file_yml)
+                if mpixControl.badpixel_list is not None:
+                    print("badPixels:\n", yaml.dump(mpixControl.badpixel_list, default_flow_style=True), file=self.out_file_yml)
+                # tag for data blocks
+                print("frame_data:", file=self.out_file_yml)
+            if self.verbosity > 0:
+                print("*==* writing raw frames to file " + self.out_filename)
+
         # file to save cluster data from processed frames
         self.csvfile = None
         self.clusterfile = None
@@ -1331,7 +1358,7 @@ class runDAQ:
             _suffix = pathlib.Path(self.cluster_filename).suffix
             if _suffix == '' or _suffix == '.yml':
                 fn = self.cluster_filename + '.yml' if _suffix == '' else self.cluster_filename
-                self.clusterfile = open(fn, "w", buffering=100)
+                self.clusterfile = open(fn, "w", buffering=8192)
                 print("--- #cluster data", file=self.clusterfile)  # header line
                 frameAnalyzer.write_clusterheader(self.clusterfile)
                 meta_dict = dict(
@@ -1346,7 +1373,7 @@ class runDAQ:
                 print("cluster_data:", file=self.clusterfile)
             elif _suffix == '.csv':
                 fn = self.cluster_filename
-                self.csvfile = open(fn, "w", buffering=100)
+                self.csvfile = open(fn, "w", buffering=8192)
                 frameAnalyzer.write_csvheader(self.csvfile)
             else:
                 print("!!! unkown file format to store cluster data", _suffix)
@@ -1360,33 +1387,6 @@ class runDAQ:
 
         # set-up frame analyzer
         self.frameAna = frameAnalyzer()
-
-        # file to save raw frame data
-        self.out_file_yml = None
-        self.out_file_npy = None
-        if self.out_filename is not None:
-            write_suffix = pathlib.Path(self.out_filename).suffix
-            if write_suffix == '.npy':
-                self.write_mode = "2d"
-                self.out_file_npy = self.out_filename
-            else:
-                self.write_mode = "list"
-                if write_suffix == '':
-                    self.out_filename = self.out_filename + ".yml"
-                self.out_file_yml = open(self.out_filename, "w", buffering=10)
-                print("--- #frame data", file=self.out_file_yml)  # header line
-                meta_dict = dict(
-                    meta_data=dict(acq_time=self.acq_time, acq_count=self.acq_count, npixels_x=self.npx, npixels_y=self.npx, time=time.asctime())
-                )
-                print(yaml.dump(meta_dict), file=self.out_file_yml)
-                sensor_dict = dict(deviceInfo=mpixControl.deviceInfo)
-                print(yaml.dump(sensor_dict), file=self.out_file_yml)
-                if mpixControl.badpixel_list is not None:
-                    print("badPixels:\n", yaml.dump(mpixControl.badpixel_list, default_flow_style=True), file=self.out_file_yml)
-                # tag for data blocks
-                print("frame_data:", file=self.out_file_yml)
-            if self.verbosity > 0:
-                print("*==* writing raw frames to file " + self.out_filename)
 
         # initialize visualizer
         self.mpixvis = miniPIXvis(nover=self.n_overlay, unit=self.unit, circ=self.circularity_cut, acq_time=self.tot_acq_time)
@@ -1532,7 +1532,7 @@ class runDAQ:
                         frame = np.int32(frame2d.reshape(self.npx * self.npx))
                     if self.prescale_analysis == 1:
                         time.sleep(0.2)  # gives less hectic impression in play-back mode
- 
+
                 if self.out_file_yml is not None:
                     pixel_idxs = np.argwhere(frame > 0)
                     print(
@@ -1544,10 +1544,10 @@ class runDAQ:
                     with NpyAppendArray(self.out_file_npy) as npa:
                         npa.append(np.array([frame2d]))
 
-                # further process (subset of) frames (given by prescaling factor)                 
-                if i_frame%self.prescale_analysis == 0:
+                # further process (subset of) frames (given by prescaling factor)
+                if (i_frame - 1) % self.prescale_analysis == 0:
                     # analyze frame and retrieve result
-                    clusters, clustered_pixels = self.frameAna(frame2d)    
+                    clusters, clustered_pixels = self.frameAna(frame2d)
                     # store analysis results (if requested)
                     if clusters is not None:
                         if self.csvfile is not None:
@@ -1557,7 +1557,7 @@ class runDAQ:
                     # animated visualization
                     cluster_summary = frameAnalyzer.get_cluster_summary(clusters)
                     self.mpixvis(frame2d, cluster_summary, dt_alive)
-                # -- endif  of analysis and visualization    
+                # -- endif  of analysis and visualization
 
                 if not mpixControl.kbdQ.empty():
                     # decode keyboard input
@@ -1584,6 +1584,7 @@ class runDAQ:
             mpixControl.mpixActive.clear()
             if self.read_filename is None:
                 mpixControl.endEvent.set()
+            # close all output files
             if self.out_file_yml is not None:
                 print("... #end", file=self.out_file_yml)  # footer line
                 self.out_file_yml.flush()
@@ -1591,8 +1592,13 @@ class runDAQ:
             if self.csvfile is not None:
                 self.csvfile.flush()
                 self.csvfile.close()
+            if self.clusterfile is not None:
+                self.clusterfile.flush()
+                self.clusterfile.close()
+
             if self.read_filename is None:
                 pypixet.exit()
+
             print(10 * ' ' + "  - type <ret> to terminate ->> ", end='')
 
 
