@@ -1308,6 +1308,8 @@ class runDAQ:
                     self.daq.print_device_info()
                 if self.verbosity > 0:
                     print(f"     * readout {self.acq_count} x {self.acq_time} s")
+                    if self.prescale_analysis != 1:
+                        print(f"     * analysis prescaling factor {self.prescale_analysis}")
                     print(f"     * overlaying {self.n_overlay} frames with {self.tot_acq_time} s")
 
         # set path to working directory (relative path for input and output files)
@@ -1557,7 +1559,7 @@ class runDAQ:
                     # animated visualization
                     cluster_summary = frameAnalyzer.get_cluster_summary(clusters)
                     self.mpixvis(frame2d, cluster_summary, dt_alive)
-                # -- endif  of analysis and visualization
+                # -- endif  analysis and visualization
 
                 if not mpixControl.kbdQ.empty():
                     # decode keyboard input
@@ -1595,6 +1597,8 @@ class runDAQ:
             if self.clusterfile is not None:
                 self.clusterfile.flush()
                 self.clusterfile.close()
+
+            time.sleep(1.5)  # give time for processes to finish
 
             if self.read_filename is None:
                 pypixet.exit()
