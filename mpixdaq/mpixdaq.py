@@ -272,13 +272,14 @@ class miniPIXdaq:
             if rc != 0:
                 print("!!! miniPIX Acquisition error, return code ", rc)
                 self.dataQ.put(None)
-            # get frame and store in ring buffer
-            self.fBuffer[self._w_idx, :] = np.asarray(self.dev.lastAcqFrameRefInc().data())
-            # remove noisy pixels from (linear) data frame based on bad-pixel list
-            if mpixControl.badpixel_list is not None:
-                self.fBuffer[self._w_idx][mpixControl.badpixel_list] = -1
-            self.dataQ.put(self._w_idx)
-            self._w_idx = self._w_idx + 1 if self._w_idx < self.Nbuf - 1 else 0
+            else:
+                # get frame and store in ring buffer
+                self.fBuffer[self._w_idx, :] = np.asarray(self.dev.lastAcqFrameRefInc().data())
+                # remove noisy pixels from (linear) data frame based on bad-pixel list
+                if mpixControl.badpixel_list is not None:
+                    self.fBuffer[self._w_idx][mpixControl.badpixel_list] = -1
+                self.dataQ.put(self._w_idx)
+                self._w_idx = self._w_idx + 1 if self._w_idx < self.Nbuf - 1 else 0
 
     def __del__(self):
         pypixet.exit()
@@ -749,7 +750,7 @@ class miniPIXvis:
         if self.acq_time is not None and self.acq_time > 0.0:
             txt_overlay = txt_overlay + f", acquisition time {self.acq_time} s per frame"
         self.axim.text(0.01, -0.06, txt_overlay, transform=self.axim.transAxes, color="royalblue")
-        self.im_text = self.axim.text(0.02, -0.085, "#", transform=self.axim.transAxes, color="r", alpha=0.75)
+        self.im_text = self.axim.text(0.02, -0.085, "#", transform=self.axim.transAxes, color="orangered", alpha=0.75)
         #  show detector geometry
         col_geom = "gray"
         _rect = mpl.patches.Rectangle((0, 0), self.npx, self.npx, linewidth=1, edgecolor=col_geom, facecolor='none')
@@ -945,9 +946,9 @@ class miniPIXvis:
         if dt_active - self.dt_last_plot > 0.08:  # limit number of graphics updates
             # dead_time_fraction = 1.0 - dt_alive / dt_active
             status = (
-                f"#{self.i_frame}   active {dt_active:.0f}s   alive {dt_alive:.0f}s "
-                + f"  clusters = {self.N_clusters:.0f} / {self.Energy:.0f}keV "
-                + f"  single pixels: {self.np_unass:.0f} / {self.E_unass:.0f}keV"
+                f"#{self.i_frame}  {dt_active:.1f}s   acq. alive {dt_alive:.1f}s|{100 * dt_alive / dt_active:.0f}%"
+                + f"  clusters {self.N_clusters:.0f}|{self.Energy:.0f}keV "
+                + f"  single {self.np_unass:.0f}|{self.E_unass:.0f}keV"
                 + 10 * " "
             )
             self.img.set(data=self.cimage)
@@ -1237,8 +1238,8 @@ class runDAQ:
         parser = argparse.ArgumentParser(description="read, analyze, display and histogram data from miniPIX device")
         parser.add_argument('-v', '--verbosity', type=int, default=1, help='verbosity level (1)')
         parser.add_argument('-o', '--overlay', type=int, default=10, help='number of frames to overlay in graph (10)')
-        parser.add_argument('-a', '--acq_time', type=float, default=0.1, help='acquisition time/frame (0.1)')
-        parser.add_argument('-c', '--acq_count', type=int, default=5, help='number of frames to add (5)')
+        parser.add_argument('-a', '--acq_time', type=float, default=0.5, help='acquisition time/frame (0.5)')
+        parser.add_argument('-c', '--acq_count', type=int, default=1, help='number of frames to add (1)')
         parser.add_argument('-f', '--file', type=str, default='', help='file to store frame data')
         parser.add_argument('-w', '--writefile', type=str, default='', help='csv file to write cluster data')
         parser.add_argument('-t', '--time', type=int, default=36000, help='run time in seconds (36000)')
