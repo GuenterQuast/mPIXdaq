@@ -142,6 +142,7 @@ class miniPIXdaq:
 
       - ac_count: number of frames to overlay
       - ac_time: acquisition time
+      - callback: bool, running in callback mode if True
 
     Queue for communication and synchronization
 
@@ -271,52 +272,45 @@ class miniPIXdaq:
 
     def clb_acq_done(self, n):
         """Callback function
-        called by pixet.dev when new frame data ready
+        called by pixet.dev or __call__ when new frame is available
 
         Args:
 
-            n: number of finished frames
+            n: frame number
         """
         if not mpixControl.endEvent.is_set():
             # get frame and store in ring buffer
-            self.fBuffer[self._w_idx, :] = np.asarray(self.dev.lastAcqFrameRefInc().data())
+            frame = self.dev.lastAcqFrameRefInc()
+            self.fBuffer[self._w_idx, :] = np.asarray(frame.data())
+            frame.destroy()
             # remove noisy pixels from (linear) data frame based on bad-pixel list
             if mpixControl.badpixel_list is not None:
                 self.fBuffer[self._w_idx][mpixControl.badpixel_list] = -1
             self.dataQ.put(self._w_idx)
-            self._w_idx = self._w_idx + 1 if self._w_idx < self.Nbuf - 1 else 0
+            self._w_idx = self._w_idx + 1 if self._w_idx < self.Nbuf - 1 else 0            
 
     def __call__(self):
         """Read *ac_count* frames with *ac_time* accumulation time each and add all up;
         return pointer to buffer data via Queue
         """
         if self.callback_mode:
-            # callback mode is only marginally faster and causes problems with properly ending
-            if self.rc_clb is None:
-                self.rc_clb = self.dev.doContinuousAcquisition(self.ac_count, self.ac_time, self.pixet.PX_ACQMODE_CONTINUOUS)
-                print("*==* running in callback mode")
-                if self.rc_clb != 0:
-                    exit("!!! miniPIX error setting up callback, return code ", self.rc_callback)
-                    self.dataQ.put(None)
+            # callback mode is faster if ac_count > 1 
             while not mpixControl.endEvent.is_set():  # keep running while active
-                time.sleep(0.5)
-            self.pixet.exitPixet()
-            return
-
-        # else use (default) polling mode (only marginally slower)
-        while not mpixControl.endEvent.is_set():
-            rc = self.dev.doSimpleIntegralAcquisition(self.ac_count, self.ac_time, self.pixet.PX_FTYPE_AUTODETECT, "")
-            if rc != 0:
-                print("!!! miniPIX Acquisition error, return code ", rc)
-                self.dataQ.put(None)
-            else:
-                # get frame and store in ring buffer
-                self.fBuffer[self._w_idx, :] = np.asarray(self.dev.lastAcqFrameRefInc().data())
-                # remove noisy pixels from (linear) data frame based on bad-pixel list
-                if mpixControl.badpixel_list is not None:
-                    self.fBuffer[self._w_idx][mpixControl.badpixel_list] = -1
-                self.dataQ.put(self._w_idx)
-                self._w_idx = self._w_idx + 1 if self._w_idx < self.Nbuf - 1 else 0
+                # read ac_count individual frames in one burst    
+                self.rc_clb = self.dev.doSimpleAcquisition(self.ac_count, self.ac_time, self.pixet.PX_FTYPE_NONE, "")
+                # self.rc_clb = self.dev.doContinuousAcquisition(self.ac_count, self.ac_time, self.pixet.PX_ACQMODE_CONTINUOUS)
+                if self.rc_clb != 0:
+                    exit(f"!!! miniPIX error setting up callback, return code {self.rc_clb}")
+                    self.dataQ.put(None)
+        else: # use polling mode (only marginally slower)
+            while not mpixControl.endEvent.is_set():
+                # add ac_count frames into one frame of ac_count * ac_time duration
+                rc = self.dev.doSimpleIntegralAcquisition(self.ac_count, self.ac_time, self.pixet.PX_FTYPE_NONE, "")
+                if rc != 0:
+                    print("!!! miniPIX Acquisition error, return code ", rc)
+                    self.dataQ.put(None)
+                else:
+                    self.clb_acq_done(self.ac_count) # retrieve data and put in buffer
         self.pixet.exitPixet()
 
     def __del__(self):
@@ -1349,11 +1343,15 @@ class runDAQ:
                 if self.verbosity > 1:
                     self.daq.print_device_info()
                 if self.verbosity > 0:
-                    print(f"     * readout {self.acq_count} x {self.acq_time} s")
+                    print()
+                    if self.callback_mode:
+                        print(f"     -> reading frames of {self.acq_time} s duration in callback mode")
+                    else: 
+                        print(f"     -> reading frames of {self.acq_count} x {self.acq_time} s = {self.tot_acq_time} s duration")
+                    print(f"     -> graphics overlay of {self.n_overlay} frames with {self.tot_acq_time} s")
                     if self.prescale_analysis != 1:
-                        print(f"     * analysis prescaling factor {self.prescale_analysis}")
-                    print(f"     * overlaying {self.n_overlay} frames with {self.tot_acq_time} s")
-
+                        print(f"      * analysis prescaling factor {self.prescale_analysis}")
+ 
         # set path to working directory (relative path for input and output files)
         os.chdir(self.wd_path)
 
@@ -1644,9 +1642,7 @@ class runDAQ:
             time.sleep(1.5)  # give time for processes to finish
 
             if self.read_filename is None:
-                # end pypixet prperly (does not (yet) work in callback mode)
-                if not self.callback_mode:
-                    pypixet.exit()
+                pypixet.exit()  # shut-down pypixet
 
             print(10 * ' ' + "  - type <ret> to terminate ->> ", end='')
             print()
