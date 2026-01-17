@@ -287,22 +287,22 @@ class miniPIXdaq:
             if mpixControl.badpixel_list is not None:
                 self.fBuffer[self._w_idx][mpixControl.badpixel_list] = -1
             self.dataQ.put(self._w_idx)
-            self._w_idx = self._w_idx + 1 if self._w_idx < self.Nbuf - 1 else 0            
+            self._w_idx = self._w_idx + 1 if self._w_idx < self.Nbuf - 1 else 0
 
     def __call__(self):
         """Read *ac_count* frames with *ac_time* accumulation time each and add all up;
         return pointer to buffer data via Queue
         """
         if self.callback_mode:
-            # callback mode is faster if ac_count > 1 
+            # callback mode is faster if ac_count > 1
             while not mpixControl.endEvent.is_set():  # keep running while active
-                # read ac_count individual frames in one burst    
+                # read ac_count individual frames in one burst
                 self.rc_clb = self.dev.doSimpleAcquisition(self.ac_count, self.ac_time, self.pixet.PX_FTYPE_NONE, "")
                 # self.rc_clb = self.dev.doContinuousAcquisition(self.ac_count, self.ac_time, self.pixet.PX_ACQMODE_CONTINUOUS)
                 if self.rc_clb != 0:
                     exit(f"!!! miniPIX error setting up callback, return code {self.rc_clb}")
                     self.dataQ.put(None)
-        else: # use polling mode (only marginally slower)
+        else:  # use polling mode (only marginally slower)
             while not mpixControl.endEvent.is_set():
                 # add ac_count frames into one frame of ac_count * ac_time duration
                 rc = self.dev.doSimpleIntegralAcquisition(self.ac_count, self.ac_time, self.pixet.PX_FTYPE_NONE, "")
@@ -310,7 +310,7 @@ class miniPIXdaq:
                     print("!!! miniPIX Acquisition error, return code ", rc)
                     self.dataQ.put(None)
                 else:
-                    self.clb_acq_done(self.ac_count) # retrieve data and put in buffer
+                    self.clb_acq_done(self.ac_count)  # retrieve data and put in buffer
         self.pixet.exitPixet()
 
     def __del__(self):
@@ -592,8 +592,8 @@ class frameAnalyzer:
             if _npx > 1:  # clusters with more than one pixel
                 n_cpixels[_idx_mlt] = _npx
                 cluster_energies[_idx_mlt] = c[id_e]
-                circularity[_idx_mlt] = c[id_var][1] / c[id_var][0]
-                flatness[_idx_mlt] = c[id_varE][0] / c[id_var][0]
+                circularity[_idx_mlt] = np.sqrt(c[id_var][1] / c[id_var][0])
+                flatness[_idx_mlt] = np.sqrt(c[id_varE][0] / c[id_var][0])
                 _idx_mlt += 1
             else:
                 # single pixels
@@ -1346,12 +1346,12 @@ class runDAQ:
                     print()
                     if self.callback_mode:
                         print(f"     -> reading frames of {self.acq_time} s duration in callback mode")
-                    else: 
+                    else:
                         print(f"     -> reading frames of {self.acq_count} x {self.acq_time} s = {self.tot_acq_time} s duration")
                     print(f"     -> graphics overlay of {self.n_overlay} frames with {self.tot_acq_time} s")
                     if self.prescale_analysis != 1:
                         print(f"      * analysis prescaling factor {self.prescale_analysis}")
- 
+
         # set path to working directory (relative path for input and output files)
         os.chdir(self.wd_path)
 
@@ -1627,8 +1627,11 @@ class runDAQ:
             mpixControl.mpixActive.clear()
             if self.read_filename is None:
                 mpixControl.endEvent.set()
-            # close all output files
+
+            # finish and close all output files
+            eor_dict = dict(eor_data=dict(Nframes=i_frame, Twall=round(dt_active, 1), Talive=round(dt_alive, 1)))
             if self.out_file_yml is not None:
+                print(yaml.dump(eor_dict), file=self.out_file_yml)
                 print("... #end", file=self.out_file_yml)  # footer line
                 self.out_file_yml.flush()
                 self.out_file_yml.close()
@@ -1636,6 +1639,8 @@ class runDAQ:
                 self.csvfile.flush()
                 self.csvfile.close()
             if self.clusterfile is not None:
+                print(yaml.dump(eor_dict), file=self.clusterfile)
+                print("... #end", file=self.clusterfile)  # footer line
                 self.clusterfile.flush()
                 self.clusterfile.close()
 
