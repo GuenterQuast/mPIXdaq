@@ -153,7 +153,7 @@ class miniPIXdaq:
 
     """
 
-    def __init__(self, ac_count=10, ac_time=0.1):
+    def __init__(self, ac_count=10, ac_time=0.1, callback=False):
         """initialize miniPIX device and set up data acquisition"""
 
         # no device yet
@@ -212,6 +212,12 @@ class miniPIXdaq:
         #    with fewer slots than buffers to enforce blocking if no buffer space left
         self.dataQ = Queue(self.Nbuf - 2)
 
+        self.callback_mode = callback
+        if self.callback_mode:
+            # register call-back function
+            self.dev.registerEvent(self.pixet.PX_EVENT_ACQ_FINISHED, 0, self.clb_acq_done)
+            self.rc_clb = None  # continuous daq via callback not yet initialized
+
     def get_device_info(self):
         """get and store device parameters in dictionary"""
         self.deviceInfo = {}
@@ -263,10 +269,41 @@ class miniPIXdaq:
         else:
             print("   No calibration parameters found on Chip")
 
+    def clb_acq_done(self, n):
+        """Callback function
+        called by pixet.dev when new frame data ready
+
+        Args:
+
+            n: number of finished frames
+        """
+        if not mpixControl.endEvent.is_set():
+            # get frame and store in ring buffer
+            self.fBuffer[self._w_idx, :] = np.asarray(self.dev.lastAcqFrameRefInc().data())
+            # remove noisy pixels from (linear) data frame based on bad-pixel list
+            if mpixControl.badpixel_list is not None:
+                self.fBuffer[self._w_idx][mpixControl.badpixel_list] = -1
+            self.dataQ.put(self._w_idx)
+            self._w_idx = self._w_idx + 1 if self._w_idx < self.Nbuf - 1 else 0
+
     def __call__(self):
         """Read *ac_count* frames with *ac_time* accumulation time each and add all up;
         return pointer to buffer data via Queue
         """
+        if self.callback_mode:
+            # callback mode is only marginally faster and causes problems with properly ending
+            if self.rc_clb is None:
+                self.rc_clb = self.dev.doContinuousAcquisition(self.ac_count, self.ac_time, self.pixet.PX_ACQMODE_CONTINUOUS)
+                print("*==* running in callback mode")
+                if self.rc_clb != 0:
+                    exit("!!! miniPIX error setting up callback, return code ", self.rc_callback)
+                    self.dataQ.put(None)
+            while not mpixControl.endEvent.is_set():  # keep running while active
+                time.sleep(0.5)
+            self.pixet.exitPixet()
+            return
+
+        # else use (default) polling mode (only marginally slower)
         while not mpixControl.endEvent.is_set():
             rc = self.dev.doSimpleIntegralAcquisition(self.ac_count, self.ac_time, self.pixet.PX_FTYPE_AUTODETECT, "")
             if rc != 0:
@@ -280,6 +317,7 @@ class miniPIXdaq:
                     self.fBuffer[self._w_idx][mpixControl.badpixel_list] = -1
                 self.dataQ.put(self._w_idx)
                 self._w_idx = self._w_idx + 1 if self._w_idx < self.Nbuf - 1 else 0
+        self.pixet.exitPixet()
 
     def __del__(self):
         pypixet.exit()
@@ -1248,6 +1286,8 @@ class runDAQ:
         parser.add_argument('-p', '--prescale', type=int, default=1, help='prescaling factor for frame analysis')
         parser.add_argument('-r', '--readfile', type=str, default='', help='file to read frame data')
         parser.add_argument('-b', '--badpixels', type=str, default='', help='file with bad pixels to mask')
+        parser.add_argument('--callback_mode', action='store_true', help='run pypixet in callback-mode (! experimental)')
+
         args = parser.parse_args()
         timestamp = time.strftime('%y%m%d-%H%M', time.localtime())
 
@@ -1267,7 +1307,8 @@ class runDAQ:
         self.flatness_cut = args.flatness_cut
         self.run_time = args.time
         self.prescale_analysis = args.prescale
-        self.write_mode = "list"  # write pixel list, alternadive "2d"
+        self.callback_mode = args.callback_mode
+        self.write_mode = "list"  # write pixel list, alternative "2d"
 
         # - conditional import
         if self.out_filename is not None and '.npy' in self.out_filename:
@@ -1284,9 +1325,9 @@ class runDAQ:
 
         # - load pypixet library and connect to miniPIX
         if self.read_filename is None:
-            self.tot_acq_time = self.acq_count * self.acq_time
+            self.tot_acq_time = self.acq_time if self.callback_mode else self.acq_count * self.acq_time
             # initialize data acquisition object
-            self.daq = miniPIXdaq(self.acq_count, self.acq_time)
+            self.daq = miniPIXdaq(self.acq_count, self.acq_time, callback=self.callback_mode)
             if self.daq.dev is None:
                 _a = input("  Problem with miniPIX device - read data from file ? (y/n) > ")
                 if _a in {'y', 'Y', 'j', 'J'}:
@@ -1503,7 +1544,8 @@ class runDAQ:
         i_frame = 0
         # start daq as a Thread
         if self.read_filename is None:
-            Thread(target=self.daq, daemon=True).start()
+            daq_thread = Thread(target=self.daq, daemon=True)
+            daq_thread.start()
 
         # start daq loop
         t_start = time.time()
@@ -1515,7 +1557,7 @@ class runDAQ:
                     timestamp = time.time() - t_start
                     frame[:] = self.daq.fBuffer[_idx]
                     frame2d = frame.reshape(self.npx, self.npx)
-                    dt_alive += self.acq_count * self.acq_time
+                    dt_alive += self.acq_time if self.callback_mode else self.acq_count * self.acq_time
                     i_frame += 1
                 else:  # from array in memory (as read from file)
                     timestamp = i_frame * self.tot_acq_time
@@ -1602,9 +1644,13 @@ class runDAQ:
             time.sleep(1.5)  # give time for processes to finish
 
             if self.read_filename is None:
-                pypixet.exit()
+                # end pypixet prperly (does not (yet) work in callback mode)
+                if not self.callback_mode:
+                    pypixet.exit()
 
             print(10 * ' ' + "  - type <ret> to terminate ->> ", end='')
+            print()
+            sys.exit(0)
 
 
 if __name__ == "__main__":  # -  - - - - - - - - - -
