@@ -123,6 +123,8 @@ options:
                         file to read frame data
   -b BADPIXELS, --badpixels BADPIXELS
                         file with bad pixels to mask
+  --callback_mode       run pypixet in callback-mode (! experimental)
+                    
 ```
 
 The default values are adjusted to situations with low rates, where
@@ -225,6 +227,28 @@ The libraries may be downloaded from their web page,
 [ADVACAM DWONLOADS](https://advacam.com/downloads/). 
 They are provided here as *Python* packages for some platforms
 for convenience. 
+
+### Read-out options  
+In high-rate scenarios exceeding 100 particles/s the read-out efficiency
+for the miniPIX becomes a concern. The USB 2 transfer and 
+initialization overheads take about 25 ms per frame. In practice, 
+this means that about 20 frames/s of 25 ms exposure time each can be 
+transferred at a read-out dead-time of 50%. The number of objects per 
+frame should not exceed about 100 in oder to avoid overlaps between 
+clusters. So, in practice, signatures of 2000 particles/s can be handled,
+which is clearly sufficient for most laboratory experiments with rather
+weak radioactive sources limited by radiation protection rules. 
+
+Read-out of the miniPIX is fastest in call-back mode, when the
+driver is initialized to call a function for data retrieval whenever
+a new frame is ready to be transferred. The package supports this
+via the option *--callback_mode*. If this is used, only a single 
+initialization step for *acq_count* frames is necessary. The
+exposure time of each frame is given by the value of *acq_time*.
+To achieve maximum read-out speed for the scenario sketched above,
+the best options would be 
+
+> ``run_mPIXdaq --acq_time 25 --acq_count 50 --callback_mode``
 
 
 ## Data Analysis
