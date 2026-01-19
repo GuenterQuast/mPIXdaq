@@ -889,7 +889,6 @@ class miniPIXvis:
         # boolean indices for linear and circular, spiky objects
         is_round = circularity[:n_clusters] > self.circularity_cut
         is_flat = flatness[:n_clusters] > self.flatness_cut
-
         is_alpha = is_round & ~is_flat
 
         # update histogram 1 with pixel energies
@@ -1266,8 +1265,8 @@ class runDAQ:
         parser.add_argument('-f', '--file', type=str, default='', help='file to store frame data')
         parser.add_argument('-w', '--writefile', type=str, default='', help='csv file to write cluster data')
         parser.add_argument('-t', '--time', type=int, default=36000, help='run time in seconds (36000)')
-        parser.add_argument('--circularity_cut', type=float, default=0.5, help='cut on circularity for alpha detection')
-        parser.add_argument('--flatness_cut', type=float, default=0.4, help='cut on flatness for alpha detection')
+        parser.add_argument('--circularity_cut', type=float, default=0.5, help='cut on circularity for alpha detection (0.5)')
+        parser.add_argument('--flatness_cut', type=float, default=0.6, help='cut on flatness for alpha detection (0.6)')
         parser.add_argument('-p', '--prescale', type=int, default=1, help='prescaling factor for frame analysis')
         parser.add_argument('-r', '--readfile', type=str, default='', help='file to read frame data')
         parser.add_argument('-b', '--badpixels', type=str, default='', help='file with bad pixels to mask')
@@ -1616,7 +1615,7 @@ class runDAQ:
             mpixControl.mpixActive.clear()
             if self.read_filename is None:
                 mpixControl.endEvent.set()
-                # drain dataQ from remaining events
+                # drain dataQ of remaining events
                 while not self.daq.dataQ.empty():
                     _ = self.daq.dataQ.get()
 
