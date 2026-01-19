@@ -1,7 +1,7 @@
 ## mPIXdaq: Data acquisition and analysis for *miniPIX (EDU)* pixel detector 
 ---
 
-                                                    Vers. 1.0.0, January 2026
+                                                    Vers. 1.0.1, February 2026
 
 The [miniPIX EDU](https://advacam.com/camera/minipix-edu) is a camera
 for radiation based on the [Timepix](https://home.cern/tags/timepix) 
@@ -10,7 +10,7 @@ area and 300µm depth each. The chip is covered by a very thin foil to
 permit α and β radiation to reach  the pixels. The device is enclosed 
 in an aluminum housing with a USB 2.0 interface. The sensor chip
 is covered with a thin foil and is very fragile; this area should be 
-covered with protective cover if not measuring α radiation. 
+protected with a cover if not measuring α radiation. 
 
 The device provides two-dimensional images of particle traces in 
 the sensitive detector material. The high spatial resolution compared 
@@ -25,7 +25,8 @@ platforms as well as a software-development kit for own applications.
 The code provided here is a minimalist example to read out single
 frames, i.e. a full set of 256x256 measurements accumulated over a 
 given, fixed time interval. Each frame is displayed as an image with
-a logarithmic color scale representing the deposited energy. 
+a logarithmic color scale representing the deposited energy in each
+pixel. 
 
 The analysis of the recorded signals, i.e. clustering of pixels, energy
 determination and visualization, is achieved with standard open-source
@@ -50,7 +51,7 @@ directory in the *pypixet* *Python* interface.
 
 To get started, follow the steps below: 
 
- - Get the code from gitlab@KIT or from github  
+ - Get the code from github  
     ``git clone https://github.com/GuenterQuast/mPIXdaq``.
 
    This repository includes the *Python* code and a minimalistic set
@@ -58,16 +59,16 @@ To get started, follow the steps below:
 
  - Next, `cd` to the `mPIXdaq` directory you just downloaded.
 
- - Set up the USB interface of your computer to recognize the miniPIX EDU:  
+ - Set up the USB interface of your computer to recognize the miniPIX detector:  
    ``sudo install_driver_rules.sh`` (to be done only once),
-   then connect the *miniPIX EDU* device to your computer.  
+   then connect the *miniPIX* to your computer.  
 
 The package may also be installed in your virtual python environment:
 
   - `python -m pip install .`
 
 
-Now everything is set up to enjoy your miniPIX EDU. Just run the *Python* 
+Now everything is set up to enjoy your *miniPIX*. Just run the *Python* 
 program from any working directory by typing   
 
    > ``run_mPIXdaq.py``.
@@ -80,10 +81,10 @@ and configuration data to the directory */tmp/mPIX/*.
 
 It is also worth mentioning that on some systems the current directory,
 ".", needs to be contained in the `LD_LIBRARY_PATH` so that the Advacam 
-*Python* interface *pypixet* finds all its *C* libraries. This is also 
-done in the *Python* script ``run_mPIXdaq.py`` by temporarily modifying 
-the environment variable `LD_LIBRARY_PATH` if necessary and then restarting 
-to execute the *Python* code in the new environment.  
+*Python* interface *pypixet* finds all its *C* libraries and configuration 
+files. This is also done in the *Python* script ``run_mPIXdaq.py`` by 
+temporarily modifying the environment variable `LD_LIBRARY_PATH` if necessary
+and then restarting to execute the *Python* code in the new environment.  
  
 
 ## Running the example script
@@ -111,18 +112,18 @@ options:
                         frame count for readout via callback (20)
   -f FILE, --file FILE  file to store frame data
   -w WRITEFILE, --writefile WRITEFILE
-                        csv file to write cluster data
+                        file to write cluster data
   -t TIME, --time TIME  run time in seconds (36000)
   --circularity_cut CIRCULARITY_CUT
-                        cut on circularity for alpha detection
+                        cut on circularity for alpha detection (0.5)
   --flatness_cut FLATNESS_CUT
-                        cut on flatness for alpha detection
+                        cut on flatness for alpha detection (0.6)
   -p PRESCALE, --prescale PRESCALE
                         prescaling factor for frame analysis
   -r READFILE, --readfile READFILE
                         file to read frame data
   -b BADPIXELS, --badpixels BADPIXELS
-                        file with bad pixels to mask                    
+                        file with bad pixels to mask
 ```
 
 The default values are adjusted to situations with low rates, where
@@ -147,10 +148,10 @@ a *.yml* file. The `.yml` format also permits storing meta data like parameters
 of the data acquisition, the properties of the sensor and the list of bad pixels.
 To save space, the output files may be compressed with *zip' or *gzip*. 
 
-The same formats are recognized when reading back files using the `-r` resp. 
-`--readfile` options.  
-In addition, `.txt` files written with the *Pixet* program of Advacam can be 
-used as an input.
+The same formats are recognized when reading back files using the `-r` 
+resp. `--readfile` options.  
+In addition, `.txt` files written with the *Pixet* program of Advacam
+can be used as an input. 
 
 Data analysis consists of clustering of pixels in each frame and
 determination of cluster parameters, like the number of pixels, energy
@@ -183,14 +184,14 @@ Properties of clusters, including a list of contributing pixels and
 their energy values,  are optionally written to a file in *yaml* format
 (file extension `.yml`) for later off-line analysis. A version in *.csv* 
 format containing just the cluster properties is also available. 
-A *Jupyter* notebook, *analyze_mPIXclusters.ipynb*, is provided which 
-illustrates an example analysis. 
+A *Jupyter* notebook, *analyze_mPIXclusters.ipynb*, illustrates an example 
+analysis based on such file formats.
 
-To test the software without access to a miniPIX device or without
+To test the software without access to a *miniPIX* device or without
 a radioactive source, a file with recorded data is provided. Use the
 option `--readfile data/BlackForestStone.yml.gz` to start a demonstration.
 Note that the analysis of the recorded pixel frames is done in real
-time and may take some time on slow computers. 
+time and may take some time on slow computers.
 
 
 ## Implementation Details
@@ -209,7 +210,7 @@ which are used to provide deposited energies per pixel in units of keV.
 
 The relevant libraries for device control are provided in directories
 `advacam_<arch>` for `x86_64` Linux, `arm32` and `arm64` and for 
-Macintosh arm64 amd MS Windows architectures. The contents of a 
+Macintosh arm64 and MS Windows architectures. The contents of a 
 typical directory is: 
 
 ```
@@ -236,7 +237,7 @@ transferred at a read-out dead-time of 50%. The number of objects per
 frame should not exceed about 100 in oder to avoid overlaps between 
 clusters. So, in practice, signatures of 2000 particles/s can be handled,
 which is clearly sufficient for most laboratory experiments with rather
-weak radioactive sources limited by radiation protection rules. 
+weak radioactive sources that comply with radiation protection regulations. 
 
 Read-out of the miniPIX is fastest in call-back mode, when the driver 
 is initialized to call a function for data retrieval whenever a new 
@@ -245,8 +246,7 @@ frame is ready to be transferred. Only one initialization step for
 given by the value of *acq_time*. To achieve maximum read-out speed 
 for the scenario sketched above, the best options would be 
 
-> ``run_mPIXdaq --acq_time 0.25 --acq_count 50``
-
+> ``run_mPIXdaq --acq_time 0.025 --acq_count 50``
 
 ## Data Analysis
 
@@ -279,7 +279,7 @@ in the detector material (via the Compton process).
 ![The graphical display of miniPIXdaq](miniPIXdaq.png)
 
 The analysis shown here is suitable for low-rate scenarios, e.g.
-the analysis of natural radiation as emitted by minerals like
+investigations of natural radiation as emitted by minerals like
 Pitchblend (=Uraninit),  Columbit, Thorianit and others. Radon
 accumulated from the air in basement rooms on the surface
 of an electrostatically charged ballon also work fine. Therefore,
@@ -399,8 +399,10 @@ class frameAnalyzer:
     of clusters in a pixel frame, returning
       - n_clusters: number of multi-pixel clusters
       - n_cpixels: number of pixels per cluster
-      - circularity: circularity per cluster (ranging from 0. for linear, 1. for circular)
-      - flatness:  ratio of maximum variances of pixel and energy distributions in clusters
+      - circularity: circularity per cluster (ranging from 0. for linear, 1. for
+        circular)
+      - flatness:  ratio of maximum variances of pixel and energy distributions
+        in clusters
       - cluster_energies: energy per cluster
       - single_energies: energies in single pixels
 ```
@@ -410,7 +412,7 @@ class frameAnalyzer:
   """Display of miniPIX frames and histograms for low-rate scenarios,
   where on-line analysis is possible and animated graphs are meaningful
 
-  Animated graph of (overlayed) pixel images, number of clusters per frame
+  Animated graph of (overlaid) pixel images, number of clusters per frame
   and histograms of cluster properties
     
     Args:

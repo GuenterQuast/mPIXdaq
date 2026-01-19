@@ -196,10 +196,9 @@ class miniPIXdaq:
             print("!!! Could not enable device calibration")
         else:
             print("*==* running in ToT mode converted to keV")
-        # parameters controlling data acquisition
 
+        # parameters controlling data acquisition
         #  -  ac_count, ac_time, fileType, fileName
-        #     if ac_count>1: frame data is available only from last frame
         self.ac_count = ac_count
         self.ac_time = ac_time
 
@@ -209,7 +208,7 @@ class miniPIXdaq:
         self._w_idx = 0
 
         # Queue for synchronization & data transfer from buffer,
-        #    with fewer slots than buffers to enforce blocking if no buffer space left
+        #    with fewer slots than buffers to enforce blocking if no buffer space is left
         self.dataQ = Queue(self.Nbuf - 2)
 
     def get_device_info(self):
@@ -269,7 +268,7 @@ class miniPIXdaq:
 
         Args:
 
-            n: frame number
+            n: number of finished frames
         """
         # get frame and store in ring buffer
         frame = self.dev.lastAcqFrameRefInc()
@@ -284,8 +283,8 @@ class miniPIXdaq:
         frame.destroy()
 
     def __call__(self):
-        """Read *ac_count* frames with *ac_time* accumulation time each;
-        return pointer to buffer data via Queue
+        """Read *ac_count* frames with *ac_time* exposure time each;
+        return pointer to data in buffer via Queue
         """
         # register call-back function
         self.dev.registerEvent(self.pixet.PX_EVENT_ACQ_FINISHED, 0, self.clb_acq_done)
@@ -1260,10 +1259,10 @@ class runDAQ:
         parser = argparse.ArgumentParser(description="read, analyze, display and histogram data from miniPIX device")
         parser.add_argument('-v', '--verbosity', type=int, default=1, help='verbosity level (1)')
         parser.add_argument('-o', '--overlay', type=int, default=10, help='number of frames to overlay in graph (10)')
-        parser.add_argument('-a', '--acq_time', type=float, default=0.5, help='acquisition time/frame (0.5)')
+        parser.add_argument('-a', '--acq_time', type=float, default=0.5, help='acquisition time/frame in seconds (0.5)')
         parser.add_argument('-c', '--acq_count', type=int, default=20, help='frame count for readout via callback (20)')
         parser.add_argument('-f', '--file', type=str, default='', help='file to store frame data')
-        parser.add_argument('-w', '--writefile', type=str, default='', help='csv file to write cluster data')
+        parser.add_argument('-w', '--writefile', type=str, default='', help='file to write cluster data')
         parser.add_argument('-t', '--time', type=int, default=36000, help='run time in seconds (36000)')
         parser.add_argument('--circularity_cut', type=float, default=0.5, help='cut on circularity for alpha detection (0.5)')
         parser.add_argument('--flatness_cut', type=float, default=0.6, help='cut on flatness for alpha detection (0.6)')
