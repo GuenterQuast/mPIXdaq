@@ -140,8 +140,8 @@ class miniPIXdaq:
 
     Args:
 
-      - ac_count: number of frames to overlay
-      - ac_time: acquisition time
+      - ac_count: number of frames to read successively
+      - ac_time: acquisition (=exposure) time per frame
 
     Queue for communication and synchronization
 
@@ -316,7 +316,7 @@ class frameAnalyzer:
             (x, y), n_pix, energy, (var_mx, var_mn), angle, (xEm, yEm), (varE_mx, varE_mn)
           with cluster properties
 
-        Helper functions to store analysis results are include as static methods
+        Helper functions to store analysis results are included as static methods
 
         Another static method, cluster_summary() is particularly useful for on-line
         monitoring of incoming data and provides a summary of the properties
@@ -690,7 +690,7 @@ class miniPIXvis:
            - circ: circularity of "round" clusters (0. - 1.)
            - flat: flatness of energy distribution of pixels in clusters (0. - 1.)
            - acq_time: accumulation time per read-out frame
-           - prescale: prescale factor of analyzed frames
+           - prescale: prescale factor for frame analysis
         """
 
         # sensor properties
@@ -1229,7 +1229,7 @@ def decode_AdvacamFormat(file):
 
 # - class tying all of the above together - - - - - - - - - -
 class runDAQ:
-    """run miniPIX data acquisition, analysis and real-time graphics
+    """run miniPIX data acquisition, analysis and real-time graphics and data storage
 
     class to handle:
 
@@ -1237,8 +1237,7 @@ class runDAQ:
         - initialization of miniPIX device of input file
         - real-time analysis of data frames
         - animated figures to show a live view of incoming data
-        - event loop controlling data acquisition, data output to file
-          and graphical display
+        - event loop controlling data acquisition, data output to file and graphical display
     """
 
     def __init__(self, wd_path=None):

@@ -23,7 +23,7 @@ The vendor provides a ready-to-use program for different computer
 platforms as well as a software-development kit for own applications. 
 
 The code provided here is a minimalist example to read out single
-frames, i.e. a full set of 256x256 measurements accumulated over a 
+frames, i.e. a full set of 256x256 pixel energies accumulated over a 
 given, fixed time interval. Each frame is displayed as an image with
 a logarithmic color scale representing the deposited energy in each
 pixel. 
@@ -177,13 +177,13 @@ in the clusters. For α particles, this distribution peaks at the centre and
 steeply falls off towards the boundary, leading to a very small variance.
 A small ratio of the variances of the energy distribution and of the area
 covered by pixels is therefore a very prominent signature of α particles.
-The cut separating flat and peaking signatures is controlled by the parameter
+The cut separating peaking and flat signatures is controlled by the parameter
 `flatness` with values between 0 and 1. 
 
 Properties of clusters, including a list of contributing pixels and
 their energy values,  are optionally written to a file in *yaml* format
-(file extension `.yml`) for later off-line analysis. A version in *.csv* 
-format containing just the cluster properties is also available. 
+(file extension `.yml`) for later off-line analysis. A more compact version 
+in *.csv* format, containing just the cluster properties, is also available.  
 A *Jupyter* notebook, *analyze_mPIXclusters.ipynb*, illustrates an example 
 analysis based on such file formats.
 
@@ -197,16 +197,16 @@ time and may take some time on slow computers.
 ## Implementation Details
 
 The default data acquisition is based on the function 
-*doSimpleIntegralAcquisition()* from  the *Advacam* *Python* API.
-A fixed number of frames (*acq_counts*) with an adjustable accumulation
-time (*acq_time*) are read from the miniPIX device and added up. 
+*doSimpleAcquisition()* from  the *Advacam* *Python* API in callback
+mode, i.e. *acq_counts* frames with an adjustable accumulation time *acq_time*
+ are read from the miniPIX device successively.  
 
-The chosen readout mode is *PX_TPXMODE_TOT*, where "ToT" means 
-"time over threshold". This quantity shows good proportionality to
-the deposited energy at high signal values, but exhibits a non-linear 
-behavior for small signals near the detection threshold  of the miniPIX. 
-Calibration constants are stored on the miniPIX device for each pixel, 
-which are used to provide deposited energies per pixel in units of keV. 
+The chosen readout mode is "ToT" ("time over threshold", *PX_TPXMODE_TOT*).
+This quantity shows good proportionality to the deposited energy at high 
+signal values, but exhibits a non-linear behavior for small signals near 
+the detection threshold  of the *miniPIX*. Calibration constants are stored 
+on the miniPIX device for each pixel, which are used to provide deposited 
+energies per pixel in units of keV. 
 
 The relevant libraries for device control are provided in directories
 `advacam_<arch>` for `x86_64` Linux, `arm32` and `arm64` and for 
@@ -239,7 +239,7 @@ clusters. So, in practice, signatures of 2000 particles/s can be handled,
 which is clearly sufficient for most laboratory experiments with rather
 weak radioactive sources that comply with radiation protection regulations. 
 
-Read-out of the miniPIX is fastest in call-back mode, when the driver 
+Read-out of the miniPIX is fastest in callback mode, when the driver 
 is initialized to call a function for data retrieval whenever a new 
 frame is ready to be transferred. Only one initialization step for 
 *acq_count* frames is necessary. The exposure time of each frame is 
@@ -247,6 +247,7 @@ given by the value of *acq_time*. To achieve maximum read-out speed
 for the scenario sketched above, the best options would be 
 
 > ``run_mPIXdaq --acq_time 0.025 --acq_count 50``
+
 
 ## Data Analysis
 
@@ -266,10 +267,10 @@ The figure below shows the graphical display with a pixel image and
 the typical distributions of the pixel and cluster energies and the 
 number of pixels per cluster. The source used was a weakly radioactive
 stone from the Black Forest containing a small amount of Uranium and 
-its decay products. The pixel map shown in the figure was sampled 
-over a time of five seconds. The histogram in the lower-right
-corner shows how well the cluster types discriminate different types
-of radiation: α rays in the green band with relatively low numbers 
+its decay products. The pixel map shown in the figure was sampled over 
+a time of five seconds. The histogram in the lower-right corner 
+demonstrates that the cluster types of different types of radiation
+are well separated: α rays in the green band with relatively low numbers 
 of pixels per cluster, electrons (β) as long tracks with large numbers
 of pixels per cluster and rather low energies. Single pixels not 
 associated to clusters mostly originate from 𝛾 rays. Some of the electron 
@@ -278,20 +279,22 @@ in the detector material (via the Compton process).
 
 ![The graphical display of miniPIXdaq](miniPIXdaq.png)
 
-The analysis shown here is suitable for low-rate scenarios, e.g.
-investigations of natural radiation as emitted by minerals like
-Pitchblend (=Uraninit),  Columbit, Thorianit and others. Radon
-accumulated from the air in basement rooms on the surface
-of an electrostatically charged ballon also work fine. Therefore,
-the frame collection time is chosen to be on the order of seconds, 
+The frame collection time is chosen to be on the order of seconds, 
 so that analysis results can be displayed in real-time on 
 a sufficiently fast computer including the Raspberry Pi 5.
+This is suitable for investigations of natural radiation as emitted by 
+minerals like Pitchblend (=Uraninit),  Columbit, Thorianit and others. 
+Radon accumulated from the air in basement rooms on the surface
+of an electrostatically charged ballon also work fine.
 
 For applications at higher rates, the analysis may have to
-be done off-line by reading data from recorded files, or 
-multiple cores must be used for the analysis task. The option
-*--prescale* may be used to limit frame and cluster analysis
-to a subset of the recorded frames. 
+be done off-line by reading data from recorded files. The option
+*--prescale* can be used to limit frame and cluster analysis
+to a subset of the recorded frames while still allowing to record 
+all data to file with sufficiently low dead time.
+
+In a future version of this program an option to use multiple cores 
+for the analysis task may be provided. 
 
 
 ## Sensor Details
@@ -355,7 +358,7 @@ Details on the interfaces are given below.
 
 ```
 class miniPIXdaq:
-    """Initialize, readout miniPIX device and store data
+    """Initialize and readout miniPIX device
 
     After initialization, the __call__() method of this class is executed
     in an infinite loop, storing data from the device in a ring buffer.
@@ -365,8 +368,8 @@ class miniPIXdaq:
 
     Args:
 
-      - ac_count: number of frames to overlay
-      - ac_time: acquisition time
+      - ac_count: number of frames to read successively
+      - ac_time: acquisition (=exposure) time per frame
 
     Queues for communication and synchronization
 
@@ -392,7 +395,7 @@ class frameAnalyzer:
         (x, y), n_pix, energy, (var_mx, var_mn), angle, (xEm, yEm), (varE_mx, varE_mn) 
       with cluster properties
 
-    Helper functions to store analysis results are include as static methods
+    Helper functions to store analysis results are included as static methods
 
     Another static method, cluster_summary() is particularly useful for on-line
     monitoring of incoming data and provides a summary of the properties
@@ -422,8 +425,7 @@ class frameAnalyzer:
     - circ: circularity of "round" clusters (0. - 1.)
     - flat: flatness of energy distribution of pixels in clusters (0. - 1.)
     - acq_time: accumulation time per read-out frame
-  """
-
+    - prescale: prescale factor for frame analysis
 ``` 
 
 Objects of these classes are instantiated by the class `runDAQ`.  
@@ -432,7 +434,7 @@ as already described above.
 
 ```
   class runDAQ:
-     """run miniPIX data acquisition, analysis and real-time graphics
+     """run miniPIX data acquisition, analysis and real-time graphics and data storage
 
   class to handle:
 
@@ -440,8 +442,7 @@ as already described above.
     - initialization of miniPIX device of input file
     - real-time analysis of data frames
     - animated figures to show a live view of incoming data
-    - event loop controlling data acquisition, data output to file
-      and graphical display
+    - event loop controlling data acquisition, data output to file and graphical display
     """
 ```
 
@@ -451,7 +452,7 @@ efficient and fast animation using methods from `matplotlib.pyplot`.
 ```
 class bhist:
     """one-dimensional histogram for animation, based on bar graph
-    supports multiple classes as stacked histogram
+    supports multiple data classes as stacked histogram
 
     Args:
         * data: tuple of arrays to be histogrammed
@@ -481,8 +482,9 @@ class scatterplot:
 ```
 
 A package script `run_mPIXdaq` is provided as an example to tie everything 
-together in a running program. Because the ADVACAM *Python* interface 
-(`pypixet.so`) expects C-libraries and configuration files in the very same directory as the Python interface *pypixet.so* itself, some tricky manipulation
+together into a running program. Because the ADVACAM *Python* interface 
+(`pypixet.so`) expects C-libraries and configuration files in the very same 
+directory as the Python interface *pypixet.so* itself, some tricky manipulation
 of the environment variable `LD_LIBRAREY_PATH` is needed to ensure that all
 libraries are loaded and the *miniPIX* is correctly initialized. 
 
