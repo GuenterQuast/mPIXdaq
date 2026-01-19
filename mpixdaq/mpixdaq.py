@@ -142,7 +142,6 @@ class miniPIXdaq:
 
       - ac_count: number of frames to overlay
       - ac_time: acquisition time
-      - callback: bool, running in callback mode if True
 
     Queue for communication and synchronization
 
@@ -154,7 +153,7 @@ class miniPIXdaq:
 
     """
 
-    def __init__(self, ac_count=10, ac_time=0.1, callback=False):
+    def __init__(self, ac_count=10, ac_time=0.1):
         """initialize miniPIX device and set up data acquisition"""
 
         # no device yet
@@ -212,12 +211,6 @@ class miniPIXdaq:
         # Queue for synchronization & data transfer from buffer,
         #    with fewer slots than buffers to enforce blocking if no buffer space left
         self.dataQ = Queue(self.Nbuf - 2)
-
-        self.callback_mode = callback
-        if self.callback_mode:
-            # register call-back function
-            self.dev.registerEvent(self.pixet.PX_EVENT_ACQ_FINISHED, 0, self.clb_acq_done)
-            self.rc_clb = None  # continuous daq via callback not yet initialized
 
     def get_device_info(self):
         """get and store device parameters in dictionary"""
@@ -278,39 +271,33 @@ class miniPIXdaq:
 
             n: frame number
         """
+        # get frame and store in ring buffer
+        frame = self.dev.lastAcqFrameRefInc()
         if not mpixControl.endEvent.is_set():
-            # get frame and store in ring buffer
-            frame = self.dev.lastAcqFrameRefInc()
+            # store data while running
             self.fBuffer[self._w_idx, :] = np.asarray(frame.data())
-            frame.destroy()
             # remove noisy pixels from (linear) data frame based on bad-pixel list
             if mpixControl.badpixel_list is not None:
                 self.fBuffer[self._w_idx][mpixControl.badpixel_list] = -1
             self.dataQ.put(self._w_idx)
             self._w_idx = self._w_idx + 1 if self._w_idx < self.Nbuf - 1 else 0
+        frame.destroy()
 
     def __call__(self):
-        """Read *ac_count* frames with *ac_time* accumulation time each and add all up;
+        """Read *ac_count* frames with *ac_time* accumulation time each;
         return pointer to buffer data via Queue
         """
-        if self.callback_mode:
-            # callback mode is faster if ac_count > 1
-            while not mpixControl.endEvent.is_set():  # keep running while active
-                # read ac_count individual frames in one burst
-                self.rc_clb = self.dev.doSimpleAcquisition(self.ac_count, self.ac_time, self.pixet.PX_FTYPE_NONE, "")
-                # self.rc_clb = self.dev.doContinuousAcquisition(self.ac_count, self.ac_time, self.pixet.PX_ACQMODE_CONTINUOUS)
-                if self.rc_clb != 0:
-                    exit(f"!!! miniPIX error setting up callback, return code {self.rc_clb}")
-                    self.dataQ.put(None)
-        else:  # use polling mode (only marginally slower)
-            while not mpixControl.endEvent.is_set():
-                # add ac_count frames into one frame of ac_count * ac_time duration
-                rc = self.dev.doSimpleIntegralAcquisition(self.ac_count, self.ac_time, self.pixet.PX_FTYPE_NONE, "")
-                if rc != 0:
-                    print("!!! miniPIX Acquisition error, return code ", rc)
-                    self.dataQ.put(None)
-                else:
-                    self.clb_acq_done(self.ac_count)  # retrieve data and put in buffer
+        # register call-back function
+        self.dev.registerEvent(self.pixet.PX_EVENT_ACQ_FINISHED, 0, self.clb_acq_done)
+
+        while not mpixControl.endEvent.is_set():  # keep running while active
+            # read ac_count individual frames in one burst
+            rc_clb = self.dev.doSimpleAcquisition(self.ac_count, self.ac_time, self.pixet.PX_FTYPE_NONE, "")
+            if rc_clb != 0:
+                exit(f"!!! miniPIX error setting up callback, return code {rc_clb}")
+
+        print("miniPIXdaq: endEvent seen")
+
         self.pixet.exitPixet()
 
     def __del__(self):
@@ -694,7 +681,7 @@ class miniPIXvis:
         """call-back for matplotlib 'close_event'"""
         mpixControl.mplActive.clear()
 
-    def __init__(self, nover=10, unit='keV', circ=0.5, flat=0.5, acq_time=1.0):
+    def __init__(self, nover=10, unit='keV', circ=0.5, flat=0.5, acq_time=1.0, prescale=1):
         """initialize figure with pixel image, rate history and two histograms and a scatter plot
 
         Args:
@@ -704,6 +691,7 @@ class miniPIXvis:
            - circ: circularity of "round" clusters (0. - 1.)
            - flat: flatness of energy distribution of pixels in clusters (0. - 1.)
            - acq_time: accumulation time per read-out frame
+           - prescale: prescale factor of analyzed frames
         """
 
         # sensor properties
@@ -719,6 +707,7 @@ class miniPIXvis:
         self.flatness_cut = flat
         self.unit = unit
         self.acq_time = acq_time
+        self.prescale = prescale
 
         # maximum number of frames in scatter plot
         self.max_n_frames_for_scatter_plot = 5000
@@ -777,10 +766,12 @@ class miniPIXvis:
         self.img = self.axim.imshow(np.zeros((self.npx, self.npx)), origin="lower", cmap='hot', norm=LogNorm(vmin=self.vmin, vmax=vmax))
         cbar = self.fig.colorbar(self.img, shrink=0.6, aspect=40, pad=-0.0375)
         self.img.set_clim(vmin=self.vmin, vmax=vmax)
-        # cbar.set_label("Energy " + unit, loc="top", labelpad=-5 )
+        # cbar.set_label("Energy " + unit, loc="top", labelpad=-5
         txt_overlay = f"overlay of {int(self.n_overlay)} frames"
         if self.acq_time is not None and self.acq_time > 0.0:
             txt_overlay = txt_overlay + f", acquisition time {self.acq_time} s per frame"
+        if self.prescale != 1:
+            txt_overlay = txt_overlay + f", prescaling factor {self.prescale}"
         self.axim.text(0.01, -0.06, txt_overlay, transform=self.axim.transAxes, color="royalblue")
         self.im_text = self.axim.text(0.02, -0.085, "#", transform=self.axim.transAxes, color="orangered", alpha=0.75)
         #  show detector geometry
@@ -1271,7 +1262,7 @@ class runDAQ:
         parser.add_argument('-v', '--verbosity', type=int, default=1, help='verbosity level (1)')
         parser.add_argument('-o', '--overlay', type=int, default=10, help='number of frames to overlay in graph (10)')
         parser.add_argument('-a', '--acq_time', type=float, default=0.5, help='acquisition time/frame (0.5)')
-        parser.add_argument('-c', '--acq_count', type=int, default=1, help='number of frames to add (1)')
+        parser.add_argument('-c', '--acq_count', type=int, default=20, help='frame count for readout via callback (20)')
         parser.add_argument('-f', '--file', type=str, default='', help='file to store frame data')
         parser.add_argument('-w', '--writefile', type=str, default='', help='csv file to write cluster data')
         parser.add_argument('-t', '--time', type=int, default=36000, help='run time in seconds (36000)')
@@ -1280,7 +1271,6 @@ class runDAQ:
         parser.add_argument('-p', '--prescale', type=int, default=1, help='prescaling factor for frame analysis')
         parser.add_argument('-r', '--readfile', type=str, default='', help='file to read frame data')
         parser.add_argument('-b', '--badpixels', type=str, default='', help='file with bad pixels to mask')
-        parser.add_argument('--callback_mode', action='store_true', help='run pypixet in callback-mode (! experimental)')
 
         args = parser.parse_args()
         timestamp = time.strftime('%y%m%d-%H%M', time.localtime())
@@ -1301,7 +1291,6 @@ class runDAQ:
         self.flatness_cut = args.flatness_cut
         self.run_time = args.time
         self.prescale_analysis = args.prescale
-        self.callback_mode = args.callback_mode
         self.write_mode = "list"  # write pixel list, alternative "2d"
 
         # - conditional import
@@ -1319,9 +1308,8 @@ class runDAQ:
 
         # - load pypixet library and connect to miniPIX
         if self.read_filename is None:
-            self.tot_acq_time = self.acq_time if self.callback_mode else self.acq_count * self.acq_time
             # initialize data acquisition object
-            self.daq = miniPIXdaq(self.acq_count, self.acq_time, callback=self.callback_mode)
+            self.daq = miniPIXdaq(self.acq_count, self.acq_time)
             if self.daq.dev is None:
                 _a = input("  Problem with miniPIX device - read data from file ? (y/n) > ")
                 if _a in {'y', 'Y', 'j', 'J'}:
@@ -1344,11 +1332,8 @@ class runDAQ:
                     self.daq.print_device_info()
                 if self.verbosity > 0:
                     print()
-                    if self.callback_mode:
-                        print(f"     -> reading frames of {self.acq_time} s duration in callback mode")
-                    else:
-                        print(f"     -> reading frames of {self.acq_count} x {self.acq_time} s = {self.tot_acq_time} s duration")
-                    print(f"     -> graphics overlay of {self.n_overlay} frames with {self.tot_acq_time} s")
+                    print(f"     -> reading frames of {self.acq_time} s duration")
+                    print(f"     -> graphics overlay of {self.n_overlay} frames with {self.acq_time} s")
                     if self.prescale_analysis != 1:
                         print(f"      * analysis prescaling factor {self.prescale_analysis}")
 
@@ -1431,7 +1416,14 @@ class runDAQ:
         self.frameAna = frameAnalyzer()
 
         # initialize visualizer
-        self.mpixvis = miniPIXvis(nover=self.n_overlay, unit=self.unit, circ=self.circularity_cut, acq_time=self.tot_acq_time)
+        self.mpixvis = miniPIXvis(
+            nover=self.n_overlay,
+            unit=self.unit,
+            circ=self.circularity_cut,
+            flat=self.flatness_cut,
+            acq_time=self.acq_time,
+            prescale=self.prescale_analysis,
+        )
 
     def decode_yml(self, d):
         """Read data from yaml dictionary (the default file format of mPIXdaq)"""
@@ -1513,16 +1505,13 @@ class runDAQ:
                 exit(f"unexpected shape {shape} of array, expected 256x256")
             self.npx = shape[1]
             self.acq_time = 0.0  # acquitition time unknown (not stored in npy file)
-            self.tot_acq_time = 0.0
         elif suffix == '.txt' or suffix2 == ".txt":
             self.npx = 256
             self.acq_time = 0.0  # acquitition time unknown (not stored in .txt file)
-            self.tot_acq_time = 0.0
         else:  # assume list of pixel number and energy value pairs + meta data
             self.acq_time = self.mdata['acq_time']
             self.acq_count = self.mdata['acq_count']
             self.npx = self.mdata['npixels_x']
-            self.tot_acq_time = self.acq_count * self.acq_time
         self.unit = "(keV)"
         return
 
@@ -1555,10 +1544,10 @@ class runDAQ:
                     timestamp = time.time() - t_start
                     frame[:] = self.daq.fBuffer[_idx]
                     frame2d = frame.reshape(self.npx, self.npx)
-                    dt_alive += self.acq_time if self.callback_mode else self.acq_count * self.acq_time
+                    dt_alive += self.acq_time
                     i_frame += 1
                 else:  # from array in memory (as read from file)
-                    timestamp = i_frame * self.tot_acq_time
+                    timestamp = i_frame * self.acq_time
                     i_frame += 1
                     if i_frame > self.n_frames_in_file:
                         print("\033[36m\n" + 20 * ' ' + "'end-of-file - type <ret> to terminate")
@@ -1618,15 +1607,18 @@ class runDAQ:
         finally:
             # end daq loop, print reason for end and clean up
             if not mpixControl.mpixActive.is_set():
-                print("\033[36m\n" + 20 * ' ' + "'E'nd command received", end='')
+                print("\033[36m\n" + 20 * ' ' + "'E'nd command received  ", end='')
             elif not mpixControl.mplActive.is_set():
-                print("\033[36m\n" + 20 * ' ' + " Graphics window closed", end='')
+                print("\033[36m\n" + 20 * ' ' + " Graphics window closed  ", end='')
             elif dt_active > self.run_time:
-                print("\033[36m\n" + 20 * ' ' + f"end after {dt_active:.1f} s", end='')
+                print("\033[36m\n" + 20 * ' ' + f"end after {dt_active:.1f} s  ", end='')
 
             mpixControl.mpixActive.clear()
             if self.read_filename is None:
                 mpixControl.endEvent.set()
+                # drain dataQ from remaining events
+                while not self.daq.dataQ.empty():
+                    _ = self.daq.dataQ.get()
 
             # finish and close all output files
             eor_dict = dict(eor_data=dict(Nframes=i_frame, Twall=round(dt_active, 1), Talive=round(dt_alive, 1)))

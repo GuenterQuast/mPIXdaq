@@ -106,9 +106,9 @@ options:
   -o OVERLAY, --overlay OVERLAY
                         number of frames to overlay in graph (10)
   -a ACQ_TIME, --acq_time ACQ_TIME
-                        acquisition time/frame (0.1)
+                        acquisition time/frame in seconds (0.5)
   -c ACQ_COUNT, --acq_count ACQ_COUNT
-                        number of frames to add (5)
+                        frame count for readout via callback (20)
   -f FILE, --file FILE  file to store frame data
   -w WRITEFILE, --writefile WRITEFILE
                         csv file to write cluster data
@@ -122,13 +122,11 @@ options:
   -r READFILE, --readfile READFILE
                         file to read frame data
   -b BADPIXELS, --badpixels BADPIXELS
-                        file with bad pixels to mask
-  --callback_mode       run pypixet in callback-mode (! experimental)
-                    
+                        file with bad pixels to mask                    
 ```
 
 The default values are adjusted to situations with low rates, where
-frames from the *miniPIX* with an integration time of `acq_time = 0.5` s
+frames from the *miniPIX* with an exposure time of `acq_time = 0.5` s
 are read. For the graphics display, `overlay = 10` recent frames are 
 overlaid, leading to a total integration time of 5 s. 
 These images represent a two-dimensional pixel map with a color code 
@@ -149,9 +147,10 @@ a *.yml* file. The `.yml` format also permits storing meta data like parameters
 of the data acquisition, the properties of the sensor and the list of bad pixels.
 To save space, the output files may be compressed with *zip' or *gzip*. 
 
-The same formats are recognized when reading back files using the `-r` resp. `--readfile` options.  
-In addition, `.txt` files written with the *Pixet* program of Advacam
-can be used as an input. 
+The same formats are recognized when reading back files using the `-r` resp. 
+`--readfile` options.  
+In addition, `.txt` files written with the *Pixet* program of Advacam can be 
+used as an input.
 
 Data analysis consists of clustering of pixels in each frame and
 determination of cluster parameters, like the number of pixels, energy
@@ -239,16 +238,14 @@ clusters. So, in practice, signatures of 2000 particles/s can be handled,
 which is clearly sufficient for most laboratory experiments with rather
 weak radioactive sources limited by radiation protection rules. 
 
-Read-out of the miniPIX is fastest in call-back mode, when the
-driver is initialized to call a function for data retrieval whenever
-a new frame is ready to be transferred. The package supports this
-via the option *--callback_mode*. If this is used, only a single 
-initialization step for *acq_count* frames is necessary. The
-exposure time of each frame is given by the value of *acq_time*.
-To achieve maximum read-out speed for the scenario sketched above,
-the best options would be 
+Read-out of the miniPIX is fastest in call-back mode, when the driver 
+is initialized to call a function for data retrieval whenever a new 
+frame is ready to be transferred. Only one initialization step for 
+*acq_count* frames is necessary. The exposure time of each frame is 
+given by the value of *acq_time*. To achieve maximum read-out speed 
+for the scenario sketched above, the best options would be 
 
-> ``run_mPIXdaq --acq_time 25 --acq_count 50 --callback_mode``
+> ``run_mPIXdaq --acq_time 0.25 --acq_count 50``
 
 
 ## Data Analysis
