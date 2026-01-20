@@ -1298,10 +1298,9 @@ class runDAQ:
         if self.verbosity > 0:
             print(f"\n*==* script {sys.argv[0]} executing in working directory {self.wd_path}")
 
-        # - check (and fix) input consistency
+        #
         if self.cluster_filename is not None and self.prescale_analysis != 1:
-            self.prescale_analysis = 1
-            print(f"!!! prescaling set to {self.prescale_analysis} to write cluster infomation for all frames")
+            print(f"!!! analysis prescaling disabled to write cluster information for all frames")
 
         # - load pypixet library and connect to miniPIX
         if self.read_filename is None:
@@ -1574,8 +1573,9 @@ class runDAQ:
                         npa.append(np.array([frame2d]))
 
                 # further process (subset of) frames (given by prescaling factor)
-                if (i_frame - 1) % self.prescale_analysis == 0:
-                    # analyze frame and retrieve result
+                do_processing = (i_frame - 1) % self.prescale_analysis == 0
+                if self.cluster_filename is not None or do_processing:
+                    # analyze frame and retrieve result if
                     clusters, clustered_pixels = self.frameAna(frame2d)
                     # store analysis results (if requested)
                     if clusters is not None:
@@ -1583,7 +1583,9 @@ class runDAQ:
                             self.frameAna.write_csv(self.csvfile, timestamp, clusters)
                         if self.clusterfile is not None:
                             self.frameAna.write_clusters(self.clusterfile, timestamp, frame, clusters, clustered_pixels)
-                    # animated visualization
+
+                if do_processing:
+                    # animated visualization for prescaled fraction of events
                     cluster_summary = frameAnalyzer.get_cluster_summary(clusters)
                     self.mpixvis(frame2d, cluster_summary, dt_alive)
                 # -- endif  analysis and visualization
