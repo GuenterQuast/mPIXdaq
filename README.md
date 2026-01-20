@@ -228,7 +228,31 @@ The libraries may be downloaded from their web page,
 They are provided here as *Python* packages for some platforms
 for convenience. 
 
-### Read-out options  
+### Parameter settings
+
+The optimal choice of parameters, in particular the values of exposure time,
+overlay of frames for the graphical display depend very much on the use case.
+
+In scenarios with low rates aiming at a demonstration of the capabilities
+of a modern particle detector like the *miniPIX* for outreach purposes, it
+is most useful to mimic the behavior of a cloud chamber, i.e. particle traces
+appear, remain visible for some time an then disappear again. This can
+be achieved by setting a acquisition time of 0.2 s and an overlay of 10 frames.
+Particles tracks then remain on screen for 2 s before they disappear again.
+The command to run in this mode is:
+
+   > `run_mPIXdaq -a 0.2 -o10`
+
+If the goal is to efficiently record particle tracks with low read-out dead-time,
+it is not necessary to optimize the visual impression, because the graphical 
+display is only used to ensure the quality of the recorded data. To reduce
+processing overheads, the fraction of events being analyzed and displayed
+may be pre-scaled. In the example below, only every fourth frame is analyzed
+and displayed: 
+
+   > `run_mPIXdaq -a 0.5 -p4 -o1`
+
+
 In high-rate scenarios exceeding 100 particles/s the read-out efficiency
 for the miniPIX becomes a concern. The USB 2 transfer and 
 initialization overheads take about 25 ms per frame. In practice, 
@@ -241,12 +265,16 @@ weak radioactive sources that comply with radiation protection regulations.
 
 Read-out of the miniPIX is fastest in callback mode, when the driver 
 is initialized to call a function for data retrieval whenever a new 
-frame is ready to be transferred. Only one initialization step for 
-*acq_count* frames is necessary. The exposure time of each frame is 
-given by the value of *acq_time*. To achieve maximum read-out speed 
-for the scenario sketched above, the best options would be 
+frame is ready to be transferred. To receive *acq_count* frames, only
+one initialization step is necessary. The exposure time of each frame 
+is given by the value of *acq_time*. To achieve maximum read-out speed 
+for such a high-rate scenarios, start data-acquisition with the command: 
 
-> ``run_mPIXdaq --acq_time 0.025 --acq_count 50``
+> `run_mPIXdaq -a 0.025 -c50 -p10 -o1`
+
+With these settings, only one tenth of the frames is analyzed and displayed;
+the recorded frame rate is 20 Hz, while the read-out dead-time indeed turns 
+out to be 50% (measured on a Raspberry Pi 5).
 
 
 ## Data Analysis
