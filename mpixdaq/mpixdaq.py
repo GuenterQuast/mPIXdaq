@@ -1298,10 +1298,6 @@ class runDAQ:
         if self.verbosity > 0:
             print(f"\n*==* script {sys.argv[0]} executing in working directory {self.wd_path}")
 
-        #
-        if self.cluster_filename is not None and self.prescale_analysis != 1:
-            print(f"!!! analysis prescaling disabled to write cluster information for all frames")
-
         # - load pypixet library and connect to miniPIX
         if self.read_filename is None:
             # initialize data acquisition object
@@ -1410,6 +1406,8 @@ class runDAQ:
 
         # set-up frame analyzer
         self.frameAna = frameAnalyzer()
+        if self.cluster_filename is not None and self.prescale_analysis != 1:
+            print(f"*!!* analysis prescaling disabled to write cluster information for all frames")
 
         # initialize visualizer
         self.mpixvis = miniPIXvis(
