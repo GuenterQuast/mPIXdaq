@@ -193,41 +193,6 @@ option `--readfile data/BlackForestStone.yml.gz` to start a demonstration.
 Note that the analysis of the recorded pixel frames is done in real
 time and may take some time on slow computers.
 
-
-## Implementation Details
-
-The default data acquisition is based on the function 
-*doSimpleAcquisition()* from  the *Advacam* *Python* API in callback
-mode, i.e. *acq_counts* frames with an adjustable accumulation time *acq_time*
- are read from the miniPIX device successively.  
-
-The chosen readout mode is "ToT" ("time over threshold", *PX_TPXMODE_TOT*).
-This quantity shows good proportionality to the deposited energy at high 
-signal values, but exhibits a non-linear behavior for small signals near 
-the detection threshold  of the *miniPIX*. Calibration constants are stored 
-on the miniPIX device for each pixel, which are used to provide deposited 
-energies per pixel in units of keV. 
-
-The relevant libraries for device control are provided in directories
-`advacam_<arch>` for `x86_64` Linux, `arm32` and `arm64` and for 
-Macintosh arm64 and MS Windows architectures. The contents of a 
-typical directory is: 
-
-```
-  __init__.py   # package initialization
-  pypixet.so    # the Pixet Python interface
-  minipix.so    # C library for pypixet
-  pxcore.so     # C library for pypixet
-  pixet.ini     # initialization file, in same directory as pypixet
-  factory/      # initialization constants 
-```
-
-Note that the copyright of these libraries is held by Advacam. 
-The libraries may be downloaded from their web page, 
-[ADVACAM DWONLOADS](https://advacam.com/downloads/). 
-They are provided here as *Python* packages for some platforms
-for convenience. 
-
 ### Parameter settings
 
 The optimal choice of parameters, in particular the values of exposure time,
@@ -277,6 +242,41 @@ the recorded frame rate is 20 Hz, while the read-out dead-time indeed turns
 out to be 50% (measured on a Raspberry Pi 5).
 
 
+## Implementation Details
+
+The default data acquisition is based on the function 
+*doSimpleAcquisition()* from  the *Advacam* *Python* API in callback
+mode, i.e. *acq_counts* frames with an adjustable accumulation time *acq_time*
+ are read from the miniPIX device successively.  
+
+The chosen readout mode is "ToT" ("time over threshold", *PX_TPXMODE_TOT*).
+This quantity shows good proportionality to the deposited energy at high 
+signal values, but exhibits a non-linear behavior for small signals near 
+the detection threshold  of the *miniPIX*. Calibration constants are stored 
+on the miniPIX device for each pixel, which are used to provide deposited 
+energies per pixel in units of keV. 
+
+The relevant libraries for device control are provided in directories
+`advacam_<arch>` for `x86_64` Linux, `arm32` and `arm64` and for 
+Macintosh arm64 and MS Windows architectures. The contents of a 
+typical directory is: 
+
+```
+  __init__.py   # package initialization
+  pypixet.so    # the Pixet Python interface
+  minipix.so    # C library for pypixet
+  pxcore.so     # C library for pypixet
+  pixet.ini     # initialization file, in same directory as pypixet
+  factory/      # initialization constants 
+```
+
+Note that the copyright of these libraries is held by Advacam. 
+The libraries may be downloaded from their web page, 
+[ADVACAM DWONLOADS](https://advacam.com/downloads/). 
+They are provided here as *Python* packages for some platforms
+for convenience. 
+
+
 ## Data Analysis
 
 The analysis shown in this example is intentionally very simple and based 
@@ -324,6 +324,38 @@ all data to file with sufficiently low dead time.
 In a future version of this program an option to use multiple cores 
 for the analysis task may be provided. 
 
+### Output files and formats
+
+*mPIXdaq* supports the acquisition and storage of data produced by the 
+*miniPIX* detector. The default output-format is *yaml* due to ist human readability, clear structure and the modularity of data blocks. These files 
+are written sequentially as text files and may be compressed using 
+*gzip* or *zip* to obtain more compact representations of the recorded data.
+The possibility to write raw or clustered data for further off-line analysis
+is a valuable asset for use of the software in physics laboratory courses,
+because it enables students to develop strategies and perform 
+their own analysis of data previously recorded in the student lab. 
+
+**Frame data** and **cluster data** including some meta data are stored 
+in *yaml* structures with the keys 
+*meta_data:*, *deviceInfo:*, *bad_pixels:* and *eor_summary:*.
+Frame or cluster data are stored as a list of lists of pairs of pixel indices 
+and pixel energies for all pixels with non-zero energy under the keys
+*frame_data:* or *cluster_data:*, respectively. These files can be loaded 
+into a *Python* dictionary using the python code   
+  >  `yaml_dict = yaml.load(open('<filename>', 'r'), Loader=yaml.CLoader)`  
+
+and frame or cluster data unpacked into a *Python* list via  
+  >   `list_of_framedata = yaml_dict["frame_data"]`  or  
+  >   `list_of_clusterdata = yaml_dict["cluster_data"]`, respectively.
+
+Frame data in text form or as *zip*ed or *gzip*ed files can be used as 
+input to *mPIXdaq* via the '-r' or '--readfile' options. 
+
+A *jupyter* notebook, distributed as part of the package, illustrates how to read and interpret cluster data.
+
+Histograms displayed in the on-line graphical display may be saved using
+the control buttons in the *matplotlib* window. 
+
 
 ## Sensor Details
 
@@ -353,8 +385,8 @@ which is optionally applied to obtain pixel readings in units of keV.
 The calibration is reliable up to pixel energies of one MeV. 
 Higher pixel energies may result when frames with short acquisition 
 time are summed up. For details, see the article by J. Jakubek, 
-*Precise energy calibration of pixel detector working in time-over-threshold
-mode*, NIM A 633 (2011), 5262-5265*.
+*Precise energy calibration of pixel detector working in 
+time-over-threshold mode*, NIM A 633 (2011), 5262-5265*.
 
 
 ## Package Structure
