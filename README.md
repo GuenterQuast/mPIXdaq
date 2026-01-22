@@ -193,8 +193,7 @@ option `--readfile data/BlackForestStone.yml.gz` to start a demonstration.
 Note that the analysis of the recorded pixel frames is done in real
 time and may take some time on slow computers.
 
-### Parameter settings
-
+### Parameter settings  
 The optimal choice of parameters, in particular the values of exposure time,
 overlay of frames for the graphical display depend very much on the use case.
 
@@ -324,21 +323,23 @@ all data to file with sufficiently low dead time.
 In a future version of this program an option to use multiple cores 
 for the analysis task may be provided. 
 
-### Output files and formats
+### Output files and formats  
 
-*mPIXdaq* supports the acquisition and storage of data produced by the 
-*miniPIX* detector. The default output-format is *yaml* due to ist human readability, clear structure and the modularity of data blocks. These files 
-are written sequentially as text files and may be compressed using 
-*gzip* or *zip* to obtain more compact representations of the recorded data.
-The possibility to write raw or clustered data for further off-line analysis
-is a valuable asset for use of the software in physics laboratory courses,
-because it enables students to develop strategies and perform 
-their own analysis of data previously recorded in the student lab. 
+*miniPIXdaq* offers the possibility to write raw or clustered data for 
+further off-line analysis, which is a valuable asset for use of the software 
+in physics laboratory courses. This feature enables students to develop 
+their own strategies for the analysis of data recorded in the student lab. 
+
+The default output-format is *yaml*, offering human readability, clear 
+structure and modularity of data blocks. Output files are written 
+sequentially as text files while data acquisition is progressing.
+Files may be compressed using *gzip* or *zip* to obtain more compact 
+representations of the recorded data.
 
 **Frame data** and **cluster data** including some meta data are stored 
 in *yaml* structures with the keys 
 *meta_data:*, *deviceInfo:*, *bad_pixels:* and *eor_summary:*.
-Frame or cluster data are stored as a list of lists of pairs of pixel indices 
+Frame or cluster data are stored as lists of pairs of pixel indices 
 and pixel energies for all pixels with non-zero energy under the keys
 *frame_data:* or *cluster_data:*, respectively. These files can be loaded 
 into a *Python* dictionary using the python code   
@@ -351,7 +352,21 @@ and frame or cluster data unpacked into a *Python* list via
 Frame data in text form or as *zip*ed or *gzip*ed files can be used as 
 input to *mPIXdaq* via the '-r' or '--readfile' options. 
 
-A *jupyter* notebook, distributed as part of the package, illustrates how to read and interpret cluster data.
+*list_of_clusterdata* is a list of two lists, the first one containing
+cluster properties and the second one indices and energies of contributing
+pixels, i.e.  
+  >   `list_of_clusterproperties[i] = yaml_dict["cluster_data"][i][0]` and   
+  >   `list_of_clusterpixels[i] = yaml_dict["cluster_data"][i][1]`,
+
+A *jupyter* notebook *analyze_mPIXclusters.ipynb* is distributed as part of the 
+package and illustrates how to read and interpret cluster data.
+
+The keys of the variables in *list_of_clusterproperties* are
+  > ['time', 'x_mean', 'y_mean', 'n_pix', 'energy', 'var_mx', 'var_mn', 'angle', 'xE_mean', 'yE_mean', 'varE_mx', 'varE_mn']
+
+It is also possible to store the cluster properties in simple *.csv* format by
+explicitly specifying the file extension:
+  `run_mPIXdaq <options> -w <name>_clusters.csv`. 
 
 Histograms displayed in the on-line graphical display may be saved using
 the control buttons in the *matplotlib* window. 
