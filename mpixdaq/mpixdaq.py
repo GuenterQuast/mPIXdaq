@@ -1530,7 +1530,7 @@ class runDAQ:
 
         # start daq loop
         t_start = time.time()
-        print("\n" + 15 * ' ' + "\033[36m type 'E<ret>' or close graphics window to end" + "\033[31m", end='\r')
+        print("\n" + 25 * ' ' + "\033[36m type 'E<ret>' or close graphics window to end" + "\033[31m", end='\r')
         try:
             while (dt_active < self.run_time) and mpixControl.mplActive.is_set() and mpixControl.mpixActive.is_set():
                 if self.read_filename is None:
@@ -1544,7 +1544,7 @@ class runDAQ:
                     timestamp = i_frame * self.acq_time
                     i_frame += 1
                     if i_frame > self.n_frames_in_file:
-                        print("\033[36m\n" + 20 * ' ' + "'end-of-file - type <ret> to terminate")
+                        print("\033[36m\n" + 25 * ' ' + "'end-of-file - type <ret> to terminate")
                         break
                     if self.read_mode == 'list':
                         frame[:] = 0
@@ -1594,7 +1594,7 @@ class runDAQ:
                         mpixControl.mpixActive.clear()
                 #    # heart-beat for console
                 dt_active = time.time() - t_start
-                print(f"  #{i_frame}  {dt_active:.0f}s", end="\r")
+                print(f"  #{i_frame}  {dt_active:.0f}s  {i_frame/dt_active:0.1f}fps", end="\r")
 
         except KeyboardInterrupt:
             print("\n keyboard interrupt ")
@@ -1638,7 +1638,7 @@ class runDAQ:
             if self.read_filename is None:
                 pypixet.exit()  # shut-down pypixet
 
-            print(10 * ' ' + "  - type <ret> to terminate ->> ", end='')
+            print(15 * ' ' + "  - type <ret> to terminate ->> ", end='')
             print()
             sys.exit(0)
 
