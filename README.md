@@ -150,8 +150,8 @@ To save space, the output files may be compressed with *zip' or *gzip*.
 
 The same formats are recognized when reading back files using the `-r` 
 resp. `--readfile` options.  
-In addition, `.txt` files written with the *Pixet* program of Advacam
-can be used as an input. 
+In addition, files written with the *Pixet* program of Advacam in *.clog*
+format can be used as an input to this software package. 
 
 Data analysis consists of clustering of pixels in each frame and
 determination of cluster parameters, like the number of pixels, energy

@@ -1196,71 +1196,6 @@ class scatterplot:
             self.gr[_ic].set(data=(self.bcntx[_xidx] + self.pofx[_ic], self.bcnty[_yidx] + self.pofy[_ic]))
 
 
-# function to read frame data in advacam  .clog
-def decode_Advacam_clog(file):
-    """Read data in Advacam .clog format and return list of pixel frames
-
-    Args:
-      - file: file handle
-    """
-
-    width = mpixControl.deviceInfo["width"]
-    frames = []
-    frame = []
-    while True:
-        _l = file.readline()
-        if not _l:
-            break
-        if isinstance(_l, bytes):
-            _l = _l.decode()  # needed for gzip returninf bytes objects
-        if _l == '':  # skip empty lines between frames
-            pass
-        elif _l[0:5] == "Frame":  # new start-of-frame found
-            if frame != []:
-                frames.append(frame)
-                frame = []
-        elif _l[0] == '[':  # new cluster
-            _l = re.sub(r"[^0-9, -, \[, \], \.]", '', _l.replace(', ', ','))  # only leave valid chars before eval()
-            for _p in _l.split():
-                _pxl = eval(_p)
-                frame.append([int(_pxl[0] + _pxl[1] * width), int(_pxl[2])])
-    frames.append(frame)  # append last frame
-    file.close()
-    return frames
-
-
-# function to read frame data in advacam .txt (sparse matrix) format
-def decode_Advacam_txt(file):
-    """Read data in Advacam .txt (sparse matrix) format and return list of pixel frames
-
-    A frame contains lines with pairs of pixel number and pixel value;
-    frames are separated by a line containing a '#'
-
-    Args:
-    - file: file handle
-    """
-
-    frames = []
-    frame = []
-
-    while True:
-        _l = file.readline()
-        if not _l:
-            break
-        if isinstance(_l, bytes):
-            _l = _l.decode()  # needed for gzip returninf bytes objects
-        if _l == '#\n':  # end of frame
-            frames.append(frame)  # append completed frame to list of frames
-            frame = []
-        else:
-            # add pixel number and value to current pixel list
-            frame.append([int(_l.split('\t')[0]), int(_l.split('\t')[1])])
-    frames.append(frame)  # append last frame
-
-    file.close()
-    return frames
-
-
 # - class tying all of the above together - - - - - - - - - -
 class runDAQ:
     """run miniPIX data acquisition, analysis and real-time graphics and data storage
@@ -1463,6 +1398,71 @@ class runDAQ:
         if "badPixels" in d.keys():
             mpixControl.badpixel_list = d["badPixels"]
 
+    # function to read frame data in advacam  .clog
+    @staticmethod
+    def decode_Advacam_clog(file):
+        """Read data in Advacam .clog format and return list of pixel frames
+
+        Args:
+          - file: file handle
+        """
+
+        width = mpixControl.deviceInfo["width"]
+        frames = []
+        frame = []
+        while True:
+            _l = file.readline()
+            if not _l:
+                break
+            if isinstance(_l, bytes):
+                _l = _l.decode()  # needed for gzip returninf bytes objects
+            if _l == '':  # skip empty lines between frames
+                pass
+            elif _l[0:5] == "Frame":  # new start-of-frame found
+                if frame != []:
+                    frames.append(frame)
+                    frame = []
+            elif _l[0] == '[':  # new cluster
+                _l = re.sub(r"[^0-9, -, \[, \], \.]", '', _l.replace(', ', ','))  # only leave valid chars before eval()
+                for _p in _l.split():
+                    _pxl = eval(_p)
+                    frame.append([int(_pxl[0] + _pxl[1] * width), int(_pxl[2])])
+        frames.append(frame)  # append last frame
+        file.close()
+        return frames
+
+    # function to read frame data in advacam .txt (sparse matrix) format
+    @staticmethod
+    def decode_Advacam_txt(file):
+        """Read data in Advacam .txt (sparse matrix) format and return list of pixel frames
+
+        A frame contains lines with pairs of pixel number and pixel value;
+        frames are separated by a line containing a '#'
+
+        Args:
+        - file: file handle
+        """
+
+        frames = []
+        frame = []
+
+        while True:
+            _l = file.readline()
+            if not _l:
+                break
+            if isinstance(_l, bytes):
+                _l = _l.decode()  # needed for gzip returninf bytes objects
+            if _l == '#\n':  # end of frame
+                frames.append(frame)  # append completed frame to list of frames
+                frame = []
+            else:
+                # add pixel number and value to current pixel list
+                frame.append([int(_l.split('\t')[0]), int(_l.split('\t')[1])])
+        frames.append(frame)  # append last frame
+
+        file.close()
+        return frames
+
     def read_frames_from_file(self):
         """Read frame data from file
 
@@ -1484,8 +1484,8 @@ class runDAQ:
         suffix = pathlib.Path(self.read_filename).suffix
         name = pathlib.Path(self.read_filename).stem
         suffix2 = pathlib.Path(name).suffix
-        suffixes_list = {'.yml', '.txt', '.clog'}
-        if suffix in suffixes_list or suffix2 in suffixes_list:
+        suffixes_list_mode = {'.yml', '.txt', '.clog'}
+        if suffix in suffixes_list_mode or suffix2 in suffixes_list_mode:
             self.read_mode = 'list'
         elif suffix == '.npy' or suffix2 == '.npy':
             self.read_mode = '2d'
@@ -1503,10 +1503,10 @@ class runDAQ:
                 self.decode_yml(yaml.load(_f, Loader=yaml.CLoader))
         elif suffix == ".txt":
             with open(self.read_filename, 'r') as _f:
-                self.fdata = decode_Advacam_txt(_f)
+                self.fdata = self.decode_Advacam_txt(_f)
         elif suffix == ".clog":
             with open(self.read_filename, 'r') as _f:
-                self.fdata = decode_Advacam_clog(_f)
+                self.fdata = self.decode_Advacam_clog(_f)
         # read compressed input files
         elif suffix == ".gz":
             _file = gzip.GzipFile(self.read_filename, mode='r')
@@ -1515,9 +1515,9 @@ class runDAQ:
             elif suffix2 == '.yml':
                 self.decode_yml(yaml.load(_file, Loader=yaml.CLoader))
             elif suffix2 == '.txt':
-                self.fdata = decode_Advacam_txt(_file)
+                self.fdata = self.decode_Advacam_txt(_file)
             elif suffix2 == '.clog':
-                self.fdata = decode_Advacam_clog(_file)
+                self.fdata = self.decode_Advacam_clog(_file)
         elif suffix == ".zip":
             zf = zipfile.ZipFile(self.read_filename, 'r')
             fnam = zf.namelist()[0]
@@ -1526,24 +1526,25 @@ class runDAQ:
             if suffix2 == '.yml':
                 self.decode_yml(yaml.load(_file, Loader=yaml.CLoader))  # assume one .yml file in archive
             elif suffix2 == '.txt':
-                self.fdata = decode_Advacam_txt(_file)
+                self.fdata = self.decode_Advacam_txt(_file)
             elif suffix2 == '.clog':
-                self.fdata = decode_Advacam_clog(_file)
+                self.fdata = self.decode_Advacam_clog(_file)
             else:
                 self.fdata = np.load(_file)
 
         # determine meta-data
-        if self.read_mode == '2d':  # assume data is 256x256 pixels in keV per pixel
+        width = mpixControl.deviceInfo["width"]
+        if self.read_mode == '2d':
             shape = self.fdata.shape
-            if len(shape) < 3 or shape[1] != 256:
-                exit(f"unexpected shape {shape} of array, expected 256x256")
-            elif shape[1] != 256:
-                exit(f"unexpected shape {shape} of array, expected 256x256")
+            if len(shape) < 3 or shape[1] != width:
+                exit(f"unexpected shape {shape} of array, expected {width}x{width}")
+            elif shape[1] != width:
+                exit(f"unexpected shape {shape} of array, expected {width}x{width}")
             self.npx = shape[1]
-            self.acq_time = 0.0  # acquitition time unknown (not stored in npy file)
+            self.acq_time = 0.0  # acquisition time unknown (not stored in npy file)
         elif suffix == '.txt' or suffix2 == ".txt" or suffix == '.clog' or suffix2 == '.clog':
-            self.npx = 256
-            self.acq_time = 0.0  # acquitition time unknown (not stored in .txt file)
+            self.npx = width
+            self.acq_time = 0.0  # acquisition time unknown (not stored in .txt or .clog file)
         else:  # assume list of pixel number and energy value pairs + meta data
             self.acq_time = self.mdata['acq_time']
             self.acq_count = self.mdata['acq_count']
@@ -1598,8 +1599,8 @@ class runDAQ:
                         frame = np.int32(frame2d.reshape(self.npx * self.npx))
                     if self.prescale_analysis == 1:
                         time.sleep(0.2)  # gives better impression in play-back mode
-                    # mask bad pixels from input
-                    if mpixControl.badpixel_list is not None:
+                    # mask bad pixels if requested
+                    if self.fname_badpixels != '':
                         frame[mpixControl.badpixel_list] = -1
 
                 if self.out_file_yml is not None:
