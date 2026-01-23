@@ -14,4 +14,4 @@
 
   - miniPIX readout in callback speeds up data acquisition
 
-  
+  - added Advacam .clog as possible input format  

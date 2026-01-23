@@ -43,6 +43,7 @@ LICENSE
 import argparse
 import os
 import sys
+import re
 import pathlib
 import time
 import yaml
@@ -1195,9 +1196,42 @@ class scatterplot:
             self.gr[_ic].set(data=(self.bcntx[_xidx] + self.pofx[_ic], self.bcnty[_yidx] + self.pofy[_ic]))
 
 
-# function to read frame data in advacam txt format
-def decode_AdvacamFormat(file):
-    """Read data in Advacam .txt format and return list of pixel frames
+# function to read frame data in advacam  .clog
+def decode_Advacam_clog(file):
+    """Read data in Advacam .clog format and return list of pixel frames
+
+    Args:
+      - file: file handle
+    """
+
+    width = mpixControl.deviceInfo["width"]
+    frames = []
+    frame = []
+    while True:
+        _l = file.readline()
+        if not _l:
+            break
+        if isinstance(_l, bytes):
+            _l = _l.decode()  # needed for gzip returninf bytes objects
+        if _l == '':  # skip empty lines between frames
+            pass
+        elif _l[0:5] == "Frame":  # new start-of-frame found
+            if frame != []:
+                frames.append(frame)
+                frame = []
+        elif _l[0] == '[':  # new cluster
+            _l = re.sub(r"[^0-9, -, \[, \], \.]", '', _l.replace(', ', ','))  # only leave valid chars before eval()
+            for _p in _l.split():
+                _pxl = eval(_p)
+                frame.append([int(_pxl[0] + _pxl[1] * width), int(_pxl[2])])
+    frames.append(frame)  # append last frame
+    file.close()
+    return frames
+
+
+# function to read frame data in advacam .txt (sparse matrix) format
+def decode_Advacam_txt(file):
+    """Read data in Advacam .txt (sparse matrix) format and return list of pixel frames
 
     A frame contains lines with pairs of pixel number and pixel value;
     frames are separated by a line containing a '#'
@@ -1214,7 +1248,7 @@ def decode_AdvacamFormat(file):
         if not _l:
             break
         if isinstance(_l, bytes):
-            _l = _l.decode()  # needed for gzip returninb bytes objects
+            _l = _l.decode()  # needed for gzip returninf bytes objects
         if _l == '#\n':  # end of frame
             frames.append(frame)  # append completed frame to list of frames
             frame = []
@@ -1441,7 +1475,7 @@ class runDAQ:
 
         - fdata: 2d array or list of [pixel number, value]
         - read_mode:  2d or list
-        - meta-data (daq params, device info and bad pixels) if inpt is yaml
+        - meta-data (daq params, device info and bad pixels) if input is yaml
         """
 
         if self.verbosity > 0:
@@ -1450,7 +1484,8 @@ class runDAQ:
         suffix = pathlib.Path(self.read_filename).suffix
         name = pathlib.Path(self.read_filename).stem
         suffix2 = pathlib.Path(name).suffix
-        if suffix == '.yml' or suffix2 == '.yml' or suffix == '.txt' or suffix2 == '.txt':
+        suffixes_list = {'.yml', '.txt', '.clog'}
+        if suffix in suffixes_list or suffix2 in suffixes_list:
             self.read_mode = 'list'
         elif suffix == '.npy' or suffix2 == '.npy':
             self.read_mode = '2d'
@@ -1468,7 +1503,10 @@ class runDAQ:
                 self.decode_yml(yaml.load(_f, Loader=yaml.CLoader))
         elif suffix == ".txt":
             with open(self.read_filename, 'r') as _f:
-                self.fdata = decode_AdvacamFormat(_f)
+                self.fdata = decode_Advacam_txt(_f)
+        elif suffix == ".clog":
+            with open(self.read_filename, 'r') as _f:
+                self.fdata = decode_Advacam_clog(_f)
         # read compressed input files
         elif suffix == ".gz":
             _file = gzip.GzipFile(self.read_filename, mode='r')
@@ -1477,7 +1515,9 @@ class runDAQ:
             elif suffix2 == '.yml':
                 self.decode_yml(yaml.load(_file, Loader=yaml.CLoader))
             elif suffix2 == '.txt':
-                self.fdata = decode_AdvacamFormat(_file)
+                self.fdata = decode_Advacam_txt(_file)
+            elif suffix2 == '.clog':
+                self.fdata = decode_Advacam_clog(_file)
         elif suffix == ".zip":
             zf = zipfile.ZipFile(self.read_filename, 'r')
             fnam = zf.namelist()[0]
@@ -1486,10 +1526,12 @@ class runDAQ:
             if suffix2 == '.yml':
                 self.decode_yml(yaml.load(_file, Loader=yaml.CLoader))  # assume one .yml file in archive
             elif suffix2 == '.txt':
-                self.fdata = decode_AdvacamFormat(_file)
+                self.fdata = decode_Advacam_txt(_file)
+            elif suffix2 == '.clog':
+                self.fdata = decode_Advacam_clog(_file)
             else:
                 self.fdata = np.load(_file)
-        #
+
         # determine meta-data
         if self.read_mode == '2d':  # assume data is 256x256 pixels in keV per pixel
             shape = self.fdata.shape
@@ -1499,7 +1541,7 @@ class runDAQ:
                 exit(f"unexpected shape {shape} of array, expected 256x256")
             self.npx = shape[1]
             self.acq_time = 0.0  # acquitition time unknown (not stored in npy file)
-        elif suffix == '.txt' or suffix2 == ".txt":
+        elif suffix == '.txt' or suffix2 == ".txt" or suffix == '.clog' or suffix2 == '.clog':
             self.npx = 256
             self.acq_time = 0.0  # acquitition time unknown (not stored in .txt file)
         else:  # assume list of pixel number and energy value pairs + meta data
@@ -1507,7 +1549,6 @@ class runDAQ:
             self.acq_count = self.mdata['acq_count']
             self.npx = self.mdata['npixels_x']
         self.unit = "(keV)"
-        return
 
     def __call__(self):
         """run daq loop"""
@@ -1544,7 +1585,6 @@ class runDAQ:
                     timestamp = i_frame * self.acq_time
                     i_frame += 1
                     if i_frame > self.n_frames_in_file:
-                        print("\033[36m\n" + 25 * ' ' + "'end-of-file - type <ret> to terminate")
                         break
                     if self.read_mode == 'list':
                         frame[:] = 0
@@ -1557,7 +1597,10 @@ class runDAQ:
                         frame2d = self.fdata[i_frame - 1]
                         frame = np.int32(frame2d.reshape(self.npx * self.npx))
                     if self.prescale_analysis == 1:
-                        time.sleep(0.2)  # gives less hectic impression in play-back mode
+                        time.sleep(0.2)  # gives better impression in play-back mode
+                    # mask bad pixels from input
+                    if mpixControl.badpixel_list is not None:
+                        frame[mpixControl.badpixel_list] = -1
 
                 if self.out_file_yml is not None:
                     pixel_idxs = np.argwhere(frame > 0)
@@ -1594,23 +1637,30 @@ class runDAQ:
                         mpixControl.mpixActive.clear()
                 #    # heart-beat for console
                 dt_active = time.time() - t_start
-                print(f"  #{i_frame}  {dt_active:.0f}s  {i_frame/dt_active:0.1f}fps", end="\r")
+                print(f"  #{i_frame}  {dt_active:.0f}s  {i_frame / dt_active:0.1f}fps", end="\r")
 
         except KeyboardInterrupt:
             print("\n keyboard interrupt ")
         except Exception as e:
-            print("\n excpetion in daq loop: ", str(e))
+            print("\n exception in daq loop: ", str(e))
 
         finally:
-            # end daq loop, print reason for end and clean up
-            if not mpixControl.mpixActive.is_set():
-                print("\033[36m\n" + 20 * ' ' + "'E'nd command received  ", end='')
-            elif not mpixControl.mplActive.is_set():
-                print("\033[36m\n" + 20 * ' ' + " Graphics window closed  ", end='')
-            elif dt_active > self.run_time:
-                print("\033[36m\n" + 20 * ' ' + f"end after {dt_active:.1f} s  ", end='')
+            if not mpixControl.mplActive.is_set():
+                mpixControl.mpixActive.clear()
+                print("\033[36m\n" + 20 * ' ' + " Graphics window closed, tpye <ret> ", end='')
+            else:
+                # end daq loop, print reason for end and clean up
+                if not mpixControl.mpixActive.is_set():
+                    print("\033[36m\n" + 20 * ' ' + "'E'nd command received, type <ret> ", end='')
+                elif dt_active > self.run_time:
+                    mpixControl.mpixActive.clear()
+                    print("\033[36m\n" + 20 * ' ' + f"end after {dt_active:.1f} s, type <ret> ", end='')
+                elif self.read_filename is not None:
+                    mpixControl.mpixActive.clear()
+                    print("\033[36m\n" + 25 * ' ' + "'end-of-file reached, type <ret> ", end='')
+                # wait for user input while keeping graphics window active
+                _ = input(15 * ' ' + "  - type <ret> to terminate graphics window ->> ")
 
-            mpixControl.mpixActive.clear()
             if self.read_filename is None:
                 mpixControl.endEvent.set()
                 # drain dataQ of remaining events
@@ -1638,7 +1688,6 @@ class runDAQ:
             if self.read_filename is None:
                 pypixet.exit()  # shut-down pypixet
 
-            print(15 * ' ' + "  - type <ret> to terminate ->> ", end='')
             print()
             sys.exit(0)
 
