@@ -35,7 +35,7 @@ protected with a cover if not measuring α radiation.
 The device provides two-dimensional images of particle traces in 
 the sensitive detector material. The high spatial resolution compared 
 to the typical range of particles in silicon is useful to distinguish 
-the different types of radiation and measure their deposited energies. 
+the different types of radiation and to measure their deposited energies. 
 α-particles are completely absorbed and deposit all of their energy in 
 the sensitive area, allowing usage of the device as an energy spectrometer.  
 
