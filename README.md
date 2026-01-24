@@ -1,7 +1,27 @@
-## mPIXdaq: Data acquisition and analysis for *miniPIX (EDU)* pixel detector 
 ---
+title: Recording, analysis and visualization of data 
+       from Advacam miniPIX (EDU) silicon pixel detector  
+author: Günter Quast, February 2026
+...
 
-                                                    Vers. 1.0.1, February 2026
+<head>
+  <style>
+     p {
+          margin-left:20px;
+          text-align:justify;          
+          max-width:60em;
+          font-family:Helvetica, Sans-Serif;
+          <!-- color:black; -->
+          <!-- background-color:White; -->
+     }
+  </style>
+</head>
+
+<!-- ------------------------------------------------------------------ -->
+
+
+## mPIXdaq Data acquisition and analysis for *miniPIX (EDU)* pixel detector 
+                                                                             Vers. 1.0.1, February 2026  
 
 The [miniPIX EDU](https://advacam.com/camera/minipix-edu) is a camera
 for radiation based on the [Timepix](https://home.cern/tags/timepix) 
@@ -95,8 +115,8 @@ data archival to disk are shown by typing
   ``run_mPIXdaq.py --help``, resulting in the following output:
 
 ```
-usage: run_mPIXdaq.py [-h] [-v VERBOSITY] [-o OVERLAY] [-a ACQ_TIME] [-c ACQ_COUNT] [-f FILE] [-w WRITEFILE] [-t TIME]
-                      [--circularity_cut CIRCULARITY_CUT] [-r READFILE]
+usage: run_mPIXdaq.py [-h] [-v VERBOSITY] [-o OVERLAY] [-a ACQ_TIME] [-c ACQ_COUNT] [-f FILE]  
+                      [-w WRITEFILE] [-t TIME] [--circularity_cut CIRCULARITY_CUT] [-r READFILE]
 
 read, analyze and display data from miniPIX device
 
@@ -140,7 +160,7 @@ in the working directory, where xxxx is the serial number of the miniPIX device.
 Alternatively a file name may be specified using the `-b` or `--badpixels` option. 
 
 Collected frame data may be directly written to disk, if a filename is
-given using the `-f`or `--file` option. Two formats are foreseen at present,
+given using the `-f` or `--file` option. Two formats are foreseen at present,
 storage of the two-dimensional frames as *numpy*-arrays (file extension `.npy`) 
 or as lists of pixel indices and energy values in *yaml*-format (file extension
 `.yml`). If no suffix for the filename is given, the default behavior is writing 
@@ -167,8 +187,8 @@ as the ratio of the smaller and the larger of the two eigenvalues of the
 covariance matrix. This simple procedure already provides a good
 separation of α and β particles and of isolated pixels not assigned
 to clusters. The latter ones have a high probability of being produced in
-interactions of photons, while electrons from β radiation or from 
-photon interactions produce long traces, and α particles produce large,
+interactions of γ radiation (keV-photons), while electrons from β radiation 
+or from γ interactions produce long traces. α particles produce large,
 circular clusters due to their very high ionization loss in the
 detector material.  
 
@@ -300,7 +320,7 @@ demonstrates that the cluster types of different types of radiation
 are well separated: α rays in the green band with relatively low numbers 
 of pixels per cluster, electrons (β) as long tracks with large numbers
 of pixels per cluster and rather low energies. Single pixels not 
-associated to clusters mostly originate from 𝛾 rays. Some of the electron 
+associated to clusters mostly originate from γ rays. Some of the electron 
 tracks  with typically low energies also stem from photon interactions 
 in the detector material (via the Compton process).
 
