@@ -9,7 +9,7 @@ author: Günter Quast, February 2026
      p {
           margin-left:20px;
           text-align:justify;          
-          max-width:60em;
+          max-width:54em;
           font-family:Helvetica, Sans-Serif;
           <!-- color:black; -->
           <!-- background-color:White; -->
@@ -21,7 +21,7 @@ author: Günter Quast, February 2026
 
 
 ## mPIXdaq Data acquisition and analysis for *miniPIX (EDU)* pixel detector 
-                                                                             Vers. 1.0.1, February 2026  
+                                                                    Vers. 1.0.1, February 2026  
 
 The [miniPIX EDU](https://advacam.com/camera/minipix-edu) is a camera
 for radiation based on the [Timepix](https://home.cern/tags/timepix) 
@@ -236,7 +236,6 @@ and displayed:
 
    > `run_mPIXdaq -a 0.5 -p4 -o1`
 
-
 In high-rate scenarios exceeding 100 particles/s the read-out efficiency
 for the miniPIX becomes a concern. The USB 2 transfer and 
 initialization overheads take about 25 ms per frame. In practice, 
@@ -259,6 +258,16 @@ for such a high-rate scenarios, start data-acquisition with the command:
 With these settings, only one tenth of the frames is analyzed and displayed;
 the recorded frame rate is 20 Hz, while the read-out dead-time indeed turns 
 out to be 50% (measured on a Raspberry Pi 5).
+
+If higher higher read-out rates up to the nominal 40 frames/sec are needed,
+data can be recorded using the *Pixet* (basic) program delivered by 
+Advacam together with the device. Select tracking mode, the required
+exposure-time per frame and the number of frames from the graphical 
+interface, then press the record button, and after completion save 
+the acquired frames using the *save* button selecting *.clog* as the 
+file format. This format is understood by *mPIXdaq* and can be read in, 
+thus allowing you to perform cluster analysis and writing files in the 
+same formats as implemented in *mPIXdaq*.
 
 
 ## Implementation Details

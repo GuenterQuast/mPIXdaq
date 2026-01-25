@@ -1598,7 +1598,10 @@ class runDAQ:
                         frame2d = self.fdata[i_frame - 1]
                         frame = np.int32(frame2d.reshape(self.npx * self.npx))
                     if self.prescale_analysis == 1:
-                        time.sleep(0.2)  # gives better impression in play-back mode
+                        if self.acq_time > 0.0:  # wait between frames for better impression in play-back mode
+                            time.sleep(self.acq_time)
+                        else:
+                            time.sleep(0.2)
                     # mask bad pixels if requested
                     if self.fname_badpixels != '':
                         frame[mpixControl.badpixel_list] = -1
@@ -1687,7 +1690,11 @@ class runDAQ:
             time.sleep(1.5)  # give time for processes to finish
 
             if self.read_filename is None:
-                pypixet.exit()  # shut-down pypixet
+                # last chance to drain dataQ
+                while not self.daq.dataQ.empty():
+                    _ = self.daq.dataQ.get()
+                # shut-down pypixet
+                pypixet.exit()
 
             print()
             sys.exit(0)
