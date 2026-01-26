@@ -1599,7 +1599,7 @@ class runDAQ:
                         frame = np.int32(frame2d.reshape(self.npx * self.npx))
                     if self.prescale_analysis == 1:
                         if self.acq_time > 0.0:  # wait between frames for better impression in play-back mode
-                            time.sleep(self.acq_time)
+                            time.sleep(max(0.0, self.acq_time - 0.2))
                         else:
                             time.sleep(0.2)
                     # mask bad pixels if requested
