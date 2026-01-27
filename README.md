@@ -115,8 +115,10 @@ data archival to disk are shown by typing
   ``run_mPIXdaq.py --help``, resulting in the following output:
 
 ```
-usage: run_mPIXdaq.py [-h] [-v VERBOSITY] [-o OVERLAY] [-a ACQ_TIME] [-c ACQ_COUNT] [-f FILE]  
-                      [-w WRITEFILE] [-t TIME] [--circularity_cut CIRCULARITY_CUT] [-r READFILE]
+usage: run_mPIXdaq.py [-h] [-v VERBOSITY] [-o OVERLAY] [-a ACQ_TIME]
+                      [-c ACQ_COUNT] [-f FILE]  [-w WRITEFILE] [-t TIME] 
+                      [--circularity_cut CIRCULARITY_CUT] 
+                      [--flatness_cut FLATNESS_CUT] [-r READFILE]
 
 read, analyze and display data from miniPIX device
 
@@ -181,10 +183,10 @@ distribution over the pixels in the clusters.
 The shape of the cluster area is encoded in a quantity called circularity. 
 For discrimination between linear and round clusters, a cut is controlled 
 by the parameter `circularity_cut` ranging from 0. for perfectly linear 
-to 1. for perfectly circular clusters. Technically, the covariance
-matrix of the cluster area is calculated, and the circularity is defined 
-as the ratio of the smaller and the larger of the two eigenvalues of the
-covariance matrix. This simple procedure already provides a good
+to 1. for perfectly circular clusters. Technically, the covariance matrix 
+of the cluster area is calculated, and the circularity is defined as the 
+square root of the ratio of the smaller and the larger of the two eigenvalues 
+of the covariance matrix. This simple procedure already provides a good
 separation of α and β particles and of isolated pixels not assigned
 to clusters. The latter ones have a high probability of being produced in
 interactions of γ radiation (keV-photons), while electrons from β radiation 
@@ -213,7 +215,7 @@ option `--readfile data/BlackForestStone.yml.gz` to start a demonstration.
 Note that the analysis of the recorded pixel frames is done in real
 time and may take some time on slow computers.
 
-### Parameter settings  
+### Parameter settings  for data acquisition
 The optimal choice of parameters, in particular the values of exposure time,
 overlay of frames for the graphical display depend very much on the use case.
 
@@ -221,9 +223,9 @@ In scenarios with low rates aiming at a demonstration of the capabilities
 of a modern particle detector like the *miniPIX* for outreach purposes, it
 is most useful to mimic the behavior of a cloud chamber, i.e. particle traces
 appear, remain visible for some time an then disappear again. This can
-be achieved by setting a acquisition time of 0.2 s and an overlay of 10 frames.
-Particles tracks then remain on screen for 2 s before they disappear again.
-The command to run in this mode is:
+be achieved by setting an acquisition time of 0.2 s and an overlay of 10 frames.
+Particles tracks then remain visible on screen for 2 s. The command to run in this 
+mode is:
 
    > `run_mPIXdaq -a 0.2 -o10`
 
@@ -234,18 +236,17 @@ processing overheads, the fraction of events being analyzed and displayed
 may be pre-scaled. In the example below, only every fourth frame is analyzed
 and displayed: 
 
-   > `run_mPIXdaq -a 0.5 -p4 -o1`
+   > `run_mPIXdaq -a 0.2 -p4 -o1`
 
 In high-rate scenarios exceeding 100 particles/s the read-out efficiency
-for the miniPIX becomes a concern. The USB 2 transfer and 
-initialization overheads take about 25 ms per frame. In practice, 
-this means that about 20 frames/s of 25 ms exposure time each can be 
-transferred at a read-out dead-time of 50%. The number of objects per 
-frame should not exceed about 100 in oder to avoid overlaps between 
-clusters. So, in practice, signatures of 2000 particles/s can be handled,
-which is clearly sufficient for most laboratory experiments with rather
-weak radioactive sources that comply with radiation protection regulations. 
-
+for the miniPIX becomes a concern. The USB 2 transfer and initialization 
+overheads take about 25 ms per frame. In practice, this means that about 
+20 frames/s of 25 ms exposure time each can be transferred at a read-out 
+dead-time of 50%. The number of objects per frame should not exceed about 
+100 in oder to avoid overlaps between clusters. So, in practice, signatures
+of 2000 particles/s can be handled, which is clearly sufficient for most 
+laboratory experiments with rather weak radioactive sources that comply 
+with radiation protection regulations. 
 Read-out of the miniPIX is fastest in callback mode, when the driver 
 is initialized to call a function for data retrieval whenever a new 
 frame is ready to be transferred. To receive *acq_count* frames, only
@@ -260,22 +261,24 @@ the recorded frame rate is 20 Hz, while the read-out dead-time indeed turns
 out to be 50% (measured on a Raspberry Pi 5).
 
 If higher higher read-out rates up to the nominal 40 frames/sec are needed,
-data can be recorded using the *Pixet* (basic) program delivered by 
-Advacam together with the device. Select tracking mode, the required
-exposure-time per frame and the number of frames from the graphical 
-interface, then press the record button, and after completion save 
-the acquired frames using the *save* button selecting *.clog* as the 
-file format. This format is understood by *mPIXdaq* and can be read in, 
+data can be recorded using the *Pixet* (basic) program delivered by Advacam 
+together with the device. Select tracking mode, the required exposure-time
+per frame and the number of frames from the graphical interface, then press
+the record button, and after completion save the acquired frames using 
+the *save* button selecting *.clog* as the file format. This format is 
+understood by *mPIXdaq* and can be read in via the *--readfile* option,  
 thus allowing you to perform cluster analysis and writing files in the 
-same formats as implemented in *mPIXdaq*.
+same formats as implemented in *mPIXdaq*. In case your miniPIX device
+suffers from noisy pixels, a bad-pixel map can be specified using
+the *--badpixel* option.
 
 
 ## Implementation Details
 
-The default data acquisition is based on the function 
-*doSimpleAcquisition()* from  the *Advacam* *Python* API in callback
-mode, i.e. *acq_counts* frames with an adjustable accumulation time *acq_time*
- are read from the miniPIX device successively.  
+The default data acquisition is based on the function *doSimpleAcquisition()* 
+from  the *Advacam* *Python* API in callback mode, i.e. *acq_counts* frames 
+with an adjustable accumulation time *acq_time* are read from the miniPIX 
+device successively.  
 
 The chosen readout mode is "ToT" ("time over threshold", *PX_TPXMODE_TOT*).
 This quantity shows good proportionality to the deposited energy at high 
@@ -390,8 +393,8 @@ pixels, i.e.
 A *jupyter* notebook *analyze_mPIXclusters.ipynb* is distributed as part of the 
 package and illustrates how to read and interpret cluster data.
 
-The keys of the variables in *list_of_clusterproperties* are
-  > ['time', 'x_mean', 'y_mean', 'n_pix', 'energy', 'var_mx', 'var_mn', 'angle', 'xE_mean', 'yE_mean', 'varE_mx', 'varE_mn']
+The keys of the variables in *list_of_clusterproperties* are  
+>['time', 'x_mean', 'y_mean', 'n_pix', 'energy', 'var_mx', 'var_mn', 'angle', 'xE_mean', 'yE_mean', 'varE_mx', 'varE_mn']
 
 It is also possible to store the cluster properties in simple *.csv* format by
 explicitly specifying the file extension:
