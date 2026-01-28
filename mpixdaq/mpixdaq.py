@@ -1310,6 +1310,7 @@ class runDAQ:
                 print(f" found {self.n_frames_in_file} pixel frames in file")
             if self.verbosity > 1:
                 print(f"    Data recorded with device  {mpixControl.deviceInfo['dn']}")
+            self.frame_iterator = iter(self.fdata)
 
         # file to save raw frame data
         self.out_file_yml = None
@@ -1392,11 +1393,11 @@ class runDAQ:
         """Read data from yaml dictionary (the default file format of mPIXdaq)"""
 
         self.mdata = d["meta_data"]
-        self.fdata = d["frame_data"]
         if "deviceInfo" in d.keys():
             mpixControl.deviceInfo = d["deviceInfo"]
         if "badPixels" in d.keys():
             mpixControl.badpixel_list = d["badPixels"]
+        return d["frame_data"]
 
     # function to read frame data in advacam  .clog
     @staticmethod
@@ -1513,7 +1514,7 @@ class runDAQ:
             if suffix2 == '.npy':
                 self.fdata = np.load(_file)
             elif suffix2 == '.yml':
-                self.decode_yml(yaml.load(_file, Loader=yaml.CLoader))
+                self.fdata = self.decode_yml(yaml.load(_file, Loader=yaml.CSafeLoader))
             elif suffix2 == '.txt':
                 self.fdata = self.decode_Advacam_txt(_file)
             elif suffix2 == '.clog':
@@ -1524,7 +1525,7 @@ class runDAQ:
             # _file = zf.read(fnam)
             _file = open(fnam, 'r')
             if suffix2 == '.yml':
-                self.decode_yml(yaml.load(_file, Loader=yaml.CLoader))  # assume one .yml file in archive
+                fdata = self.decode_yml(yaml.load(_file, Loader=yaml.CSafeLoader))  # assume one .yml file in archive
             elif suffix2 == '.txt':
                 self.fdata = self.decode_Advacam_txt(_file)
             elif suffix2 == '.clog':
@@ -1585,17 +1586,17 @@ class runDAQ:
                 else:  # from array in memory (as read from file)
                     timestamp = i_frame * self.acq_time
                     i_frame += 1
-                    if i_frame > self.n_frames_in_file:
-                        break
+                    # if i_frame > self.n_frames_in_file:
+
                     if self.read_mode == 'list':
-                        frame[:] = 0
-                        pixel_list = np.asarray(self.fdata[i_frame - 1])
+                        frame[:] = 0  # empty frame
+                        pixel_list = np.asarray(next(self.frame_iterator))
                         if len(pixel_list) > 0:
-                            frame[pixel_list[:, 0]] = pixel_list[:, 1]
+                            frame[pixel_list[:, 0]] = pixel_list[:, 1]  # set pixel energies
                         frame2d = frame.reshape(self.npx, self.npx)
                     else:
                         # 2d-frames as input
-                        frame2d = self.fdata[i_frame - 1]
+                        frame2d = next(self.frame_iterator)
                         frame = np.int32(frame2d.reshape(self.npx * self.npx))
                     if self.prescale_analysis == 1:
                         if self.acq_time > 0.0:  # wait between frames for better impression in play-back mode
@@ -1645,6 +1646,9 @@ class runDAQ:
 
         except KeyboardInterrupt:
             print("\n keyboard interrupt ")
+        except StopIteration:
+            mpixControl.mpixActive.clear()
+            print("\033[36m\n" + 25 * ' ' + "'end-of-file reached, type <ret> ", end='')
         except Exception as e:
             print("\n exception in daq loop: ", str(e))
 
@@ -1659,9 +1663,6 @@ class runDAQ:
                 elif dt_active > self.run_time:
                     mpixControl.mpixActive.clear()
                     print("\033[36m\n" + 20 * ' ' + f"end after {dt_active:.1f} s, type <ret> ", end='')
-                elif self.read_filename is not None:
-                    mpixControl.mpixActive.clear()
-                    print("\033[36m\n" + 25 * ' ' + "'end-of-file reached, type <ret> ", end='')
                 # wait for user input while keeping graphics window active
                 _ = input(15 * ' ' + "  - type <ret> to terminate graphics window ->> ")
 
