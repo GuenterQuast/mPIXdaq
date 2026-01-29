@@ -1156,7 +1156,7 @@ class scatterplot:
             else:
                 labels = ["class " + str(_ic) for _ic in range(self.n_classes)]
         if colors is None:
-            colors = n_classes * [None]
+            colors = self.n_classes * [None]
 
         self.gr = []
         for _ic in range(self.n_classes):
@@ -1387,26 +1387,49 @@ class runDAQ:
             prescale=self.prescale_analysis,
         )
 
-    def decode_yml(self, file):
+    def decode_yml(self, ymlfile):
         """Read data from yaml dictionary (the default file format of mPIXdaq)
         and yield individual frames from file
-
-        !!! should be changed to read data sequentionally
         """
 
-        # load complete file (this consumes memory and may be slow)
-        _d = yaml.load(file, Loader=yaml.CSafeLoader)
-        file.close()
+        meta_blk = ''
+        while _l := ymlfile.readline():
+            if isinstance(_l, bytes):
+                _l = _l.decode()  # needed for gzip returninf bytes objects
+            if _l.startswith("frame_data:"):
+                in_datablk = True
+                break
+            meta_blk += _l
+        # decode meta-data
+        _meta = yaml.load(meta_blk, Loader=yaml.CSafeLoader)
+        self.mdata = _meta["meta_data"]
+        if "deviceInfo" in _meta.keys():
+            mpixControl.deviceInfo = _meta["deviceInfo"]
+        if "badPixels" in _meta.keys():
+            mpixControl.badpixel_list = _meta["badPixels"]
 
-        self.mdata = _d["meta_data"]
-        if "deviceInfo" in _d.keys():
-            mpixControl.deviceInfo = _d["deviceInfo"]
-        if "badPixels" in _d.keys():
-            mpixControl.badpixel_list = _d["badPixels"]
+        if in_datablk:
+            return self.frame_generator(ymlfile)
 
-        return iter(_d["frame_data"])
+    @staticmethod
+    def frame_generator(ymlfile):
+        """generator retruning frames from data block of yaml file"""
+        in_datablk = True
+        while in_datablk:
+            data_blk = ''
+            while _l := ymlfile.readline():
+                if isinstance(_l, bytes):
+                    _l = _l.decode()  # needed for gzip returninf bytes objects
+                if _l == '\n':
+                    break
+                if _l.startswith == "..." or _l.startswith("eor_data:"):
+                    in_datablk = False
+                    break
+                data_blk += _l
+            _frame = yaml.load(data_blk, Loader=yaml.CSafeLoader)
+            if _frame is not None:
+                yield (_frame[0])
 
-    # function to read frame data in advacam .clog format
     @staticmethod
     def decode_Advacam_clog(file):
         """Read data in Advacam .clog format and yield frame
