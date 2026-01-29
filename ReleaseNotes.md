@@ -15,3 +15,6 @@
   - miniPIX readout in callback speeds up data acquisition
 
   - added Advacam .clog as possible input format  
+
+  - reading from files now sequential for .yml, .txt and .clog
+  
