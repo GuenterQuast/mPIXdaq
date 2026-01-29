@@ -1395,7 +1395,7 @@ class runDAQ:
         meta_blk = ''
         while _l := ymlfile.readline():
             if isinstance(_l, bytes):
-                _l = _l.decode()  # needed for gzip returninf bytes objects
+                _l = _l.decode()  # needed for gzip returning bytes objects
             if _l.startswith("frame_data:"):
                 in_datablk = True
                 break
@@ -1419,16 +1419,16 @@ class runDAQ:
             data_blk = ''
             while _l := ymlfile.readline():
                 if isinstance(_l, bytes):
-                    _l = _l.decode()  # needed for gzip returninf bytes objects
+                    _l = _l.decode()  # needed for gzip returning bytes objects
                 if _l == '\n':
                     break
-                if _l.startswith == "..." or _l.startswith("eor_data:"):
+                elif _l.startswith("...") or _l.startswith("eor_data:"):
                     in_datablk = False
                     break
                 data_blk += _l
-            _frame = yaml.load(data_blk, Loader=yaml.CSafeLoader)
-            if _frame is not None:
-                yield (_frame[0])
+            if not in_datablk:
+                break
+            yield yaml.load(data_blk, Loader=yaml.CSafeLoader)[0]
 
     @staticmethod
     def decode_Advacam_clog(file):
@@ -1445,7 +1445,7 @@ class runDAQ:
             if not _l:
                 break
             if isinstance(_l, bytes):
-                _l = _l.decode()  # needed for gzip returninf bytes objects
+                _l = _l.decode()  # needed for gzip returning bytes objects
             if _l == '':  # skip empty lines between frames
                 pass
             elif _l[0:5] == "Frame":  # new start-of-frame found
@@ -1477,7 +1477,7 @@ class runDAQ:
             if not _l:
                 break
             if isinstance(_l, bytes):
-                _l = _l.decode()  # needed for gzip returninf bytes objects
+                _l = _l.decode()  # needed for gzip returning bytes objects
             if _l != '#\n':  # not end of frame
                 # add pixel number and value to current pixel list
                 frame.append([int(_l.split('\t')[0]), int(_l.split('\t')[1])])
@@ -1660,14 +1660,13 @@ class runDAQ:
                     # decode keyboard input
                     if mpixControl.kbdQ.get() == 'E':
                         mpixControl.mpixActive.clear()
-                #    # heart-beat for console
+
                 dt_active = time.time() - t_start
-                print(f"  #{i_frame}  {dt_active:.0f}s  {i_frame / dt_active:0.1f}fps", end="\r")
+                print(f"  #{i_frame}  {dt_active:.0f}s  {i_frame / dt_active:0.1f}fps     ", end="\r")
 
         except KeyboardInterrupt:
             print("\n keyboard interrupt ")
         except StopIteration:
-            mpixControl.mpixActive.clear()
             print("\033[36m\n" + 25 * ' ' + "'end-of-file reached, type <ret> ", end='')
         except Exception as e:
             print("\n exception in daq loop: ", str(e))
@@ -1680,8 +1679,9 @@ class runDAQ:
                 # end daq loop, print reason for end and clean up
                 if not mpixControl.mpixActive.is_set():
                     print("\033[36m\n" + 20 * ' ' + "'E'nd command received, type <ret> ", end='')
-                elif dt_active > self.run_time:
+                else:
                     mpixControl.mpixActive.clear()
+                if dt_active > self.run_time:
                     print("\033[36m\n" + 20 * ' ' + f"end after {dt_active:.1f} s, type <ret> ", end='')
                 # wait for user input while keeping graphics window active
                 _ = input(15 * ' ' + "  - type <ret> to terminate graphics window ->> ")
