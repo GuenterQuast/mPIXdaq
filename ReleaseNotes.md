@@ -18,3 +18,5 @@
 
   - reading from files now sequential for .yml, .txt and .clog
   
+  - added decoder for mPIX cluster files
+  

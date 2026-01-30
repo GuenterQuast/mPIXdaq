@@ -1388,16 +1388,26 @@ class runDAQ:
         )
 
     def decode_yml(self, ymlfile):
-        """Read data from yaml dictionary (the default file format of mPIXdaq)
+        """Read data from yaml file (the default file format of mPIXdaq)
         and yield individual frames from file
-        """
 
+        Args:
+          * ymlfile:  file handle to open file in mPIXdaq .yml format
+
+        """
+        dtype = "unknown"
         meta_blk = ''
-        while _l := ymlfile.readline():
+        while True:
+            _l = ymlfile.readline()
+            if not _l:
+                break
             if isinstance(_l, bytes):
                 _l = _l.decode()  # needed for gzip returning bytes objects
             if _l.startswith("frame_data:"):
-                in_datablk = True
+                dtype = "frame"
+                break
+            if _l.startswith("cluster_data"):
+                dtype = "clusters"
                 break
             meta_blk += _l
         # decode meta-data
@@ -1408,16 +1418,22 @@ class runDAQ:
         if "badPixels" in _meta.keys():
             mpixControl.badpixel_list = _meta["badPixels"]
 
-        if in_datablk:
+        if dtype == "frame":
             return self.frame_generator(ymlfile)
+        elif dtype == "clusters":
+            return self.frame_from_clusters_generator(ymlfile)
 
     @staticmethod
     def frame_generator(ymlfile):
-        """generator retruning frames from data block of yaml file"""
+        """generator retruning frames from data block of yaml file with frames"""
         in_datablk = True
         while in_datablk:
             data_blk = ''
-            while _l := ymlfile.readline():
+            while True:
+                _l = ymlfile.readline()
+                if not _l:
+                    in_datablk = False
+                    break
                 if isinstance(_l, bytes):
                     _l = _l.decode()  # needed for gzip returning bytes objects
                 if _l == '\n':
@@ -1431,11 +1447,51 @@ class runDAQ:
             yield yaml.load(data_blk, Loader=yaml.CSafeLoader)[0]
 
     @staticmethod
+    def frame_from_clusters_generator(ymlfile):
+        """generator retruning frames from data block of yaml file with clusters"""
+        in_datablk = True
+        t_stamp0 = 0
+        fdata = []
+        while in_datablk:
+            data_blk = ''
+            while True:
+                _l = ymlfile.readline()
+                if not _l:
+                    yield fdata  # deliver last frame
+                    in_datablk = False
+                    break
+                if isinstance(_l, bytes):
+                    _l = _l.decode()  # needed for gzip returning bytes objects
+                if _l == '\n':
+                    break
+                elif _l.startswith("...") or _l.startswith("eor_data:"):
+                    yield fdata  # deliver last frame
+                    in_datablk = False
+                    break
+                data_blk += _l
+            if not in_datablk:
+                break
+            if data_blk != '':
+                cdata = yaml.load(data_blk, Loader=yaml.CSafeLoader)[0]
+            else:
+                continue
+            t_stamp = cdata[0][0]
+            cluster = cdata[1]
+            if t_stamp <= t_stamp0:
+                fdata += cluster  # append new cluster
+            else:
+                t_stamp0 = t_stamp
+                yield fdata  # deliver completed frame
+                fdata = cluster  # initialize next frame
+
+    #        raise StopIteration
+
+    @staticmethod
     def decode_Advacam_clog(file):
         """Read data in Advacam .clog format and yield frame
 
         Args:
-          - file: file handle
+          * file: file handle
         """
 
         width = mpixControl.deviceInfo["width"]
@@ -1468,7 +1524,7 @@ class runDAQ:
         frames are separated by a line containing a '#'
 
         Args:
-        - file: file handle
+        * file: file handle
         """
 
         frame = []
