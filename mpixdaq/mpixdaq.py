@@ -99,7 +99,8 @@ def import_npy_append_array():
 
 
 class mpixControl:
-    """Provides Device Information and Queues and Events to control threads"""
+    """Provides global variables containing Device Information
+    as well as  Queues, Events and methods to control threads"""
 
     mpixActive = Event()  # mPIX daq active
     endEvent = Event()  # end signal for all processes
@@ -110,7 +111,7 @@ class mpixControl:
     #          overwritten when connecting a device or by deviceInfo block from input file
     deviceInfo = {"dn": "eduMiniPIX (?)", "pitch": 55.0, "width": 256, "height": 256}
 
-    daqSetting = {"acq_time": 0.5, "acq_count": 10}
+    daqSettings = {"acq_time": 0.5, "acq_count": 10}
 
     # assume sensor has no bad pixels (overwritten in runDAQ)
     badpixel_list = None
@@ -141,7 +142,7 @@ class miniPIXdaq:
     (dataQ, an instance of threading.Queue()). The loop ends when the flag
     endEvent (an instance of threading.Event() in class mpixControl) is set.
 
-    Args:
+    DAQ parameters from class mpixControl:
 
       - ac_count: number of frames to read successively
       - ac_time: acquisition (=exposure) time per frame
@@ -156,7 +157,7 @@ class miniPIXdaq:
 
     """
 
-    def __init__(self, ac_count=10, ac_time=0.1):
+    def __init__(self):
         """initialize miniPIX device and set up data acquisition"""
 
         # no device yet
@@ -200,10 +201,10 @@ class miniPIXdaq:
         else:
             print("*==* running in ToT mode converted to keV")
 
-        # parameters controlling data acquisition
+        # set parameters controlling data acquisition from mpixControl
         #  -  ac_count, ac_time, fileType, fileName
-        self.ac_count = ac_count
-        self.ac_time = ac_time
+        self.ac_count = mpixControl.daqSettings['acq_count']
+        self.ac_time = mpixControl.daqSettings['acq_time']
 
         # ring buffer for data collection
         self.Nbuf = 8
@@ -671,7 +672,7 @@ class frameAnalyzer:
 
 
 # - class and functions for visualization  - - - - - - - - - -
-class miniPIXvis:
+class mpixGraphs:
     """Display of miniPIX frames and histograms for low-rate scenarios
     where on-line analysis is possible and animated graphs are meaningful
 
@@ -1200,11 +1201,11 @@ class scatterplot:
 
 class fileDecoders:
     """Collection of decoders for various input file formats
-    supports mPIXdaq .npy, mPIXdaq .yml, Advacam .txt and Advacm .clog
+    supports mPIXdaq .npy and .yml and Advacam .txt and .clog
     """
 
-    @staticmethod
-    def mPIXdaq_yml(ymlfile):
+    @classmethod
+    def mPIXdaq_yml(cls, ymlfile):
         """Read data from yaml file (the default file format of mPIXdaq)
         and yield individual frames from file
 
@@ -1229,8 +1230,8 @@ class fileDecoders:
         # decode meta-data
         _meta = yaml.load(meta_blk, Loader=yaml.CSafeLoader)
         mdata = _meta["meta_data"]
-        mpixControl.daqSetting["acq_time"] = mdata['acq_time']
-        mpixControl.daqSetting["acq_count"] = mdata['acq_count']
+        mpixControl.daqSettings['acq_time'] = mdata['acq_time']
+        mpixControl.daqSettings['acq_count'] = mdata['acq_count']
 
         if "deviceInfo" in _meta.keys():
             mpixControl.deviceInfo = _meta["deviceInfo"]
@@ -1238,9 +1239,9 @@ class fileDecoders:
             mpixControl.badpixel_list = _meta["badPixels"]
 
         if dtype == "frame":
-            return fileDecoders.frame_generator(ymlfile)
+            return cls.frame_generator(ymlfile)
         elif dtype == "clusters":
-            return fileDecoders.frame_from_clusters_generator(ymlfile)
+            return cls.frame_from_clusters_generator(ymlfile)
 
     @staticmethod
     def frame_generator(ymlfile):
@@ -1424,8 +1425,8 @@ class runDAQ:
         self.write_mode = "list"  # write pixel list, alternative "2d"
 
         # set global daq parameters
-        mpixControl.daqSetting['acq_time'] = self.acq_time
-        mpixControl.daqSetting['acq_count'] = self.acq_count
+        mpixControl.daqSettings['acq_time'] = self.acq_time
+        mpixControl.daqSettings['acq_count'] = self.acq_count
 
         # - conditional import
         if self.out_filename is not None and '.npy' in self.out_filename:
@@ -1438,7 +1439,7 @@ class runDAQ:
         # - load pypixet library and connect to miniPIX
         if self.read_filename is None:
             # initialize data acquisition object
-            self.daq = miniPIXdaq(self.acq_count, self.acq_time)
+            self.daq = miniPIXdaq()
             if self.daq.dev is None:
                 _a = input("  Problem with miniPIX device - read data from file ? (y/n) > ")
                 if _a in {'y', 'Y', 'j', 'J'}:
@@ -1546,7 +1547,7 @@ class runDAQ:
             print("*!!* analysis prescaling disabled to write cluster information for all frames")
 
         # initialize visualizer
-        self.mpixvis = miniPIXvis(
+        self.mpixvis = mpixGraphs(
             nover=self.n_overlay,
             unit=self.unit,
             circ=self.circularity_cut,
@@ -1634,8 +1635,8 @@ class runDAQ:
         elif suffix == '.txt' or suffix2 == ".txt" or suffix == '.clog' or suffix2 == '.clog':
             self.acq_time = 0.0  # acquisition time unknown (not stored in .txt or .clog file)
         else:  # assume list of pixel number and energy value pairs + meta data
-            self.acq_time = mpixControl.daqSetting["acq_time"]
-            self.acq_count = mpixControl.daqSetting["acq_count"]
+            self.acq_time = mpixControl.daqSettings["acq_time"]
+            self.acq_count = mpixControl.daqSettings["acq_count"]
         self.unit = "(keV)"
 
     def __call__(self):

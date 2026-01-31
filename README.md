@@ -442,26 +442,40 @@ This package consists of one *Python* file with several classes providing
 the base functionality. As mentioned above, it relies on
 [Advacam libraries](https://wiki.advacam.cz/wiki/Python_API)
 for setting-up and reading the sensor. 
-Other dependencies are well-known libraries from the "Python" eco-system 
-for data analysis:
+Other dependencies are well-known libraries from the *Python*
+eco-system for data analysis:  
 
-  - `numpy`
-  - `matplotlib`
-  - `scipy.ndimage.label`
-  - `numpy.cov`
-  - `numpy.linalg.eig`
+- `numpy`
+- `matplotlib`
+- `scipy.ndimage.label`
+- `numpy.cov`
+- `numpy.linalg.eig`
 
 The classes and scripts of the package are
 
-  - class `miniPIXdaq`
-  - class `frameAnalyzer`
-  - class `miniPIXvis` 
-  - class `runDAQ`
-  - class `bhist`
-  - class `scatterplot`
-  - package script `run_mPIXdaq.py`
+- classes: 
+  - `mpixControl`
+  - `miniPIXdaq`
+  - `frameAnalyzer`
+  - `mpixGraphs` 
+    - `bhist`
+    - `scatterplot`
+   - `runDAQ`
+     - fileDecoders:
+    """Collection of decoders for various input file formats
+    supports mPIXdaq .npy, mPIXdaq .yml, Advacam .txt and Advacm .clog
+    """
+
+
+ - package script `run_mPIXdaq.py`
 
 Details on the interfaces are given below.
+
+```
+class mpixControl:
+    """Provides global variables containing Device Information 
+    as well as  Queues, Events and methods to control threads"""
+```
 
 ```
 class miniPIXdaq:
@@ -473,7 +487,7 @@ class miniPIXdaq:
     (dataQ, an instance of threading.Queue()). The loop ends when the flag
     endEvent (an instance of threading.Event() in class mpixControl) is set.
 
-    Args:
+    DAQ parameters from class mpixControl:
 
       - ac_count: number of frames to read successively
       - ac_time: acquisition (=exposure) time per frame
@@ -518,7 +532,7 @@ class frameAnalyzer:
 ```
 
 ``` 
- class miniPIXvis:
+ class mpixGraphs:
   """Display of miniPIX frames and histograms for low-rate scenarios,
   where on-line analysis is possible and animated graphs are meaningful
 
@@ -553,7 +567,16 @@ as already described above.
     """
 ```
 
-Two helper classes implement 1d and 2d histogram functionality for
+A helper class implements decoders for the file input formats
+
+```
+class fileDecoders:
+    """Collection of decoders for various input file formats
+    supports mPIXdaq .npy and .yml and Advacam .txt and .clog
+     """
+```
+
+Two more helper classes implement 1d and 2d histogram functionality for
 efficient and fast animation using methods from `matplotlib.pyplot`.
 
 ```
