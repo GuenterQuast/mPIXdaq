@@ -13,7 +13,7 @@ This code depends on standard libraries from Python's scientific ecosystem
   - numpy.linalg.eig
 
 to display the pixel energy map, to cluster pixels and to determine
-luster shapes and energies.
+cluster shapes and energies.
 
 This example is meant as a starting point for use of the miniPIX in physics lab courses,
 where transparent insights concerning the sensor data and subsequent analysis steps are
@@ -22,7 +22,7 @@ key learning objectives.
 
 LICENSE
 
-    Data acquisition, visualization and analysis for the miniPIX (EDU) device by ADVACAM
+    Data acquisition, visualization and analysis for the miniPIX (EDU) device from Avacam
     Copyright (C) 2025, Günter Quast
 
     This program is free software: you can redistribute it and/or modify
@@ -32,25 +32,29 @@ LICENSE
 
     This program is distributed in the hope that it will be useful,
     but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
     GNU General Public License for more details.
 
     You should have received a copy of the GNU General Public License
-    along with this program.  If not, see <https://www.gnu.org/licenses/>.
+    along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 """
 
+# system packages
 import argparse
+import gzip
 import os
-import sys
-import re
 import pathlib
+from queue import Queue
+import re
+import sys
 import time
 import yaml
 import zipfile
-import gzip
+
+#
+# special package requirements
 import numpy as np
-from queue import Queue
 from threading import Thread, Event
 from scipy import ndimage
 
@@ -1475,7 +1479,7 @@ class runDAQ:
         if self.read_filename is not None:  # prepare reading from file
             if self.verbosity > 0:
                 print("*==* reading pixel frames from file ", self.read_filename)
-            self.read_frames_from_file()
+            self.frame_iterator = self.read_frames_from_file()
             if self.verbosity > 1:
                 print(f"    Data recorded with device  {mpixControl.deviceInfo['dn']}")
 
@@ -1559,14 +1563,16 @@ class runDAQ:
     def read_frames_from_file(self):
         """Read frame data from file
 
-        supports .npy, .yaml and Advacam .txt formats, either raw, zipped or gzipped
+        supports mPIXdaq .npy and .yml formats and Advacam .txt and .clog formats,
+        either raw, zipped or gzipped
 
         - 2d frame data from .npy or
-        - pixel values from .yml or .txt
+        - (pixel energy) value pairs from .yml, .txt or .clog
 
         provides:
 
-        - fdata: 2d array or list of [pixel number, value]
+        - frame_iterator: an iterata providing frame data
+          as 2d array or list of [pixel number, value]
         - read_mode:  2d or list
         - meta-data (daq params, device info and bad pixels) if input is yaml
         """
@@ -1585,49 +1591,49 @@ class runDAQ:
         self.infile = None
         # read uncompressed file formats
         if suffix == ".npy":
-            self.fdata = np.load(self.read_filename, mmap_mode="r")
-            self.frame_iterator = iter(self.fdata)
+            fdata = np.load(self.read_filename, mmap_mode="r")
+            frame_iterator = iter(fdata)
         elif suffix == ".yml":
             self.infile = open(self.read_filename, 'r')
-            self.frame_iterator = fileDecoders.mPIXdaq_yml(self.infile)
+            frame_iterator = fileDecoders.mPIXdaq_yml(self.infile)
         elif suffix == ".txt":
             self.infile = open(self.read_filename, 'r')
-            self.frame_iterator = fileDecoders.Advacam_txt(self.infile)
+            frame_iterator = fileDecoders.Advacam_txt(self.infile)
         elif suffix == ".clog":
             self.infile = open(self.read_filename, 'r')
-            self.frame_iterator = filIO.Advacam_clog(self.infile)
+            frame_iterator = filIO.Advacam_clog(self.infile)
         # read compressed input files
         elif suffix == ".gz":
             self.infile = gzip.GzipFile(self.read_filename, mode='r')
             if suffix2 == '.npy':
-                self.fdata = np.load(self.infile)
-                self.frame_iterator = iter(self.fdata)
+                fdata = np.load(self.infile)
+                frame_iterator = iter(fdata)
             elif suffix2 == '.yml':
-                self.frame_iterator = fileDecoders.mPIXdaq_yml(self.infile)
+                frame_iterator = fileDecoders.mPIXdaq_yml(self.infile)
             elif suffix2 == '.txt':
-                self.frame_iterator = fileDecoders.Advacam_txt(self.infile)
+                frame_iterator = fileDecoders.Advacam_txt(self.infile)
             elif suffix2 == '.clog':
-                self.frame_iterator = fileDecoders.Advacam_clog(self.infile)
+                frame_iterator = fileDecoders.Advacam_clog(self.infile)
         elif suffix == ".zip":
             zf = zipfile.ZipFile(self.read_filename, 'r')
             fnam = zf.namelist()[0]
             # _file =) zf.read(fnam)
             self.infile = open(fnam, 'r')
             if suffix2 == '.yml':
-                self.frame_iterator = fileDecoders.mPIXdaq_yml(self.infile)  # assume there is only one file in archive
+                frame_iterator = fileDecoders.mPIXdaq_yml(self.infile)  # assume there is only one file in archive
             elif suffix2 == '.txt':
-                self.frame_iterator = fileDecoders.Advacam_txt(self.infile)
+                frame_iterator = fileDecoders.Advacam_txt(self.infile)
             elif suffix2 == '.clog':
-                self.frame_iterator = fileDecoders.Advacam_clog(self.infile)
+                frame_iterator = fileDecoders.Advacam_clog(self.infile)
             else:
-                self.fdata = np.load(self.infile)
-                self.frame_iterator = iter(self.fdata)
+                fdata = np.load(self.infile)
+                frame_iterator = iter(fdata)
 
         # determine meta-data
         self.npx = mpixControl.deviceInfo["width"]
         if self.read_mode == '2d':
-            shape = self.fdata.shape
-            if len(shape) < 3 or shape[1] != width:
+            shape = fdata.shape
+            if len(shape) < 3 or shape[1] != self.npx:
                 exit(f"unexpected shape {shape} of array, expected {width}x{width}")
             elif shape[1] != self.npx:
                 exit(f"unexpected shape {shape} of array, expected {width}x{width}")
@@ -1638,6 +1644,8 @@ class runDAQ:
             self.acq_time = mpixControl.daqSettings["acq_time"]
             self.acq_count = mpixControl.daqSettings["acq_count"]
         self.unit = "(keV)"
+
+        return frame_iterator
 
     def __call__(self):
         """run daq loop"""
@@ -1670,7 +1678,7 @@ class runDAQ:
                     frame2d = frame.reshape(self.npx, self.npx)
                     dt_alive += self.acq_time
                     i_frame += 1
-                else:  # from array in memory (as read from file)
+                else:  # from file
                     timestamp = i_frame * self.acq_time
                     i_frame += 1
                     # if i_frame > self.n_frames_in_file:

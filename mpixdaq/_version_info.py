@@ -9,7 +9,7 @@
 major = 1
 minor = 0
 revision = 1
-suffix = "b1"  # for suffixes such as 'rc' or 'beta' or 'alpha'
+suffix = "rc0"  # for suffixes such as 'rc' or 'beta' or 'alpha'
 
 
 def _get_version_tuple():

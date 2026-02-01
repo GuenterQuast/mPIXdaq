@@ -72,7 +72,8 @@ directory in the *pypixet* *Python* interface.
 To get started, follow the steps below: 
 
  - Get the code from github  
-    ``git clone https://github.com/GuenterQuast/mPIXdaq``.
+    ``git clone https://github.com/GuenterQuast/mPIXdaq`` or  
+    ``git clone https://gitlab.kit.edu/Guenter.Quast/mPIXdaq``
 
    This repository includes the *Python* code and a minimalistic set
    of libraries provided by Advacam.
@@ -445,11 +446,13 @@ for setting-up and reading the sensor.
 Other dependencies are well-known libraries from the *Python*
 eco-system for data analysis:  
 
+- `scipy`
+  - `.ndimage.label`
 - `numpy`
+  - `.cov`
+  - `.linalg.eig`
 - `matplotlib`
-- `scipy.ndimage.label`
-- `numpy.cov`
-- `numpy.linalg.eig`
+  - `.pyplot`
 
 The classes and scripts of the package are
 
@@ -461,20 +464,16 @@ The classes and scripts of the package are
     - `bhist`
     - `scatterplot`
    - `runDAQ`
-     - fileDecoders:
-    """Collection of decoders for various input file formats
-    supports mPIXdaq .npy, mPIXdaq .yml, Advacam .txt and Advacm .clog
-    """
-
+     - `fileDecoders`
 
  - package script `run_mPIXdaq.py`
 
-Details on the interfaces are given below.
+Details on the classes and their interfaces are given below.
 
 ```
 class mpixControl:
     """Provides global variables containing Device Information 
-    as well as  Queues, Events and methods to control threads"""
+    as well as Queues, Events and methods to control threads"""
 ```
 
 ```

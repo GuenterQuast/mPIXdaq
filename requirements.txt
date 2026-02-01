@@ -1,19 +1,22 @@
 # requirements for mPIXdaq
 # - standard system packages 
-# sys
-# time
+# argparse
+# gzip
+# os
+# pathlib
 # platform
 # queue
+# re
+# sys
+# time
 # threading
-# gzip
-#
+# zipfile
+# 
 # special requirements
-argparse
-pathlib
-pyyaml
-npy_append_array
-numpy
 matplotlib
+numpy
+npy_append_array
+pyyaml
 scipy
 
 

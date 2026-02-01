@@ -14,10 +14,10 @@ authors = [
     {name = "Guenter Quast", email = "Guenter.Quast@kit.edu"},
 ]
 dependencies = [
-    "NumPy",
-    "pyyaml",
-    "npy_append_array",
     "matplotlib",
+    "NumPy",
+    "npy_append_array",
+    "pyyaml",
     "Scipy",
     ]
     
