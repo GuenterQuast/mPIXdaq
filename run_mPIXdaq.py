@@ -13,7 +13,7 @@ import sys
 #  - and restart python script for changes to take effect
 
 modified_path = False
-if platform.system != 'Windows':
+if platform.system() != 'Windows':
     _ldp = os.environ.get("LD_LIBRARY_PATH")
     if _ldp:
         if ':.' not in _ldp and _ldp != '.':
