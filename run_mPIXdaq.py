@@ -24,7 +24,7 @@ if platform.system() != 'Windows':
         modified_path = True
 
     # restart script in modified environment
-    if modified_path:     
+    if modified_path:
         print(" ! temporarily added '.' to LD_LIBRARY_PATH !")
         try:
             os.execv(sys.argv[0], sys.argv)
