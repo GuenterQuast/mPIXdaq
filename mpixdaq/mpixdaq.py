@@ -22,7 +22,7 @@ key learning objectives.
 
 LICENSE
 
-    Data acquisition, visualization and analysis for the miniPIX (EDU) device from Avacam
+    Data acquisition, visualization and analysis for the miniPIX (EDU) device from Advacam
     Copyright (C) 2025, Günter Quast
 
     This program is free software: you can redistribute it and/or modify
@@ -1601,7 +1601,7 @@ class runDAQ:
             frame_iterator = fileDecoders.Advacam_txt(self.infile)
         elif suffix == ".clog":
             self.infile = open(self.read_filename, 'r')
-            frame_iterator = filIO.Advacam_clog(self.infile)
+            frame_iterator = fileDecoders.Advacam_clog(self.infile)
         # read compressed input files
         elif suffix == ".gz":
             self.infile = gzip.GzipFile(self.read_filename, mode='r')
@@ -1634,9 +1634,9 @@ class runDAQ:
         if self.read_mode == '2d':
             shape = fdata.shape
             if len(shape) < 3 or shape[1] != self.npx:
-                exit(f"unexpected shape {shape} of array, expected {width}x{width}")
+                exit(f"unexpected shape {shape} of array, expected {self.npix}x{self.npix}")
             elif shape[1] != self.npx:
-                exit(f"unexpected shape {shape} of array, expected {width}x{width}")
+                exit(f"unexpected shape {shape} of array, expected {self.npix}x{self.npix}")
             self.acq_time = 0.0  # acquisition time unknown (not stored in npy file)
         elif suffix == '.txt' or suffix2 == ".txt" or suffix == '.clog' or suffix2 == '.clog':
             self.acq_time = 0.0  # acquisition time unknown (not stored in .txt or .clog file)
