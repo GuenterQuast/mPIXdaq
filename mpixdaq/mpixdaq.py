@@ -106,7 +106,8 @@ class mpixControl:
     """Provides global variables containing Device Information
     as well as  Queues, Events and methods to control threads"""
 
-    mpixActive = Event()  # mPIX daq active
+    runActive = Event()  # run active
+    mpixActive = Event()  # mPIX active
     endEvent = Event()  # end signal for all processes
     mplActive = Event()  # set while interactive plotting is active
     kbdQ = Queue()  #  keyboard input
@@ -123,7 +124,7 @@ class mpixControl:
     @staticmethod
     def keyboard_input():
         """Read keyboard input and send to Queue, running as background thread to avoid blocking"""
-        while mpixControl.mpixActive.is_set():
+        while mpixControl.runActive.is_set():
             mpixControl.kbdQ.put(input())
 
     @staticmethod
@@ -280,7 +281,7 @@ class miniPIXdaq:
         """
         # get frame and store in ring buffer
         frame = self.dev.lastAcqFrameRefInc()
-        if not mpixControl.endEvent.is_set():
+        if mpixControl.mpixActive.is_set():
             # store data while running
             self.fBuffer[self._w_idx, :] = np.asarray(frame.data())
             # remove noisy pixels from (linear) data frame based on bad-pixel list
@@ -299,9 +300,10 @@ class miniPIXdaq:
 
         while not mpixControl.endEvent.is_set():  # keep running while active
             # read ac_count individual frames in one burst
-            rc_clb = self.dev.doSimpleAcquisition(self.ac_count, self.ac_time, self.pixet.PX_FTYPE_NONE, "")
-            if rc_clb != 0:
-                exit(f"!!! miniPIX error setting up callback, return code {rc_clb}")
+            if mpixControl.mpixActive.is_set():
+                rc_clb = self.dev.doSimpleAcquisition(self.ac_count, self.ac_time, self.pixet.PX_FTYPE_NONE, "")
+                if rc_clb != 0:
+                    exit(f"!!! miniPIX error setting up callback, return code {rc_clb}")
 
         print("miniPIXdaq: endEvent seen")
 
@@ -1647,10 +1649,22 @@ class runDAQ:
 
         return frame_iterator
 
+    def pause(self):
+        """Pause data acquisition"""
+        mpixControl.mpixActive.clear()
+        if self.read_filename is None:
+            while not self.daq.dataQ.empty():  # drain dataQ of remaining events
+                _ = self.daq.dataQ.get()
+
+    def resume(self):
+        """Resume data acquisition"""
+        mpixControl.mpixActive.set()
+
     def __call__(self):
         """run daq loop"""
 
-        # set flag indicating that runDAQ is in active state
+        # set flag indicating that runDAQ and miniPIX are in active state
+        mpixControl.runActive.set()
         mpixControl.mpixActive.set()
 
         _ = mpixControl()
@@ -1670,7 +1684,25 @@ class runDAQ:
         t_start = time.time()
         print("\n" + 25 * ' ' + "\033[36m type 'E<ret>' or close graphics window to end" + "\033[31m", end='\r')
         try:
-            while (dt_active < self.run_time) and mpixControl.mplActive.is_set() and mpixControl.mpixActive.is_set():
+            while (dt_active < self.run_time) and mpixControl.mplActive.is_set() and mpixControl.runActive.is_set():
+                # check kbd input
+                if not mpixControl.kbdQ.empty():
+                    # decode keyboard input
+                    _cmd = mpixControl.kbdQ.get()
+                    if _cmd == 'E':
+                        mpixControl.runActive.clear()
+                    if _cmd == 'P':  # pause daq
+                        self.pause()
+                    if _cmd == 'R':  # resume daq
+                        self.resume()
+                # pause ?
+                if not mpixControl.mpixActive.is_set():
+                    print(f"  Paused - 'R' to resume     ", end="\r")
+                    self.mpixvis.fig.canvas.start_event_loop(0.001)  # keep graphics window alive
+                    time.sleep(0.1)
+                    continue
+
+                # get next frame
                 if self.read_filename is None:
                     _idx = self.daq.dataQ.get()
                     timestamp = time.time() - t_start
@@ -1681,8 +1713,6 @@ class runDAQ:
                 else:  # from file
                     timestamp = i_frame * self.acq_time
                     i_frame += 1
-                    # if i_frame > self.n_frames_in_file:
-
                     if self.read_mode == 'list':
                         frame[:] = 0  # empty frame
                         pixel_list = np.asarray(next(self.frame_iterator))
@@ -1698,10 +1728,12 @@ class runDAQ:
                             time.sleep(max(0.0, self.acq_time - 0.2))
                         else:
                             time.sleep(0.2)
+
                     # mask bad pixels if requested
                     if self.fname_badpixels != '':
                         frame[mpixControl.badpixel_list] = -1
 
+                # store frame data
                 if self.out_file_yml is not None:
                     pixel_idxs = np.argwhere(frame > 0)
                     print(
@@ -1715,8 +1747,9 @@ class runDAQ:
 
                 # further process (subset of) frames (given by prescaling factor)
                 do_processing = (i_frame - 1) % self.prescale_analysis == 0
+
+                # analyze frame and retrieve result if
                 if self.cluster_filename is not None or do_processing:
-                    # analyze frame and retrieve result if
                     clusters, clustered_pixels = self.frameAna(frame2d)
                     # store analysis results (if requested)
                     if clusters is not None:
@@ -1725,16 +1758,11 @@ class runDAQ:
                         if self.clusterfile is not None:
                             self.frameAna.write_clusters(self.clusterfile, timestamp, frame, clusters, clustered_pixels)
 
+                # animated visualization for prescaled fraction of events
                 if do_processing:
-                    # animated visualization for prescaled fraction of events
                     cluster_summary = frameAnalyzer.get_cluster_summary(clusters)
                     self.mpixvis(frame2d, cluster_summary, dt_alive)
                 # -- endif  analysis and visualization
-
-                if not mpixControl.kbdQ.empty():
-                    # decode keyboard input
-                    if mpixControl.kbdQ.get() == 'E':
-                        mpixControl.mpixActive.clear()
 
                 dt_active = time.time() - t_start
                 print(f"  #{i_frame}  {dt_active:.0f}s  {i_frame / dt_active:0.1f}fps     ", end="\r")
@@ -1748,20 +1776,21 @@ class runDAQ:
 
         finally:
             if not mpixControl.mplActive.is_set():
-                mpixControl.mpixActive.clear()
+                mpixControl.runActive.clear()
                 print("\033[36m\n" + 20 * ' ' + " Graphics window closed, tpye <ret> ", end='')
             else:
                 # end daq loop, print reason for end and clean up
-                if not mpixControl.mpixActive.is_set():
+                if not mpixControl.runActive.is_set():
                     print("\033[36m\n" + 20 * ' ' + "'E'nd command received, type <ret> ", end='')
                 else:
-                    mpixControl.mpixActive.clear()
+                    mpixControl.runActive.clear()
                 if dt_active > self.run_time:
                     print("\033[36m\n" + 20 * ' ' + f"end after {dt_active:.1f} s, type <ret> ", end='')
                 # wait for user input while keeping graphics window active
                 _ = input(15 * ' ' + "  - type <ret> to terminate graphics window ->> ")
 
             if self.read_filename is None:
+                mpixControl.mpixActive.clear()
                 mpixControl.endEvent.set()
                 self.infile.close()
                 # drain dataQ of remaining events
