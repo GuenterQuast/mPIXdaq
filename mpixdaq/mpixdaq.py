@@ -1802,10 +1802,11 @@ class runDAQ:
             if self.read_filename is None:
                 mpixControl.mpixActive.clear()
                 mpixControl.endEvent.set()
-                self.infile.close()
                 # drain dataQ of remaining events
                 while not self.daq.dataQ.empty():
                     _ = self.daq.dataQ.get()
+            else:
+                self.infile.close()
 
             # finish and close all output files
             eor_dict = dict(eor_data=dict(Nframes=i_frame, Twall=round(self.dt_active, 1), Talive=round(self.dt_alive, 1)))
