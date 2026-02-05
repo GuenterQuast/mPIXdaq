@@ -920,7 +920,7 @@ class mpixGraphs:
         ycir = n_cpixels[:n_clusters][is_alpha]
         self.scpl.add([(xlin, ylin), (xcir, ycir), ([self.E_unass], [self.np_unass])])
 
-    def __call__(self, frame2d, cluster_summary, dt_alive):
+    def __call__(self, frame2d, cluster_summary, dt_active, dt_alive):
         """update cumulative pixel image and rate, analyze data
         and update histograms, scatter plot and status text
         """
@@ -972,7 +972,6 @@ class mpixGraphs:
             self.cluster_energies = np.array([])
             self.single_energies = np.array([])
 
-        dt_active = time.time() - self.t_start
         # update, redraw and show all subplots in figure
         if dt_active - self.dt_last_plot > 0.08:  # limit number of graphics updates
             # dead_time_fraction = 1.0 - dt_alive / dt_active
@@ -1651,14 +1650,22 @@ class runDAQ:
 
     def pause(self):
         """Pause data acquisition"""
+
+        if not mpixControl.mpixActive.is_set():  # already in Paused state
+            return
         mpixControl.mpixActive.clear()
         if self.read_filename is None:
             while not self.daq.dataQ.empty():  # drain dataQ of remaining events
                 _ = self.daq.dataQ.get()
+        self.t_pause = time.time()
 
     def resume(self):
         """Resume data acquisition"""
+
+        if mpixControl.mpixActive.is_set():  # not in Paused state
+            return
         mpixControl.mpixActive.set()
+        self.dt_paused += time.time() - self.t_pause
 
     def __call__(self):
         """run daq loop"""
@@ -1670,8 +1677,10 @@ class runDAQ:
         _ = mpixControl()
 
         # set up daq
-        dt_alive = 0.0
-        dt_active = 0.0
+        self.dt_alive = 0.0
+        self.dt_active = 0.0
+        self.dt_paused = 0.0
+        self.t_pause = 0.0
         frame = np.zeros((self.npx * self.npx), dtype=np.int32)
         frame2d = np.zeros((self.npx, self.npx), dtype=np.int32)
         i_frame = 0
@@ -1681,10 +1690,10 @@ class runDAQ:
             daq_thread.start()
 
         # start daq loop
-        t_start = time.time()
+        self.t_start = time.time()
         print("\n" + 25 * ' ' + "\033[36m type 'E<ret>' or close graphics window to end" + "\033[31m", end='\r')
         try:
-            while (dt_active < self.run_time) and mpixControl.mplActive.is_set() and mpixControl.runActive.is_set():
+            while (self.dt_active < self.run_time) and mpixControl.mplActive.is_set() and mpixControl.runActive.is_set():
                 # check kbd input
                 if not mpixControl.kbdQ.empty():
                     # decode keyboard input
@@ -1705,10 +1714,10 @@ class runDAQ:
                 # get next frame
                 if self.read_filename is None:
                     _idx = self.daq.dataQ.get()
-                    timestamp = time.time() - t_start
+                    timestamp = time.time() - self.t_start
                     frame[:] = self.daq.fBuffer[_idx]
                     frame2d = frame.reshape(self.npx, self.npx)
-                    dt_alive += self.acq_time
+                    self.dt_alive += self.acq_time
                     i_frame += 1
                 else:  # from file
                     timestamp = i_frame * self.acq_time
@@ -1761,11 +1770,11 @@ class runDAQ:
                 # animated visualization for prescaled fraction of events
                 if do_processing:
                     cluster_summary = frameAnalyzer.get_cluster_summary(clusters)
-                    self.mpixvis(frame2d, cluster_summary, dt_alive)
+                    self.mpixvis(frame2d, cluster_summary, self.dt_active, self.dt_alive)
                 # -- endif  analysis and visualization
 
-                dt_active = time.time() - t_start
-                print(f"  #{i_frame}  {dt_active:.0f}s  {i_frame / dt_active:0.1f}fps     ", end="\r")
+                self.dt_active = time.time() - self.t_start - self.dt_paused
+                print(f"  #{i_frame}  {self.dt_active:.0f}s  {i_frame / self.dt_active:0.1f}fps     ", end="\r")
 
         except KeyboardInterrupt:
             print("\n keyboard interrupt ")
@@ -1784,8 +1793,8 @@ class runDAQ:
                     print("\033[36m\n" + 20 * ' ' + "'E'nd command received, type <ret> ", end='')
                 else:
                     mpixControl.runActive.clear()
-                if dt_active > self.run_time:
-                    print("\033[36m\n" + 20 * ' ' + f"end after {dt_active:.1f} s, type <ret> ", end='')
+                if self.dt_active > self.run_time:
+                    print("\033[36m\n" + 20 * ' ' + f"end after {self.dt_active:.1f} s, type <ret> ", end='')
                 # wait for user input while keeping graphics window active
                 _ = input(15 * ' ' + "  - type <ret> to terminate graphics window ->> ")
 
@@ -1798,7 +1807,7 @@ class runDAQ:
                     _ = self.daq.dataQ.get()
 
             # finish and close all output files
-            eor_dict = dict(eor_data=dict(Nframes=i_frame, Twall=round(dt_active, 1), Talive=round(dt_alive, 1)))
+            eor_dict = dict(eor_data=dict(Nframes=i_frame, Twall=round(self.dt_active, 1), Talive=round(self.dt_alive, 1)))
             if self.out_file_yml is not None:
                 print(yaml.dump(eor_dict), file=self.out_file_yml)
                 print("... #end", file=self.out_file_yml)  # footer line
