@@ -299,11 +299,12 @@ class miniPIXdaq:
         self.dev.registerEvent(self.pixet.PX_EVENT_ACQ_FINISHED, 0, self.clb_acq_done)
 
         while not mpixControl.endEvent.is_set():  # keep running while active
-            # read ac_count individual frames in one burst
-            if mpixControl.mpixActive.is_set():
+            if mpixControl.mpixActive.is_set():  # read ac_count individual frames in one burst
                 rc_clb = self.dev.doSimpleAcquisition(self.ac_count, self.ac_time, self.pixet.PX_FTYPE_NONE, "")
                 if rc_clb != 0:
                     exit(f"!!! miniPIX error setting up callback, return code {rc_clb}")
+            else:  # in paused mode, wait a bit
+                time.sleep(0.1)
 
         print("miniPIXdaq: endEvent seen")
 
@@ -1707,7 +1708,7 @@ class runDAQ:
                 # pause ?
                 if not mpixControl.mpixActive.is_set():
                     print(f"  Paused - 'R' to resume     ", end="\r")
-                    self.mpixvis.fig.canvas.start_event_loop(0.001)  # keep graphics window alive
+                    self.mpixvis.fig.canvas.start_event_loop(0.01)  # keep graphics window alive
                     time.sleep(0.1)
                     continue
 
