@@ -55,6 +55,7 @@ import zipfile
 #
 # special package requirements
 import numpy as np
+import multiprocessing as mp
 from threading import Thread, Event
 from scipy import ndimage
 
@@ -106,11 +107,12 @@ class mpixControl:
     """Provides global variables containing Device Information
     as well as  Queues, Events and methods to control threads"""
 
-    runActive = Event()  # run active
-    mpixActive = Event()  # mPIX active
-    endEvent = Event()  # end signal for all processes
-    mplActive = Event()  # set while interactive plotting is active
-    kbdQ = Queue()  #  keyboard input
+    runActive = mp.Event()  # run active
+    mpixActive = mp.Event()  # mPIX active
+    endEvent = mp.Event()  # end signal for all processes
+    mplActive = mp.Event()  # set while interactive plotting is active
+
+    cmdQ = mp.Queue()
 
     # set default device information (assuming a miniPIX EDU is connected)
     #          overwritten when connecting a device or by deviceInfo block from input file
@@ -125,7 +127,7 @@ class mpixControl:
     def keyboard_input():
         """Read keyboard input and send to Queue, running as background thread to avoid blocking"""
         while mpixControl.runActive.is_set():
-            mpixControl.kbdQ.put(input())
+            mpixControl.cmdQ.put(input())
 
     @staticmethod
     def get_serial_number():
@@ -133,8 +135,17 @@ class mpixControl:
         return int(dn.split('sn:')[1]) if 'sn:' in dn else None
 
     def __init__(self):
-        # start a background task to check for keyboard input
+        # start a background thread to check for keyboard input
         self.kbdthread = Thread(name="kbdInput", target=mpixControl.keyboard_input, daemon=True).start()
+
+        # start a background process for controlGUI
+        # define dict for up to 8 buttons, key=name, values = [position, command]
+        # button_dict = {"End": [7, "E"], "Pause": [6, "P"], "Resume": [5, "R"]}
+        # queue for status text
+        # self.statQ = mp.Queue()
+        # self.guiProc = mp.Process(
+        #    name="ControlGUI", target=run_controlGUI, args=(mpixControl.cmdQ, "miniPIX DAQ", self.statQ, button_dict)
+        # )
 
 
 # - class handling data acquisition from the miniPIX device - - - - - - - - - -
@@ -1675,7 +1686,7 @@ class runDAQ:
         mpixControl.runActive.set()
         mpixControl.mpixActive.set()
 
-        _ = mpixControl()
+        self.mpixControl = mpixControl()
 
         # set up daq
         self.dt_alive = 0.0
@@ -1696,9 +1707,9 @@ class runDAQ:
         try:
             while (self.dt_active < self.run_time) and mpixControl.mplActive.is_set() and mpixControl.runActive.is_set():
                 # check kbd input
-                if not mpixControl.kbdQ.empty():
+                if not mpixControl.cmdQ.empty():
                     # decode keyboard input
-                    _cmd = mpixControl.kbdQ.get()
+                    _cmd = mpixControl.cmdQ.get()
                     if _cmd == 'E':
                         mpixControl.runActive.clear()
                     if _cmd == 'P':  # pause daq
