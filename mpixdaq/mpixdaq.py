@@ -61,6 +61,7 @@ from scipy import ndimage
 
 import matplotlib as mpl
 import matplotlib.pyplot as plt
+from phypidaq.mplhelpers import run_controlGUI
 
 plt.style.use("dark_background")
 from matplotlib.colors import LogNorm
@@ -113,6 +114,7 @@ class mpixControl:
     mplActive = mp.Event()  # set while interactive plotting is active
 
     cmdQ = mp.Queue()
+    statQ = mp.Queue()
 
     # set default device information (assuming a miniPIX EDU is connected)
     #          overwritten when connecting a device or by deviceInfo block from input file
@@ -122,6 +124,10 @@ class mpixControl:
 
     # assume sensor has no bad pixels (overwritten in runDAQ)
     badpixel_list = None
+
+    # define control method
+    kbd_control = False
+    gui_control = True
 
     @staticmethod
     def keyboard_input():
@@ -135,17 +141,21 @@ class mpixControl:
         return int(dn.split('sn:')[1]) if 'sn:' in dn else None
 
     def __init__(self):
-        # start a background thread to check for keyboard input
-        self.kbdthread = Thread(name="kbdInput", target=mpixControl.keyboard_input, daemon=True).start()
+        if mpixControl.kbd_control:  # start a background thread to check for keyboard input
+            self.kbdthread = Thread(name="kbdInput", target=mpixControl.keyboard_input, daemon=True).start()
 
-        # start a background process for controlGUI
-        # define dict for up to 8 buttons, key=name, values = [position, command]
-        # button_dict = {"End": [7, "E"], "Pause": [6, "P"], "Resume": [5, "R"]}
-        # queue for status text
-        # self.statQ = mp.Queue()
-        # self.guiProc = mp.Process(
-        #    name="ControlGUI", target=run_controlGUI, args=(mpixControl.cmdQ, "miniPIX DAQ", self.statQ, button_dict)
-        # )
+        if mpixControl.gui_control:  # start a background process for controlGUI
+            # define dict for up to 8 buttons, key=name, values = [position, command]
+            button_dict = {"End": [7, "E"], "Pause": [5, "P"], "Res": [4, "R"]}
+            # queue for status text
+            self.guiProc = mp.Process(
+                name="ControlGUI", target=run_controlGUI, args=(mpixControl.cmdQ, "miniPIX DAQ", mpixControl.statQ, button_dict)
+            )
+            self.guiProc.start()
+
+    def __del__(self):
+        if mpixControl.gui_control:
+            self.guiProc.terminate()
 
 
 # - class handling data acquisition from the miniPIX device - - - - - - - - - -
@@ -1563,6 +1573,10 @@ class runDAQ:
         if self.cluster_filename is not None and self.prescale_analysis != 1:
             print("*!!* analysis prescaling disabled to write cluster information for all frames")
 
+        # set up kbd and/or gui control
+        mpixControl.runActive.set()
+        self.mpixControl = mpixControl()
+
         # initialize visualizer
         self.mpixvis = mpixGraphs(
             nover=self.n_overlay,
@@ -1682,11 +1696,8 @@ class runDAQ:
     def __call__(self):
         """run daq loop"""
 
-        # set flag indicating that runDAQ and miniPIX are in active state
-        mpixControl.runActive.set()
+        # put miniPIXsaq / frame reading  in active state
         mpixControl.mpixActive.set()
-
-        self.mpixControl = mpixControl()
 
         # set up daq
         self.dt_alive = 0.0
@@ -1696,14 +1707,19 @@ class runDAQ:
         frame = np.zeros((self.npx * self.npx), dtype=np.int32)
         frame2d = np.zeros((self.npx, self.npx), dtype=np.int32)
         i_frame = 0
+
         # start daq as a Thread
         if self.read_filename is None:
             daq_thread = Thread(target=self.daq, daemon=True)
             daq_thread.start()
 
+        # link to fiugure
+        self.mpixgraph_fig = self.mpixvis.fig  # keep graphics window alive
+
         # start daq loop
         self.t_start = time.time()
-        print("\n" + 25 * ' ' + "\033[36m type 'E<ret>' or close graphics window to end" + "\033[31m", end='\r')
+        if mpixControl.kbd_control:
+            print("\n" + 25 * ' ' + "\033[36m type 'E<ret>' or close graphics window to end" + "\033[31m", end='\r')
         try:
             while (self.dt_active < self.run_time) and mpixControl.mplActive.is_set() and mpixControl.runActive.is_set():
                 # check kbd input
@@ -1716,10 +1732,14 @@ class runDAQ:
                         self.pause()
                     if _cmd == 'R':  # resume daq
                         self.resume()
-                # pause ?
+
+                # wait here if paused
                 if not mpixControl.mpixActive.is_set():
-                    print(f"  Paused - 'R' to resume     ", end="\r")
-                    self.mpixvis.fig.canvas.start_event_loop(0.01)  # keep graphics window alive
+                    if mpixControl.kbd_control:
+                        print(f"  Paused - 'R' to resume     ", end="\r")
+                    self.mpixgraph_fig.canvas.start_event_loop(0.01)  # keep graphics window alive
+                    if mpixControl.gui_control:
+                        mpixControl.statQ.put(stat + " - paused")
                     time.sleep(0.1)
                     continue
 
@@ -1769,7 +1789,7 @@ class runDAQ:
                 # further process (subset of) frames (given by prescaling factor)
                 do_processing = (i_frame - 1) % self.prescale_analysis == 0
 
-                # analyze frame and retrieve result if
+                # analyze frame if writing to cluster file or for prescaled fraction of events
                 if self.cluster_filename is not None or do_processing:
                     clusters, clustered_pixels = self.frameAna(frame2d)
                     # store analysis results (if requested)
@@ -1785,8 +1805,13 @@ class runDAQ:
                     self.mpixvis(frame2d, cluster_summary, self.dt_active, self.dt_alive)
                 # -- endif  analysis and visualization
 
+                # print heart beat
                 self.dt_active = time.time() - self.t_start - self.dt_paused
-                print(f"  #{i_frame}  {self.dt_active:.0f}s  {i_frame / self.dt_active:0.1f}fps     ", end="\r")
+                stat = f"  #{i_frame}  {self.dt_active:.0f}s  {i_frame / self.dt_active:0.1f}fps     "
+                if mpixControl.kbd_control:
+                    print(stat, end="\r")
+                if mpixControl.gui_control:
+                    mpixControl.statQ.put(stat)
 
         except KeyboardInterrupt:
             print("\n keyboard interrupt ")
@@ -1798,17 +1823,15 @@ class runDAQ:
         finally:
             if not mpixControl.mplActive.is_set():
                 mpixControl.runActive.clear()
-                print("\033[36m\n" + 20 * ' ' + " Graphics window closed, tpye <ret> ", end='')
+                print("\033[36m\n" + 20 * ' ' + " Graphics window closed, tpye <ret> ")
             else:
                 # end daq loop, print reason for end and clean up
                 if not mpixControl.runActive.is_set():
-                    print("\033[36m\n" + 20 * ' ' + "'E'nd command received, type <ret> ", end='')
+                    print("\033[36m\n" + 20 * ' ' + "'E'nd command received, type <ret> ")
                 else:
                     mpixControl.runActive.clear()
                 if self.dt_active > self.run_time:
-                    print("\033[36m\n" + 20 * ' ' + f"end after {self.dt_active:.1f} s, type <ret> ", end='')
-                # wait for user input while keeping graphics window active
-                _ = input(15 * ' ' + "  - type <ret> to terminate graphics window ->> ")
+                    print("\033[36m\n" + 20 * ' ' + f"end after {self.dt_active:.1f} s, type <ret> ")
 
             if self.read_filename is None:
                 mpixControl.mpixActive.clear()
@@ -1844,7 +1867,10 @@ class runDAQ:
                 # shut-down pypixet
                 pypixet.exit()
 
-            print()
+            # terminate control gui if still active
+            if mpixControl.gui_control and self.mpixControl.guiProc.is_alive():
+                self.mpixControl.guiProc.terminate()
+
             sys.exit(0)
 
 
