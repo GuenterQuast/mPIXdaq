@@ -21,3 +21,5 @@
   - added decoder for mPIX cluster files
 
   - added Paused state
+
+  - added GUI Control and option to remove keyboard control
