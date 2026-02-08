@@ -61,7 +61,9 @@ from scipy import ndimage
 
 import matplotlib as mpl
 import matplotlib.pyplot as plt
-from phypidaq.mplhelpers import run_controlGUI
+
+# from phypidaq.mplhelpers import run_controlGUI
+from mpixdaq.mplhelpers import run_controlGUI
 
 plt.style.use("dark_background")
 from matplotlib.colors import LogNorm
@@ -126,7 +128,7 @@ class mpixControl:
     badpixel_list = None
 
     # define control method
-    kbd_control = False
+    kbd_control = True
     gui_control = True
 
     @staticmethod
@@ -134,6 +136,7 @@ class mpixControl:
         """Read keyboard input and send to Queue, running as background thread to avoid blocking"""
         while mpixControl.runActive.is_set():
             mpixControl.cmdQ.put(input())
+            time.sleep(0.5)  # leave some time for main process to react
 
     @staticmethod
     def get_serial_number():
@@ -142,7 +145,8 @@ class mpixControl:
 
     def __init__(self):
         if mpixControl.kbd_control:  # start a background thread to check for keyboard input
-            self.kbdthread = Thread(name="kbdInput", target=mpixControl.keyboard_input, daemon=True).start()
+            self.kbdthread = Thread(name="kbdInput", target=mpixControl.keyboard_input)
+            self.kbdthread.start()
 
         if mpixControl.gui_control:  # start a background process for controlGUI
             # define dict for up to 8 buttons, key=name, values = [position, command]
@@ -1454,6 +1458,8 @@ class runDAQ:
         # set global daq parameters
         mpixControl.daqSettings['acq_time'] = self.acq_time
         mpixControl.daqSettings['acq_count'] = self.acq_count
+        mpixControl.kbd_control = True  # enable keyboard control
+        mpixControl.gui_control = True  # enable control GUI
 
         # - conditional import
         if self.out_filename is not None and '.npy' in self.out_filename:
@@ -1827,12 +1833,16 @@ class runDAQ:
             else:
                 # end daq loop, print reason for end and clean up
                 if not mpixControl.runActive.is_set():
-                    print("\033[36m\n" + 20 * ' ' + "'E'nd command received, type <ret> ")
+                    if mpixControl.kbd_control:
+                        print("\033[36m\n" + 20 * ' ' + "'E'nd command received, type <ret>")
+                    else:
+                        print("\033[36m\n" + 20 * ' ' + "'E'nd command received ")
                 else:
                     mpixControl.runActive.clear()
                 if self.dt_active > self.run_time:
                     print("\033[36m\n" + 20 * ' ' + f"end after {self.dt_active:.1f} s, type <ret> ")
 
+            # end cleanly
             if self.read_filename is None:
                 mpixControl.mpixActive.clear()
                 mpixControl.endEvent.set()
@@ -1871,6 +1881,11 @@ class runDAQ:
             if mpixControl.gui_control and self.mpixControl.guiProc.is_alive():
                 self.mpixControl.guiProc.terminate()
 
+            #            # wait for kbd control to exit
+            if mpixControl.kbd_control:
+                while self.mpixControl.kbdthread.is_alive():
+                    time.sleep(0.2)
+            _a = input("*==* mPIXdaq finished - type <ret> to close graphics window -> ")
             sys.exit(0)
 
 
