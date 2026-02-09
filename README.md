@@ -217,8 +217,8 @@ Note that the analysis of the recorded pixel frames is done in real
 time and may take some time on slow computers.
 
 ### Parameter settings  for data acquisition
-The optimal choice of parameters, in particular the values of exposure time,
-overlay of frames for the graphical display depend very much on the use case.
+The optimal choice of parameters, in particular the values of exposure time
+and number of overlaid frames for the graphical display depend very much on the use case.
 
 In scenarios with low rates aiming at a demonstration of the capabilities
 of a modern particle detector like the *miniPIX* for outreach purposes, it
