@@ -1433,8 +1433,13 @@ class runDAQ:
         parser.add_argument('-p', '--prescale', type=int, default=1, help='prescaling factor for frame analysis')
         parser.add_argument('-r', '--readfile', type=str, default='', help='file to read frame data')
         parser.add_argument('-b', '--badpixels', type=str, default='', help='file with bad pixels to mask')
+        parser.add_argument('--kbdControl', action='store_true', default=True, help='switch on keyboard contol (on)')
+        parser.add_argument('--no-kbdControl', dest='kbdControl', action='store_false', help='switch off keyboard control')
+        parser.add_argument('--guiControl', action='store_true', default=True, help='switch on gui control')
+        parser.add_argument('--no-guiControl', dest='guiControl', action='store_false', help='switch off gui control')
 
         args = parser.parse_args()
+
         timestamp = time.strftime('%y%m%d-%H%M', time.localtime())
 
         # - set options
@@ -1458,8 +1463,8 @@ class runDAQ:
         # set global daq parameters
         mpixControl.daqSettings['acq_time'] = self.acq_time
         mpixControl.daqSettings['acq_count'] = self.acq_count
-        mpixControl.kbd_control = True  # enable keyboard control
-        mpixControl.gui_control = True  # enable control GUI
+        mpixControl.kbd_control = args.kbdControl  # switch keyboard control on/of
+        mpixControl.gui_control = args.guiControl  # disable/enable control on/of
 
         # - conditional import
         if self.out_filename is not None and '.npy' in self.out_filename:
