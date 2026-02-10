@@ -45,7 +45,6 @@ import argparse
 import gzip
 import os
 import pathlib
-from queue import Queue
 import re
 import sys
 import time
@@ -55,8 +54,8 @@ import zipfile
 #
 # special package requirements
 import numpy as np
-import multiprocessing as mp
-from threading import Thread, Event
+from multiprocessing import Queue, Event, Process
+from threading import Thread
 from scipy import ndimage
 
 import matplotlib as mpl
@@ -110,13 +109,13 @@ class mpixControl:
     """Provides global variables containing Device Information
     as well as  Queues, Events and methods to control threads"""
 
-    runActive = mp.Event()  # run active
-    mpixActive = mp.Event()  # mPIX active
-    endEvent = mp.Event()  # end signal for all processes
-    mplActive = mp.Event()  # set while interactive plotting is active
+    runActive = Event()  # run active
+    mpixActive = Event()  # mPIX active
+    endEvent = Event()  # end signal for all processes
+    mplActive = Event()  # set while interactive plotting is active
 
-    cmdQ = mp.Queue()
-    statQ = mp.Queue()
+    cmdQ = Queue()
+    statQ = Queue()
 
     # set default device information (assuming a miniPIX EDU is connected)
     #          overwritten when connecting a device or by deviceInfo block from input file
@@ -152,9 +151,7 @@ class mpixControl:
             # define dict for up to 8 buttons, key=name, values = [position, command]
             button_dict = {"End": [7, "E"], "Pause": [5, "P"], "Res": [4, "R"]}
             # queue for status text
-            self.guiProc = mp.Process(
-                name="ControlGUI", target=run_controlGUI, args=(mpixControl.cmdQ, "miniPIX DAQ", mpixControl.statQ, button_dict)
-            )
+            self.guiProc = Process(name="ControlGUI", target=run_controlGUI, args=(mpixControl.cmdQ, "miniPIX DAQ", mpixControl.statQ, button_dict))
             self.guiProc.start()
 
     def __del__(self):
@@ -1801,7 +1798,7 @@ class runDAQ:
                 do_processing = (i_frame - 1) % self.prescale_analysis == 0
 
                 # analyze frame if writing to cluster file or for prescaled fraction of events
-                if self.cluster_filename is not None or do_processing:
+                if do_processing or self.cluster_filename is not None:
                     clusters, clustered_pixels = self.frameAna(frame2d)
                     # store analysis results (if requested)
                     if clusters is not None:
@@ -1823,6 +1820,8 @@ class runDAQ:
                     print(stat, end="\r")
                 if mpixControl.gui_control:
                     mpixControl.statQ.put(stat)
+
+            # --- end while
 
         except KeyboardInterrupt:
             print("\n keyboard interrupt ")
