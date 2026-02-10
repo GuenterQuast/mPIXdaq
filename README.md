@@ -218,7 +218,8 @@ time and may take some time on slow computers.
 
 ### Parameter settings  for data acquisition
 The optimal choice of parameters, in particular the values of exposure time
-and number of overlaid frames for the graphical display depend very much on the use case.
+and number of overlaid frames for the graphical display depend very much on 
+the use case.
 
 In scenarios with low rates aiming at a demonstration of the capabilities
 of a modern particle detector like the *miniPIX* for outreach purposes, it
@@ -337,7 +338,7 @@ associated to clusters mostly originate from γ rays. Some of the electron
 tracks  with typically low energies also stem from photon interactions 
 in the detector material (via the Compton process).
 
-![The graphical display of miniPIXdaq](miniPIXdaq.png)
+![The graphical display of miniPIXdaq](images/miniPIXdaq.png)
 
 The frame collection time is chosen to be on the order of seconds, 
 so that analysis results can be displayed in real-time on 
