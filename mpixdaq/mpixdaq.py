@@ -1879,8 +1879,6 @@ class runDAQ:
                 # last chance to drain dataQ
                 while not self.daq.dataQ.empty():
                     _ = self.daq.dataQ.get()
-                # shut-down pypixet
-                pypixet.exit()
 
             # terminate control gui if still active
             if mpixControl.gui_control and self.mpixControl.guiProc.is_alive():
@@ -1890,7 +1888,13 @@ class runDAQ:
             if mpixControl.kbd_control:
                 while self.mpixControl.kbdthread.is_alive():
                     time.sleep(0.2)
+
             _a = input("*==* mPIXdaq finished - type <ret> to close graphics window -> ")
+
+            # finally, close down everything and exit
+            if self.read_filename is None:
+                # shut-down pypixet
+                pypixet.exit()
             sys.exit(0)
 
 
