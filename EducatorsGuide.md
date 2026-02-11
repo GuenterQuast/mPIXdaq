@@ -25,13 +25,12 @@ author: Günter Quast, February 2026
 The miniPIX (EDU) device is a modern silicon pixel detector to precisely measure 
 the spacial distribution and magnitude of energy depositions caused by radiation 
 emitted by radioactive samples. The visual impression of recorded energy depositions
-resembles images produced by cloud chambers, with the additional advantage the 
+resembles images produced by cloud chambers, with the additional advantage of  
 quantitative, digital information with a spatial resolution of 55µm of the deposited 
-energy is available.  
-Recorded data sets can thus be analyzed to study the properties of α, β and γ radiation.
+energy is available. Recorded data sets can thus be analyzed to study in detail the properties of α, β and γ radiation.
 The size of the sensitive area is 14.1 x 14.1 x 0.3 mm³, segmented into 256 x 256 pixels
- each covering an area of 55µm². The deposited energy in each segment with a volume of 
-0.55 x 0.55 x 0.300 µm³ is displayed as color-coded pixel in a tow-dimensional image.
+with 0.300 mm depth, each covering an area of 55µm². The deposited energy in each pixel
+is displayed as color-coded pixel in a tow-dimensional image.
 Such images of different types of radiation give a direct impression of the ways how 
 radiation interacts with matter: strongly localized ionization for α particles, long 
 traces of ionization from β particles, and typically small energy deposits from 
@@ -41,7 +40,7 @@ electrons (i.e. β particles) produced by γ rays via the Compton process.
 ### Analysis of radiation from natural samples
 
 An typical image of radiation from a small sample of natural Pitchblende 
-(Uraninit, Uranium Dioxide) is shown in the figure below:
+(Uraninit, Uranium Dioxide) is shown in the figure below.
 
 > ![Display of miniPIXdaq for Pitchblende](images/Pitchblende.png)
 
@@ -57,8 +56,8 @@ recorded objects is significantly reduced, and the typical signatures from
 > ![Display of miniPIXdaq for Pitchblende with plastic absorber](
   images/Pitchblende_noalpha.png)
 
-Finally, with an absorber of 3mm thick aluminum, only γ rays reach the sensor, 
-leading to typical images as shown below:
+Finally, with an absorber of 2mm thick aluminum, only γ rays reach the sensor, 
+leading to typical images as shown below.
 
 > ![Display of miniPIXdaq for Pitchblende wit Aluminum absorber](
   images/Pitchblende_Gammas-only.png)
@@ -68,39 +67,37 @@ Appropriate radioactive samples with activities of some 10 Bq are freely
 available and can be bought from educational supply stores, e.g. 
 [NTL](https://ntl.de/radioaktivitaet/4006-dr201-1c-columbit.html).
 
+Installation and use of the *mPIXdaq* software as well as the options for data 
+acquisition, data analysis and visualization are described in the *README* 
+document of the package.
+
 
 #### Pedagogical considerations
 
 From a pedagogical point of view, it is very appealing to start from a 
 natural phenomenon and let pupils or students discover the properties 
-of radiation by themselves.
-In such an approach, the historical context may or may not come later, and the 
-sequence of developments of technological methods for radiation detection 
-(electrometer, ionization chamber, Geiger counter, silicon detectors) 
-become much less important and may or may not be addressed. 
-
+of radiation by themselves.  
+In such an approach, the historical context becomes less important, as 
+well as the sequence of developments of technological methods for radiation 
+detection (electrometer, ionization chamber, Geiger counter, silicon detectors).
+The advantage of this approach, relying on modern detection techniques, in 
+contrast puts emphasis on the phenomenon of radioactivity itself and its 
+interaction with materials.  
 Furthermore, the high sensitivity of the miniPIX detector and its ability to 
 clearly discriminate different types of radiation avoids the use of artificial, 
-high-activity radioactive sources. With the miniPIX, it is possible to perform 
-background-free counting and energy determination of α particles with sources
-of low activity.
-
-
-#### Practical hints
+high-activity radioactive sources. With the *miniPIX* device, it is possible 
+to perform background-free counting and energy determination of α particles,
+or counting of β particles and γ rays with low-activity sources.
 
 Images like the ones shown above may be produced using the *mPIXdaq* program, 
 or also with the *Pixet* (basic) program the vendor provides together with 
 the *minPIX* detector. 
 
-Installation and use of the *mPIXdaq* software as well as the options for data 
-acquisition, data analysis and visualization are described in the *README* 
-document of the package.
-
-*mPIXdaq* provides a simple, transparent algorithm for clustering of pixels 
-and for the characterization of cluster properties that rely solely on basic
-methods of data analysis, which are mastered already by undergraduate students.
-The *miniPIX* images may also serve as a motivation for younger high-school 
-students to learn such techniques. 
+*mPIXdaq*, however, provides a simple, transparent algorithm for clustering 
+of pixels and for the characterization of cluster properties that rely solely 
+on basic methods of data analysis, which are mastered already by undergraduate 
+students. The *miniPIX* images may also serve as a motivation for younger 
+high-school students to learn such techniques and gain experience. 
 
 The algorithms are fast enough to be deployed on-line in low-rate scenarios,
 thus providing quantitative results on particle rates and energy spectra. 
@@ -109,7 +106,7 @@ below.
 
   >  ![Cluster Energies miniPIXdaq](images/Pitchblende_ClusterEnergies.png)
 
-*mPIXdaq*  allows highly selective recording of special cluster types, thus
+*mPIXdaq* allows highly selective recording of special cluster types, thus
 strongly discriminating the desired signatures against backgrounds. This 
 approach permits studies with sources of much lower activities than needed 
 in classical experiments e.g. to study the absorption of α particles in air.  

@@ -28,13 +28,13 @@ class controlGUI:
       - cmdQ: a multiprocessing Queue to accept commands
       - appName: name of app to be controlled
       - statQ: mp Queue to show status data
-      - confdict: a configuration dictionary for buttons, format {name: [position 0-7, command]}
+      - confdict: a configuration dictionary for buttons, format {name: [position 0-5, command]}
     """
 
     def __init__(self, cmdQ, appName="TestApp", statQ=None, confdict=None):
         self.cmdQ = cmdQ
         self.statQ = statQ
-        self.button_dict = {'x': [7, ' ']} if confdict is None else confdict
+        self.button_dict = {'x': [5, ' ']} if confdict is None else confdict
         self.button_names = list(self.button_dict.keys())
         self.button_values = list(self.button_dict.values())
 
