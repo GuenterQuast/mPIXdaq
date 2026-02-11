@@ -149,7 +149,7 @@ class mpixControl:
 
         if mpixControl.gui_control:  # start a background process for controlGUI
             # define dict for up to 8 buttons, key=name, values = [position, command]
-            button_dict = {"End": [7, "E"], "Pause": [5, "P"], "Res": [4, "R"]}
+            button_dict = {"End": [5, "E"], "Pause": [3, "P"], "Resume": [2, "R"]}
             # queue for status text
             self.guiProc = Process(name="ControlGUI", target=run_controlGUI, args=(mpixControl.cmdQ, "miniPIX DAQ", mpixControl.statQ, button_dict))
             self.guiProc.start()
