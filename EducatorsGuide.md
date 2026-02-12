@@ -27,7 +27,8 @@ the spacial distribution and magnitude of energy depositions caused by radiation
 emitted by radioactive samples. The visual impression of recorded energy depositions
 resembles images produced by cloud chambers, with the additional advantage of  
 quantitative, digital information with a spatial resolution of 55µm of the deposited 
-energy is available. Recorded data sets can thus be analyzed to study in detail the properties of α, β and γ radiation.
+energy is available. Recorded data sets can thus be analyzed to study in detail the
+properties of α, β and γ radiation.
 The size of the sensitive area is 14.1 x 14.1 x 0.3 mm³, segmented into 256 x 256 pixels
 with 0.300 mm depth, each covering an area of 55µm². The deposited energy in each pixel
 is displayed as color-coded pixel in a tow-dimensional image.
@@ -35,6 +36,28 @@ Such images of different types of radiation give a direct impression of the ways
 radiation interacts with matter: strongly localized ionization for α particles, long 
 traces of ionization from β particles, and typically small energy deposits from 
 electrons (i.e. β particles) produced by γ rays via the Compton process. 
+
+Its high sensitivity and spatial mapping of energy deposits make the *miniPIX* 
+superior to other, classical detectors. While it allows the same typical text-book 
+measurements, like rate measurements or the penetration depths of different types 
+of radiation, to be taken, more extensive possibilities open up:
+
+ - direct observation in which way radiation interacts with materials, 
+ - discrimination of radiation types based on the signatures, 
+ - energy measurements of α particles and energy loss in matter,
+ - mean energy loss of β particles in matter,
+ - photon interactions in matter (dominated by the Compton process),
+ - use of low-activity radioactive samples to study natural radioactivity.
+
+Because all these measurements can be made with a single detector, the 
+properties of radiation are brought into focus rather than the classical 
+arsenal of detection techniques like electrometer, ionization chamber, 
+Geiger counter or mono-crystal silicon detectors.  
+Unfortunately, energy spectra of γ rays cannot be measured due to the small 
+volume  of the sensitive material of the *miniPIX*, and a crystal-based 
+gamma spectrometer is still needed for γ spectroscopy, e.g. one of the 
+very cost-effective and sufficiently precise devices by 
+[RadiaCode](https://radiacode.com/).
 
 
 ### Analysis of radiation from natural samples
@@ -79,7 +102,7 @@ natural phenomenon and let pupils or students discover the properties
 of radiation by themselves.  
 In such an approach, the historical context becomes less important, as 
 well as the sequence of developments of technological methods for radiation 
-detection (electrometer, ionization chamber, Geiger counter, silicon detectors).
+detection.   
 The advantage of this approach, relying on modern detection techniques, in 
 contrast puts emphasis on the phenomenon of radioactivity itself and its 
 interaction with materials.  
