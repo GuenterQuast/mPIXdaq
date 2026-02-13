@@ -1820,8 +1820,21 @@ class runDAQ:
                     print(stat, end="\r")
                 if mpixControl.gui_control:
                     mpixControl.statQ.put(stat)
-
-            # --- end while
+            else: # normal end of end of while
+                if not mpixControl.mplActive.is_set():
+                    mpixControl.runActive.clear()
+                    print("\033[36m\n" + 20 * ' ' + " Graphics window closed, tpye <ret> ")
+                else:
+                    # end daq loop, print reason for end and clean up
+                    if not mpixControl.runActive.is_set():
+                        if mpixControl.kbd_control:
+                            print("\033[36m\n" + 20 * ' ' + "'E'nd command received, type <ret>")
+                        else:
+                            print("\033[36m\n" + 20 * ' ' + "'E'nd command received ")
+                    else:
+                        mpixControl.runActive.clear()
+                    if self.dt_active > self.run_time:
+                        print("\033[36m\n" + 20 * ' ' + f"end after {self.dt_active:.1f} s, type <ret> ")
 
         except KeyboardInterrupt:
             print("\n keyboard interrupt ")
@@ -1830,33 +1843,17 @@ class runDAQ:
         except Exception as e:
             print("\n exception in daq loop: ", str(e))
 
-        finally:
-            if not mpixControl.mplActive.is_set():
-                mpixControl.runActive.clear()
-                print("\033[36m\n" + 20 * ' ' + " Graphics window closed, tpye <ret> ")
-            else:
-                # end daq loop, print reason for end and clean up
-                if not mpixControl.runActive.is_set():
-                    if mpixControl.kbd_control:
-                        print("\033[36m\n" + 20 * ' ' + "'E'nd command received, type <ret>")
-                    else:
-                        print("\033[36m\n" + 20 * ' ' + "'E'nd command received ")
-                else:
-                    mpixControl.runActive.clear()
-                if self.dt_active > self.run_time:
-                    print("\033[36m\n" + 20 * ' ' + f"end after {self.dt_active:.1f} s, type <ret> ")
-
-            # end cleanly
-            if self.read_filename is None:
+        finally:  # end everything cleanly
+            if self.read_filename is None:  # minipix is still active, pause reading and signal end 
                 mpixControl.mpixActive.clear()
                 mpixControl.endEvent.set()
                 # drain dataQ of remaining events
                 while not self.daq.dataQ.empty():
                     _ = self.daq.dataQ.get()
-            else:
+            else: #  reading from file, close it
                 self.infile.close()
 
-            # finish and close all output files
+            # write ond-of-run record and close all output files
             eor_dict = dict(eor_data=dict(Nframes=i_frame, Twall=round(self.dt_active, 1), Talive=round(self.dt_alive, 1)))
             if self.out_file_yml is not None:
                 print(yaml.dump(eor_dict), file=self.out_file_yml)
@@ -1873,7 +1870,6 @@ class runDAQ:
                 self.clusterfile.close()
 
             time.sleep(1.5)  # give time for processes to finish
-
             if self.read_filename is None:
                 # last chance to drain dataQ
                 while not self.daq.dataQ.empty():
@@ -1883,14 +1879,16 @@ class runDAQ:
             if mpixControl.gui_control and self.mpixControl.guiProc.is_alive():
                 self.mpixControl.guiProc.terminate()
 
-            #            # wait for kbd control to exit
+            # wait for kbd control to exit
             if mpixControl.kbd_control:
                 while self.mpixControl.kbdthread.is_alive():
                     time.sleep(0.2)
 
-            _a = input("*==* mPIXdaq finished - type <ret> to close graphics window -> ")
+            # keep graphics window alive
+            if mpixControl.mplActive.is_set():
+                _a = input("*==* mPIXdaq finished - type <ret> to close graphics window -> ")
 
-            # finally, close down everything and exit
+            # finally, close down pypixet and exit
             if self.read_filename is None:
                 # shut-down pypixet
                 pypixet.exit()
