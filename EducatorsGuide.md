@@ -37,28 +37,57 @@ radiation interacts with matter: strongly localized ionization for α particles,
 traces of ionization from β particles, and typically small energy deposits from 
 electrons (i.e. β particles) produced by γ rays via the Compton process. 
 
-Its high sensitivity and spatial mapping of energy deposits make the *miniPIX* 
-superior to other, classical detectors. While it allows the same typical text-book 
-measurements, like rate measurements or the penetration depths of different types 
-of radiation, to be taken, more extensive possibilities open up:
+Compared to other detection techniques, which simply count the occurrence of 
+a single particle interaction, the *miniPIX* is special because it integrates 
+over all signals that occurred within a freely chosen exposure time. If rates 
+are sufficiently low to avoid overlaps of signatures in space and time, all 
+particle interactions are individually distinguishable and recorded and collected 
+in one "frame", similar to an optical image taken with a certain exposure time. 
+Instead of the color of an object, the deposited energy in the pixels is encoded 
+as a color scale in *miniPIX* frames, resulting in a very intuitive representation 
+of the signatures produced by particles in the sensitive volume. 
 
- - direct observation in which way radiation interacts with materials, 
- - discrimination of radiation types based on the signatures, 
- - energy measurements of α particles and energy loss in matter,
+Its high sensitivity and spatial mapping of energy deposits as well as the digitally
+recorded data make the *miniPIX* superior to other, classical detectors. While it 
+allows the same typical text-book measurements to be taken, like rate measurements 
+or the  penetration depths of different types of radiation, more extensive 
+possibilities open up:
+
+ - direct observation of how radiation interacts with materials, 
+ - discrimination of radiation types based on the pixel patterns, 
+ - dependence of the measured rates from the distance to the source,
+ - demonstration of Poisson statistics by counting objects in the recorded frames, 
+ - energy measurements of α particles and of their energy loss in matter,
  - mean energy loss of β particles in matter,
- - photon interactions in matter (dominated by the Compton process),
- - use of low-activity radioactive samples to study natural radioactivity.
+ - studies of photon interactions in matter (dominated by the Compton process).
 
-Because all these measurements can be made with a single detector, the 
-properties of radiation are brought into focus rather than the classical 
-arsenal of detection techniques like electrometer, ionization chamber, 
-Geiger counter or mono-crystal silicon detectors.  
-Unfortunately, energy spectra of γ rays cannot be measured due to the small 
-volume  of the sensitive material of the *miniPIX*, and a crystal-based 
-gamma spectrometer is still needed for γ spectroscopy, e.g. one of the 
-very cost-effective and sufficiently precise devices by 
+There are even more benefits related to the practical application in laboratory 
+courses or school experiments:
+
+ - use of low-activity radioactive samples to study natural radioactivity in
+   hands-on experiments by students, 
+ - freely adjustable exposure time to adapt to different radiation intensities,
+ - negligible noise rates, efficient suppression of backgrounds and well-defined 
+   detector live-time to avoid corrections,  
+ - digital overlay of many recorded frames to obtain feature-rich images even 
+   from low-activity sources,
+ - storage of data to disk for later, in-depth analysis of particle signatures,
+ - different levels of pre-processing of recorded frames to adjust to the students'
+   level of knowledge,
+ - usage of the very same detector for many types of measurements brings into focus
+   the properties of radiation rather than the classical arsenal of detection 
+   techniques like electrometer, ionization chamber, Geiger counter or mono-crystal 
+   silicon detectors.  
+
+Unfortunately, energy spectra of γ rays cannot be measured with the *miniPIX* due 
+to the small overall sensor volume; therefore, a gamma spectrometer with a 
+scintillating crystal is recommended for γ spectroscopy, e.g. one of the very 
+cost-effective and sufficiently precise devices made by
 [RadiaCode](https://radiacode.com/).
 
+
+Examples of successfully conducted measurements in the student and teachers
+labs at the Faculty of Physics at Karlsruhe Institute of Physics are shown below. 
 
 ### Analysis of radiation from natural samples
 
