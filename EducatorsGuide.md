@@ -22,6 +22,16 @@ author: Günter Quast, February 2026
 ## Educators Guide for the Advacam miniPIX (EDU) silicon pixel detector with mPIXdaq  
                                                                     Vers. 1.0.1, February 2026  
 
+This document is meant as a guide for educators who want to explore the possibilities
+af a modern radiation detection sensor and its implications on new ways to teach
+the subject of radioactivity at secondary and high-school level. 
+Installation and use of the *mPIXdaq* software as well as the options for data 
+acquisition, data analysis and visualization are described in the *README* 
+document of the *mPIXdaq* package. 
+
+
+### The miniPIX (EDU) and its educational potential  
+
 The miniPIX (EDU) device is a modern silicon pixel detector to precisely measure 
 the spacial distribution and magnitude of energy depositions caused by radiation 
 emitted by radioactive samples. The visual impression of recorded energy depositions
@@ -29,6 +39,7 @@ resembles images produced by cloud chambers, with the additional advantage of
 quantitative, digital information with a spatial resolution of 55µm of the deposited 
 energy is available. Recorded data sets can thus be analyzed to study in detail the
 properties of α, β and γ radiation.
+
 The size of the sensitive area is 14.1 x 14.1 x 0.3 mm³, segmented into 256 x 256 pixels
 with 0.300 mm depth, each covering an area of 55µm². The deposited energy in each pixel
 is displayed as color-coded pixel in a tow-dimensional image.
@@ -79,12 +90,11 @@ courses or school experiments:
    techniques like electrometer, ionization chamber, Geiger counter or mono-crystal 
    silicon detectors.  
 
-Unfortunately, energy spectra of γ rays cannot be measured with the *miniPIX* due 
-to the small overall sensor volume; therefore, a gamma spectrometer with a 
+Unfortunately, energy spectra of γ rays cannot be measured with the *miniPIX* 
+due to the small overall sensor volume; therefore, a gamma spectrometer with a 
 scintillating crystal is recommended for γ spectroscopy, e.g. one of the very 
 cost-effective and sufficiently precise devices made by
 [RadiaCode](https://radiacode.com/).
-
 
 Examples of successfully conducted measurements in the student and teachers
 labs at the Faculty of Physics at Karlsruhe Institute of Physics are shown below. 
@@ -100,16 +110,27 @@ The circular "blobs" from emitted α particles, long tracks form β particles
 and typically small objects from energy transfers of γ rays to electrons in 
 the silicon are clearly distinguishable. 
 
-With a thin plastic foil as absorber, the α and low-energy β signatures 
-can be suppressed. As becomes clear from the image shown below, the rate of 
-recorded objects is significantly reduced, and the typical signatures from
-α particles ("blobs") are completely missing. 
+**Enlarged views** of α, β and γ are shown below and demonstrate that the different signatures are clearly distinguishable. Note that the length of β traces depends on
+their energies and incident angles; usually, they are not fully contained within the
+sensitive volume of the *miniPIX* sensor. γ rays typically transfer only a fraction
+of their energy to electrons via the Compton process and therefore lead to signatures
+with only one or very view active sensor pixels. Note that lager energy transfers 
+and the full transfer of the γ energy to electrons via photo-effect are also possible.
+
+> ![α, β and γ signatures](images/alpha-beta-gamma.png)
+
+
+A **thin plastic foil as absorber** leads to complete suppression of all α 
+and of low-energy β signatures. As becomes clear from the image shown below, 
+the rate of recorded objects is significantly reduced, and the typical 
+signatures from α particles ("blobs") are completely missing. 
 
 > ![Display of miniPIXdaq for Pitchblende with plastic absorber](
   images/Pitchblende_noalpha.png)
 
-Finally, with an absorber of 2mm thick aluminum, only γ rays reach the sensor, 
-leading to typical images as shown below.
+A **2 mm aluminum absorber** is sufficient to completely suppress 
+all α and β particles such that only γ rays reach the sensor. 
+A typical image is shown below.
 
 > ![Display of miniPIXdaq for Pitchblende wit Aluminum absorber](
   images/Pitchblende_Gammas-only.png)
@@ -118,10 +139,6 @@ This sequence of images nicely demonstrates many features of radioactivity.
 Appropriate radioactive samples with activities of some 10 Bq are freely 
 available and can be bought from educational supply stores, e.g. 
 [NTL](https://ntl.de/radioaktivitaet/4006-dr201-1c-columbit.html).
-
-Installation and use of the *mPIXdaq* software as well as the options for data 
-acquisition, data analysis and visualization are described in the *README* 
-document of the package.
 
 
 #### Pedagogical considerations
@@ -144,12 +161,12 @@ or counting of β particles and γ rays with low-activity sources.
 Images like the ones shown above may be produced using the *mPIXdaq* program, 
 or also with the *Pixet* (basic) program the vendor provides together with 
 the *minPIX* detector. 
-
 *mPIXdaq*, however, provides a simple, transparent algorithm for clustering 
 of pixels and for the characterization of cluster properties that rely solely 
 on basic methods of data analysis, which are mastered already by undergraduate 
 students. The *miniPIX* images may also serve as a motivation for younger 
-high-school students to learn such techniques and gain experience. 
+high-school students to learn such techniques and gain experience in more
+complex methods of digital data processing and analysis.
 
 The algorithms are fast enough to be deployed on-line in low-rate scenarios,
 thus providing quantitative results on particle rates and energy spectra. 
