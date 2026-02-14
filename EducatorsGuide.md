@@ -48,15 +48,39 @@ radiation interacts with matter: strongly localized ionization for α particles,
 traces of ionization from β particles, and typically small energy deposits from 
 electrons (i.e. β particles) produced by γ rays via the Compton process. 
 
-Compared to other detection techniques, which simply count the occurrence of 
-a single particle interaction, the *miniPIX* is special because it integrates 
-over all signals that occurred within a freely chosen exposure time. If rates 
-are sufficiently low to avoid overlaps of signatures in space and time, all 
-particle interactions are individually distinguishable and recorded and collected 
-in one "frame", similar to an optical image taken with a certain exposure time. 
-Instead of the color of an object, the deposited energy in the pixels is encoded 
-as a color scale in *miniPIX* frames, resulting in a very intuitive representation 
-of the signatures produced by particles in the sensitive volume. 
+A schematic view of a charced-particle track in the sensitive detector material and the
+projection of the energy deposits on the 256x256 readout pixels is shown in the figure below.
+
+> ![3d-View of pixel cells and example of a particle track](images/pixels-with-track.png)
+
+Compared to other detection techniques, which simply count the occurrences of 
+a single particle interactions in a large volume, the *miniPIX* is special because 
+it integrates over all signals that occurred within a freely chosen exposure time
+and shows records energy deposits with high spatial resolution. 
+
+The basic operating principle of the detector is analogous other applications of silicon 
+sensors for measurements of visible or infrared light, i.e. photo-diodes, or from
+solar cells and digital cameras and should be well-known to students. 
+
+The *miniPIX* is a technological masterpiece combining 65536 individual, 
+radiation-sensitive pixels, arranged in an array of 256x256. Each pixel is connected 
+to a pre-amplifier, discriminator and counting logic. During the freely selectable 
+exposure time, signals from each pixel are integrated and read out as a single frame,
+resembling an image produced by a digital camera. In a digital photo-camera, the number
+of produced electron-hole pairs is proportional to the intensity of the incoming light. 
+Here, instead, the electron-hole pairs are produced by charged particles, and their 
+number and hence the collected charge is proportional to the energy deposited by the
+traversing particle in the sensitive volume of the pixel. A schematic of the detector
+is shown below. It consists of the actual sensor and a second chip connected to it
+to provide the readout.
+
+> ![Schematic layout of the miniPIX detector](images/timepix2-sensor.png)
+
+If particle rates are sufficiently low to avoid overlaps of signatures in space and 
+time, all  particle interactions are individually distinguishable and recorded and 
+collected in one frame. The deposited energy in the pixels is encoded as a color 
+scale in *miniPIX* frames, resulting in a very intuitive representation of the 
+signatures produced by particles in the sensitive volume. 
 
 Its high sensitivity and spatial mapping of energy deposits as well as the digitally
 recorded data make the *miniPIX* superior to other, classical detectors. While it 
@@ -96,13 +120,24 @@ scintillating crystal is recommended for γ spectroscopy, e.g. one of the very
 cost-effective and sufficiently precise devices made by
 [RadiaCode](https://radiacode.com/).
 
+An overlay of 10 frames, each recorded with an exposure time of 1s, is shown below.
+Clustering of connected pixels and a classification of the patterns is performed
+on-line during data acquisition. More details on the analysis method will be
+given below.
+
+![Pixel map and histograms of a Columbit sample recorded with *mPIXdaq*](
+  images/mPIXdaq_Columbit.png)
+
+
 Examples of successfully conducted measurements in the student and teachers
-labs at the Faculty of Physics at Karlsruhe Institute of Physics are shown below. 
+labs at the Faculty of Physics at Karlsruhe Institute of Physics are presented 
+and discussed below. 
+
 
 ### Analysis of radiation from natural samples
 
-An typical image of radiation from a small sample of natural Pitchblende 
-(Uraninit, Uranium Dioxide) is shown in the figure below.
+A typical image of radiation from a small sample of natural Pitchblende 
+(Uraninit, Uranium Dioxide), recorded with the *miniPIX*, is shown in the figure below.
 
 > ![Display of miniPIXdaq for Pitchblende](images/Pitchblende.png)
 
