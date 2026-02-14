@@ -1729,7 +1729,7 @@ class runDAQ:
         if mpixControl.kbd_control:
             print("\n" + 25 * ' ' + "\033[36m type 'E<ret>' or close graphics window to end" + "\033[31m", end='\r')
         try:
-            while (self.dt_active < self.run_time) and mpixControl.mplActive.is_set() and mpixControl.runActive.is_set():
+            while (self.dt_alive < self.run_time) and mpixControl.mplActive.is_set() and mpixControl.runActive.is_set():
                 # check kbd input
                 if not mpixControl.cmdQ.empty():
                     # decode keyboard input
@@ -1820,7 +1820,7 @@ class runDAQ:
                     print(stat, end="\r")
                 if mpixControl.gui_control:
                     mpixControl.statQ.put(stat)
-            else: # normal end of end of while
+            else:  # normal end of end of while
                 if not mpixControl.mplActive.is_set():
                     mpixControl.runActive.clear()
                     print("\033[36m\n" + 20 * ' ' + " Graphics window closed, tpye <ret> ")
@@ -1844,13 +1844,13 @@ class runDAQ:
             print("\n exception in daq loop: ", str(e))
 
         finally:  # end everything cleanly
-            if self.read_filename is None:  # minipix is still active, pause reading and signal end 
+            if self.read_filename is None:  # minipix is still active, pause reading and signal end
                 mpixControl.mpixActive.clear()
                 mpixControl.endEvent.set()
                 # drain dataQ of remaining events
                 while not self.daq.dataQ.empty():
                     _ = self.daq.dataQ.get()
-            else: #  reading from file, close it
+            else:  #  reading from file, close it
                 self.infile.close()
 
             # write ond-of-run record and close all output files
