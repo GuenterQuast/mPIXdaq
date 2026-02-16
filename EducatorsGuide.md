@@ -166,12 +166,12 @@ long tracks from β particles and typically small objects from energy transfers 
 to electrons in the silicon. 
 
 **Enlarged views** of typical α, β and γ signatures are show this clearly. Note that 
-the lengths of β traces depend on their energies and incident angles; usually, they are 
-not fully contained within the sensitive volume of the *miniPIX* sensor. 
+the lengths of β traces depend on their energies and incident angles; usually, they
+are not fully contained within the sensitive volume of the *miniPIX* sensor. 
 γ rays typically transfer only a fraction of their energy to electrons via the 
 Compton process and therefore lead to signatures with only one or very view active 
-sensor pixels. Note that lager energy transfers and the full transfer of the γ energy to 
-electrons via photo-effect are also possible.
+sensor pixels. Note that lager energy transfers and the full transfer of the γ energy
+to electrons via photo-effect are also possible.
 
 > ![α, β and γ signatures](images/alpha-beta-gamma.png)
 
@@ -216,15 +216,22 @@ radioactivity from experimental observations of a natural phenomenon and let
 pupils or students discover the properties of radiation by themselves.  
 In such an approach, the historical context becomes less important, as 
 well as the sequence of developments of technological methods for radiation 
-detection.   
-The advantage of this approach utilizing modern detection techniques right
-at the beginning, in contrast puts emphasis on the phenomenon of radioactivity 
-itself and its interaction with materials.  
+detection.  Utilizing modern detection techniques right at the beginning puts 
+emphasis on the phenomenon of radioactivity itself and its interaction with 
+materials.  
 Furthermore, the high sensitivity of the miniPIX detector and its ability to 
 clearly discriminate different types of radiation avoids the use of artificial, 
 high-activity radioactive sources. With the *miniPIX* device, it is possible 
 to perform background-free counting and energy determination of α particles,
-or counting of β particles and γ rays with low-activity sources. 
+or counting of β particles and γ rays with low-activity sources.   
+This approach permits studies with sources of much lower activities than needed 
+in classical experiments e.g. to study the absorption of α particles in air.  
+
+In contrast, with a classical radiation detector, e.g. a Geiger-Müller counter, 
+only a reduction in counting rate is observed when adding absorbers,
+but no distinction of the origin of the "clicks". Therefore, a high-rate 
+α-source is needed to demonstrate complete absorption, with the caveat that
+unavoidable background counts from γ rays are still present. 
 
 Images like the ones shown above may be produced using the *mPIXdaq* program, 
 or also with the *Pixet* (basic) program the vendor provides together with 
@@ -244,10 +251,7 @@ below.
   >  ![Cluster Energies miniPIXdaq](images/Pitchblende_ClusterEnergies.png)
 
 *mPIXdaq* allows highly selective recording of special cluster types, thus
-strongly discriminating the desired signatures against backgrounds. This 
-approach permits studies with sources of much lower activities than needed 
-in classical experiments e.g. to study the absorption of α particles in air.  
-
+strongly discriminating the desired signatures against backgrounds. 
 
 ### Analysis of signatures of different types of radiation
 
