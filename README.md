@@ -406,38 +406,6 @@ Histograms displayed in the on-line graphical display may be saved using
 the control buttons in the *matplotlib* window. 
 
 
-## Sensor Details
-
-The miniPIX (EDU) is based on the [*Timepix*](https://home.cern/tags/timepix)
-hybrid silicon pixel device, consisting of a semiconductor detector chip
-segmented into 256 x 256 square pixels with a pitch of 55 mm that is 
-bump-bonded to the readout chip. Each element of the pixel matrix is
-connected to its own preamplifier, discriminator and digital counter
-integrated on the readout chip. 
-
-The built-in *Medipix2* variant of the chip is operated in the so-called
-"frame mode", i.e. all pixels are read out at the same time, providing
-one frame consisting of the deposited energies per pixel collected during
-the acquisition time. If operated in time-over-threshold (ToT) mode,
-returned pixel readings represent the time the signal is over 
-a given threshold in counts of the chip clock (appr. 10 MHz). 
-*ToT* is linearly related to the energy deposition for large deposits 
-exceeding 50 keV. The functional dependence on the deposited energy $E$, 
-including threshold effects, is approximated by the following function
-
-   $ToT\,=\;a\,E +b - {c}/{(E-t)}$
-
-Approximate values of the calibrations constants are 
-$a$ = 1.6, $b$=23, $c$=23 and $t$=4.3. 
-Each pixel has its individual calibration stored on the chip, 
-which is optionally applied to obtain pixel readings in units of keV.
-The calibration is reliable up to pixel energies of one MeV. 
-Higher pixel energies may result when frames with short acquisition 
-time are summed up. For details, see the article by J. Jakubek, 
-*Precise energy calibration of pixel detector working in 
-time-over-threshold mode*, NIM A 633 (2011), 5262-5265*.
-
-
 ## Package Structure
 
 This package consists of one *Python* file with several classes providing 

@@ -41,11 +41,14 @@ Segmented silicon detectors like the *miniPIX* were originally developed for tra
 of charged particles in high-energy physics. They are now also widely used in diverse
 fields for particle detection, radiation dose measurements and imaging in material 
 sciences and for medical applications.  
-The affordable miniPIX EDU variant offered by 
-[Advacam](https://advacam.com/camera/minipix-edu/) 
-is based on the Timepix technology developed at CERN. Thanks to the USB interface 
-and the availability of a user program and drivers for various platforms, the detector 
-is easy  to use and allows data analysis in real-time. 
+The affordable miniPIX EDU variant 
+is based on the Timepix technology developed at CERN. 
+
+The miniPIX (EDU) variant from [Advacam](https://advacam.com/camera/minipix-edu/) 
+is based on the [*Timepix*](https://home.cern/tags/timepix) hybrid silicon pixel 
+device developed at CERN. 
+Thanks to the USB interface and the availability of a user program and drivers for
+various platforms, the detector is easy  to use and allows data analysis in real-time. 
 It is particularly useful to interactively investigate the properties and interactions 
 with matter of α, β and γ radiation in educational contexts, opening new ways 
 of teaching nuclear physics.  
@@ -55,8 +58,11 @@ and offers the additional advantage that quantitative, digital information with 
 spatial resolution of the deposited energy is also available. Besides visual inspection, recorded data sets can thus be analyzed to explore in detail the properties of radiation 
 emitted by radioactive probes.  
 
-The size of the sensitive area of the pixel sensor is 14.1 x 14.1 x 0.3 mm³, 
-segmented into 256 x 256 pixels with 0.300 mm depth, each covering an area of 55 µm². 
+The size of the sensitive area of the pixel sensor is 14.1 x 14.1 x 0.3 mm³, segmented 
+into 256 x 256 square pixels with 0.300 mm depth, each covering an area of 55 µm². 
+Bump-bonded to the sensor is a readout chip connecting ach element of the pixel matrix 
+to its own preamplifier, discriminator and digital counter integrated on the readout chip. 
+
 The deposited energy in each pixel is displayed as color-coded pixel in a two-dimensional 
 image. Such images of different types of radiation give a direct impression of the ways 
 how radiation interacts with matter: strongly localized energy deposits for α particles, 
@@ -87,10 +93,29 @@ is proportional to the intensity of the incoming light. Here, instead, the elect
 pairs are produced by charged particles, and their number and hence the collected charge
 is proportional to the energy deposited by the traversing particle in the sensitive 
 volume of the pixel.
-A schematic of the detector is shown below. It consists of the actual sensor and a
-readout-chip with amplifiers, discriminators and counting logic connected to it.
-
+A schematic of the detector is shown below. 
 > ![Schematic layout of the miniPIX detector](images/timepix2-sensor.png)
+
+The chip is operated in the so-called "frame mode", i.e. all pixels are read 
+out at the same time, providing one frame consisting of the deposited energies 
+per pixel collected during the acquisition time. 
+If operated in time-over-threshold (ToT) mode, returned pixel readings represent the 
+time the signal is over a given threshold in counts of the chip clock (appr. 10 MHz). 
+*ToT* is linearly related to the energy deposition for large deposits exceeding
+ 50 keV. The functional dependence on the deposited energy $E$, including threshold 
+ effects, is approximated by the following function
+
+   $ToT\,=\;a\,E +b - {c}/{(E-t)}$
+
+Approximate values of the calibrations constants are  
+$a$ = 1.6, $b$=23, $c$=23 and $t$=4.3. 
+Each pixel has its individual calibration stored on the chip, 
+which is optionally applied to obtain pixel readings in units of keV.
+The calibration is reliable up to pixel energies of one MeV. 
+Higher pixel energies may result when frames with short acquisition 
+time are summed up. For details, see the article by J. Jakubek, 
+*Precise energy calibration of pixel detector working in 
+time-over-threshold mode*, NIM A 633 (2011), 5262-5265*.
 
 If particle rates are sufficiently low to avoid overlaps of signatures, all particle interactions are individually distinguishable and recorded and collected in one frame. 
 The deposited energy in the pixels is encoded as a color scale in *miniPIX* frames, 
@@ -159,7 +184,7 @@ A typical frame image recorded with the *miniPIX*, is shown in the figure below.
 Pixel energies are shown as colors on a logarithmic scale, as indicted by legend
 on the right-hand side of the image. 
 
-> ![Display of miniPIXdaq for Pitchblende](images/Pitchblende.png)
+> ![Display of *mPIXdaq* for Pitchblende](images/Pitchblende.png)
 
 Three types of signatures are clearly distinguishable: circular "blobs" from α particles, 
 long tracks from β particles and typically small objects from energy transfers of γ rays 
@@ -263,9 +288,21 @@ study in detail the properties of energy depositions by different
 types of particles.
 
 
-### Advanced 
+### Advanced topics for university lab
 
-   - penetration depth of α particles in air, evidence for the Bragg peak
-   - dependence of energy deposition as a function of energy
-   - pixel energy vs. track length
-   - effect of β incidence angle  
+- The **penetration depth** of α particles in air and determination of the energy 
+  loss. The loss shows a rise at the end of the α reach when the particles 
+  become very slow. This behavior illustrates the Bragg peak of the
+  deposited energy which is relevant for radiation therapy. 
+     
+- The **pixel energy vs. track length** for β tracks directly shows the energy loss of 
+  electrons (dE/dx) with a strong increase of the deposited energy at the end of 
+  the tracks wehre the electrons become slow. Expected is an average energy deposition 
+  of of about 20 keV for electrons between energies of 0.1 to 1.5 MeV, rising to 
+  some ten keV for electrons with kinetic energies below 100 keV, as shown in the
+  following figure (using the Behte-Heitler Formula).
+
+    > ![Energy deposit per pixel for β particles](images/beta-dE_per_pixel.png) 
+
+- effect of **β incidence angle** to demonstrate the effect of the track length
+  in the sensitive volume on the deposited energy. 
