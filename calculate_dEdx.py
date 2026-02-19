@@ -14,6 +14,7 @@ import matplotlib.pyplot as plt
 
 def effective_Z_over_A():
     """Effective Z/A for air (Bragg additivity)"""
+
     Z_total = 0.0
     A_total = 0.0
     for fraction, A in air_composition.values():
@@ -31,16 +32,19 @@ def effective_Z_over_A():
 
 
 def bethe_bloch(E_MeV, Z_over_A, I, z, m):
-    """Bethe-Bloch relation for heavy particles
-    E: kinetic energy in MeV
-    Z_over_A: effective Z/A
-    I: mean ionization energy (MeV)
-    z: charge of projectile
-    m: mass of projectile (alpha oder muon)
+    """Bethe-Bloch relation for heavy particles (p, µ, 𝛼),
+    normalized to material density,
+
+    Parameters:
+      E: kinetic energy in MeV
+      Z_over_A: effective Z/A
+      I: mean ionization energy (MeV)
+      z: charge of projectile
+      m: mass of projectile (alpha oder muon)
     """
 
     K = 0.307075  # MeV mol^-1 cm^2
-    m_e = 0.511  # MeV (electron nmass)
+    m_e = 0.511  # MeV (electron mass)
     gamma = 1 + E_MeV / m
     beta2 = 1 - 1 / gamma**2
 
@@ -51,7 +55,7 @@ def bethe_bloch(E_MeV, Z_over_A, I, z, m):
     return dEdx  # MeV cm²/g
 
 
-def bethe_electron(E_kin, Z, A, I_ev):
+def dedx_electron(E_kin, Z, A, I_ev):
     """Calculates the specific energy loss of electrons (beta radiation)
     normalized to material density,
 
@@ -59,10 +63,10 @@ def bethe_electron(E_kin, Z, A, I_ev):
         https://physics.nist.gov/PhysRefData/Star/Text/ESTAR.html
 
     Parameters:
-    E_kin : float - Kinetic energy of electrons in MeV
-    Z     : int   - atomic number of material
-    A     : float - atomic mass of material in g/mol
-    I_ev  : float - average ionization potential in eV
+      E_kin : float - Kinetic energy of electrons in MeV
+      Z     : int   - atomic number of material
+      A     : float - atomic mass of material in g/mol
+      I_ev  : float - average ionization potential in eV
     """
 
     # Physics constants
@@ -75,14 +79,13 @@ def bethe_electron(E_kin, Z, A, I_ev):
     # conversion of I from eV to MeV
     I_mev = I_ev * 1e-6
 
-    # Bethe-equation for Electrons (simplified for range < 10 MeV)
+    # modified Bethe-equation for electrons (simplified for range < 10 MeV)
     #   contains  term for the indistinguishability of the electrons
     _term1 = np.log((E_kin**2 * (gamma + 1)) / (2 * I_mev**2))
     _term2 = (1 / gamma**2) * (1 + (E_kin**2 / 8) - (2 * gamma - 1) * np.log(2))
 
     # energy loss normalized to density (MeV cm^2 / g)
-    dedx = (K / 2) * (Z / A) * (1 / beta**2) * (_term1 + _term2)
-    return dedx
+    return (K / 2) * (Z / A) * (1 / beta**2) * (_term1 + _term2)
 
 
 def calc_pixel_energies(E0):
@@ -92,7 +95,7 @@ def calc_pixel_energies(E0):
     E_x = E0
     px_size = 0.0055  # in cm
     while E_x > 0.0:
-        dE = rho_Si * bethe_electron(E_x, Z_Si, A_Si, I_Si) * px_size
+        dE = rho_Si * dedx_electron(E_x, Z_Si, A_Si, I_Si) * px_size
         if dE > E_x:
             dE = E_x
         n_px += 1
@@ -164,8 +167,8 @@ if __name__ == "__main__":  # -------------------------------------------------
     nb = 100
     xp = np.linspace(bw, nb * bw, num=nb, endpoint=True) + bw / 2.0
     fig_dEdx = plt.figure()
-    plt.plot(xp, bethe_electron(xp, Z_H2O, A_H2O, I_H2O), '-', label=r"H$_2$O")
-    plt.plot(xp, bethe_electron(xp, Z_Si, A_Si, I_Si), '-', label="Si")
+    plt.plot(xp, dedx_electron(xp, Z_H2O, A_H2O, I_H2O), '-', label=r"H$_2$O")
+    plt.plot(xp, dedx_electron(xp, Z_Si, A_Si, I_Si), '-', label="Si")
     plt.xlabel("E [MeV]")
     plt.ylabel(r"enery loss  dE/dx$\,$/$\rho$   [MeV$\,$cm²/g]")
     plt.suptitle("Energy loss of electrons (mod. Bethe)")
@@ -207,12 +210,11 @@ if __name__ == "__main__":  # -------------------------------------------------
     # --- some control printout (just to compare numbers)
     E0 = 1.0
     print(f"Energy loss of electrons of {E0} MeV in water: ", end='')
-    print(f"dE/dx = {rho_H2O * bethe_electron(E0, Z_H2O, A_H2O, I_H2O):.4f} MeV/cm")
+    print(f"dE/dx = {rho_H2O * dedx_electron(E0, Z_H2O, A_H2O, I_H2O):.4f} MeV/cm")
     print(f"                                       in Si: ", end='')
-    dEdx = rho_Si * bethe_electron(E0, Z_Si, A_Si, I_Si)
+    dEdx = rho_Si * dedx_electron(E0, Z_Si, A_Si, I_Si)
     print(f"dE/dx = {dEdx:.4f} MeV/cm   {dEdx / w_eh / 10000:.0f} e-h pairs/µm")
     print(f"                    alphas of {4} MeV in air: ", end='')
-    print(f"dE/dx = {rho_air * bethe_bloch(4, Z_over_A_air, I_air, z_alpha, m_alpha):.4f} MeV/cm")
 
     # print("pixel energies in keV along track with {E0:.2f} MeV initial energy:")
     # for _i in range(n_px):
