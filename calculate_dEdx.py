@@ -37,7 +37,7 @@ class material_properties:
     I_air = 85.7e-6  # MeV, mean ionization energy of air
 
     # projectile
-    z_alpha = 2.0  # charge of alpha
+    z_alpha = 2  # charge of alpha
     m_alpha = 3727.4  # mass of alpha in MeV/c^2 (4 u)
 
     z_mu = 1  # charge of muon
@@ -66,12 +66,12 @@ class material_properties:
         cls.Z_over_A_air = Z_total / A_total
 
 
-def bethe_bloch(E_MeV, Z_over_A, I, z, m):
+def Bethe_Bloch(T, Z_over_A, I, z, m):
     """Bethe-Bloch relation for heavy particles (p, µ, 𝛼),
     normalized to material density,
 
     Parameters:
-      E: kinetic energy in MeV
+      T: kinetic energy in MeV
       Z_over_A: effective Z/A
       I: mean ionization energy (MeV)
       z: charge of projectile
@@ -79,48 +79,67 @@ def bethe_bloch(E_MeV, Z_over_A, I, z, m):
     """
 
     K = 0.307075  # MeV mol^-1 cm^2
-    m_e = 0.511  # MeV (electron mass)
-    gamma = 1 + E_MeV / m
+    m_e = 0.51099895  # MeV (electron mass)
+    gamma = 1 + T / m
     beta2 = 1 - 1 / gamma**2
 
+    # Maximum kinetic energy transfer T_max
+    #     Formula for a heavy projectile (m_alpha >> m_e)
+    r_mass = m_e / m
+    T_max = 2 * m_e * beta2 * gamma**2 / (1 + 2 * gamma * r_mass + r_mass**2)
+
     term1 = (K * Z_over_A * z**2) / beta2
-    argument = (2 * m_e * beta2 * gamma**2) / I
+    term_ln = 0.5 * np.log(2 * m_e * beta2 * gamma**2 * T_max / I**2)
 
-    dEdx = term1 * (np.log(argument) - beta2)
-    return dEdx  # MeV cm²/g
+    return term1 * (term_ln - beta2)  # MeV cm²/g
 
 
-def dedx_electron(E_kin, Z, A, I_ev):
+def dEdx_electron(T, Z, A, I_eV):
     """Calculates the specific energy loss of electrons (beta radiation)
     normalized to material density,
 
     Result validated against
-        https://physics.nist.gov/PhysRefData/Star/Text/ESTAR.html
+        https://physics.nist.gov/PhysRefDaqta/Star/Text/ESTAR.html
+
+    Notes:
+      - only collisions considered, no radiation loss (relevant for energy >>1 MeV)
+      - density effect correction (delta) omitted here for simplicity
+      - pure Bethe loss decreases below 0.4 MeV and becomes even negative
+        below 0.15 MeV for alpha particles in air;
+        this can be fixed by adding Barkas corrections, which are, however, not implemented here
+
+    Formula: Bethe-Bloch equation modified for electrons, ICRU Report 37 (1984).
 
     Parameters:
-      E_kin : float - Kinetic energy of electrons in MeV
-      Z     : int   - atomic number of material
-      A     : float - atomic mass of material in g/mol
-      I_ev  : float - average ionization potential in eV
+      T    : float or ndarray - Kinetic energy of the electron (MeV)
+      Z    : int              - Atomic number of the target material
+      A    : float            - Atomic mass of the target material (g/mol)
+      I_eV : float            - Mean excitation energy (eV)
+
+    Returns:
+      dEdx_col : float         - Mass collision stopping power (MeV*cm^2/g)
     """
 
-    # Physics constants
-    m_e_c2 = 0.511  # electron mass in MeV/c²
-    K = 0.307075  # 4 * pi * N_A * r_e^2 * m_e * c^2 in MeV cm^2 / mol
+    # Fundamental constants
+    m_e = 0.51099895  # Electron rest mass in MeV
+    K = 0.15353  # Constant 2*pi*N_A*r_e^2*m_e*c^2 in MeV*cm^2/mol
 
-    # relativistic variables
-    gamma = (E_kin / m_e_c2) + 1
-    beta = np.sqrt(1 - (1 / gamma**2))
-    # conversion of I from eV to MeV
-    I_mev = I_ev * 1e-6
+    # Relativistic parameters
+    tau = T / m_e  # Kinetic energy in units of rest mass
+    gamma = tau + 1  # Lorentz factor
+    beta2 = 1 - 1 / (gamma**2)  # Velocity squared (v/c)^2
+    I_MeV = I_eV * 1e-6  # Convert mean excitation energy to MeV
 
-    # modified Bethe-equation for electrons (simplified for range < 10 MeV)
-    #   contains  term for the indistinguishability of the electrons
-    _term1 = np.log((E_kin**2 * (gamma + 1)) / (2 * I_mev**2))
-    _term2 = (1 / gamma**2) * (1 + (E_kin**2 / 8) - (2 * gamma - 1) * np.log(2))
+    # F(tau) function for electrons (ICRU 37)
+    # Accounts for the identity of the primary and secondary (knock-on) electrons
+    F_tau = 1 - beta2 + ((tau**2 / 8) - (2 * tau + 1) * np.log(2)) / (gamma**2)
 
-    # energy loss normalized to density (MeV cm^2 / g)
-    return (K / 2) * (Z / A) * (1 / beta**2) * (_term1 + _term2)
+    # Logarithmic term of the Bethe formula
+    # Includes the maximum energy transfer (T/2 for electrons due to indistinguishability)
+    log_term = np.log(tau**2 * (tau + 2) / (2 * (I_MeV / m_e) ** 2))
+
+    # mass collision stopping power
+    return (K * Z / (A * beta2)) * (log_term + F_tau)  # MeV cm²/g
 
 
 def calc_pixel_energies(E0):
@@ -130,7 +149,7 @@ def calc_pixel_energies(E0):
     E_x = E0
     px_size = 0.0055  # in cm
     while E_x > 0.0:
-        dE = mp.rho_Si * dedx_electron(E_x, mp.Z_Si, mp.A_Si, mp.I_Si) * px_size
+        dE = mp.rho_Si * dEdx_electron(E_x, mp.Z_Si, mp.A_Si, mp.I_Si) * px_size
         if dE > E_x:
             dE = E_x
         n_px += 1
@@ -154,16 +173,18 @@ def calc_E_vs_depth(E0, rho, Z_over_A, I, z, m):
     dx = 0.05
     x = np.linspace(0, 100 * dx, 100)  # distances in cm
     Ex = []
-    E_left = E0
+    E_curr = E0  # current energy
     i = 0
-    while E_left > 0.15:
-        dE = rho * bethe_bloch(E_left, Z_over_A, I, z, m) * dx
-        if dE > E_left:
-            dE = E_left
-        Ex += [E_left]
-        E_left -= dE
-    else:
-        return np.asarray(Ex)
+    dE_last = 0.0
+    while E_curr > 0.1:
+        _dE = rho * Bethe_Bloch(E_curr, Z_over_A, I, z, m) * dx
+        dE = _dE if _dE > dE_last else dE_last  # avoid problem of simple Bethe-Bloch at low Energies
+        dE_last = dE
+        if dE > E_curr:
+            dE = E_curr
+        Ex += [E_curr]
+        E_curr -= dE
+    return np.asarray(Ex)
 
 
 if __name__ == "__main__":  # -------------------------------------------------
@@ -177,8 +198,8 @@ if __name__ == "__main__":  # -------------------------------------------------
     nb = 100
     xp = np.linspace(bw, nb * bw, num=nb, endpoint=True) + bw / 2.0
     fig_dEdx = plt.figure()
-    plt.plot(xp, dedx_electron(xp, mp.Z_H2O, mp.A_H2O, mp.I_H2O), '-', label=r"H$_2$O")
-    plt.plot(xp, dedx_electron(xp, mp.Z_Si, mp.A_Si, mp.I_Si), '-', label="Si")
+    plt.plot(xp, dEdx_electron(xp, mp.Z_H2O, mp.A_H2O, mp.I_H2O), '-', label=r"H$_2$O")
+    plt.plot(xp, dEdx_electron(xp, mp.Z_Si, mp.A_Si, mp.I_Si), '-', label="Si")
     plt.grid(True)
     plt.legend()
     plt.suptitle("Energy loss of electrons (mod. Bethe)")
@@ -197,12 +218,13 @@ if __name__ == "__main__":  # -------------------------------------------------
     plt.ylabel(r"pixel energy [keV]")
 
     # dE/dx for alpha particles in air
-    bw = 0.25
-    nb = 40
-    xp = np.linspace(bw, nb * bw, num=nb, endpoint=True) + bw / 2.0
+    bw = 0.05
+    nb = 100
+    mn = 0.15
+    xp = np.linspace(0.0, nb * bw, num=nb, endpoint=True) + mn
     plt.figure()
-    plt.plot(xp, mp.rho_air * bethe_bloch(xp, mp.Z_over_A_air, mp.I_air, mp.z_alpha, mp.m_alpha), '-', label=r"$\alpha$")
-    plt.plot(xp, mp.rho_air * bethe_bloch(xp, mp.Z_over_A_air, mp.I_air, mp.z_mu, mp.m_mu), '-', label="µ")
+    plt.plot(xp, mp.rho_air * Bethe_Bloch(xp, mp.Z_over_A_air, mp.I_air, mp.z_alpha, mp.m_alpha), '-', label=r"$\alpha$")
+    plt.plot(xp, mp.rho_air * Bethe_Bloch(xp, mp.Z_over_A_air, mp.I_air, mp.z_mu, mp.m_mu), '-', label="µ")
     plt.legend()
     plt.grid(True)
     plt.suptitle("Energy loss in air (Bethe-Bloch)")
@@ -226,12 +248,12 @@ if __name__ == "__main__":  # -------------------------------------------------
     if verbose:
         E0_e = 1.0
         print(f"Energy loss of electrons of {E0_e} MeV in water: ", end='')
-        print(f"dE/dx = {mp.rho_H2O * dedx_electron(E0_e, mp.Z_H2O, mp.A_H2O, mp.I_H2O):.2f} MeV/cm")
+        print(f"dE/dx = {mp.rho_H2O * dEdx_electron(E0_e, mp.Z_H2O, mp.A_H2O, mp.I_H2O):.2f} MeV/cm")
         print(f"                                       in Si: ", end='')
-        _dEdx_e = mp.rho_Si * dedx_electron(E0_e, mp.Z_Si, mp.A_Si, mp.I_Si)
+        _dEdx_e = mp.rho_Si * dEdx_electron(E0_e, mp.Z_Si, mp.A_Si, mp.I_Si)
         print(f"dE/dx = {_dEdx_e:.2f} MeV/cm   {_dEdx_e / mp.w_eh / 10000:.0f} e-h pairs/µm")
         E0_a = 4.0
-        _dEdx_a = mp.rho_air * bethe_bloch(E0_a, mp.Z_over_A_air, mp.I_air, mp.z_alpha, mp.m_alpha)
+        _dEdx_a = mp.rho_air * Bethe_Bloch(E0_a, mp.Z_over_A_air, mp.I_air, mp.z_alpha, mp.m_alpha)
         print(f"                    alphas of {E0_a} MeV in air: {_dEdx_a:.2f} MeV/cm", end='')
         print()
 
