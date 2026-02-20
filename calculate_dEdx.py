@@ -12,23 +12,58 @@ import matplotlib.pyplot as plt
 # ---------------------------------------------------------
 
 
-def effective_Z_over_A():
-    """Effective Z/A for air (Bragg additivity)"""
+class material_properties:
+    """Collect properties of target materials and projectiles"""
 
-    Z_total = 0.0
-    A_total = 0.0
-    for fraction, A in air_composition.values():
-        if A == 28.0134:
-            Z = 7 * 2
-        elif A == 31.9988:
-            Z = 8 * 2
-        elif A == 39.948:
-            Z = 18
-        else:
-            Z = 0
-        Z_total += fraction * Z
-        A_total += fraction * A
-    return Z_total / A_total
+    # Material parameters
+    # --- Silicon
+    Z_Si = 14  # 4.15 # effective atomic number (Z=14)
+    A_Si = 28  # Atommasse
+    rho_Si = 2.33  # g/cm³
+    I_Si = 173  # Ionisation potential in eV
+    w_eh = 3.6e-6  # MeV per e-h-Paar (3.6 eV)
+
+    # --- Water/tissue ---
+    Z_H2O = 7.4  # effective atomic number
+    A_H2O = 12.5  # effective atomic masse
+    rho_H2O = 1.0
+    I_H2O = 75.0  # eV
+
+    # --- air
+    rho_air = 1.225e-3  # g/cm³, density of air normal pressure
+    # Composition of air
+    air_composition = {"N2": (0.755, 14.0067 * 2), "O2": (0.231, 15.9994 * 2), "Ar": (0.0128, 39.948)}
+    # Z_over_A_air = material_properties.effective_Z_over_A()
+    I_air = 85.7e-6  # MeV, mean ionization energy of air
+
+    # projectile
+    z_alpha = 2.0  # charge of alpha
+    m_alpha = 3727.4  # mass of alpha in MeV/c^2 (4 u)
+
+    z_mu = 1  # charge of muon
+    m_mu = 105.658  # mass of muon in MeV/c^2
+
+    def __init__(self):
+        print("\n *==* calulate_dEdx: initializing materials \n")
+        Z_over_A_air = material_properties.effective_Z_over_A()
+
+    @classmethod
+    def effective_Z_over_A(cls):
+        """Effective Z/A for air (Bragg additivity)"""
+        Z_total = 0.0
+        A_total = 0.0
+        for fraction, A in cls.air_composition.values():
+            if A == 28.0134:
+                Z = 7 * 2
+            elif A == 31.9988:
+                Z = 8 * 2
+            elif A == 39.948:
+                Z = 18
+            else:
+                Z = 0
+            Z_total += fraction * Z
+            A_total += fraction * A
+        cls.Z_over_A_air = Z_total / A_total
 
 
 def bethe_bloch(E_MeV, Z_over_A, I, z, m):
@@ -89,13 +124,13 @@ def dedx_electron(E_kin, Z, A, I_ev):
 
 
 def calc_pixel_energies(E0):
-    """calculete pixel energies for a track with energy E0"""
+    """calculate pixel energies for an electron track with energy E0 in silicon"""
     n_px = 0
     E_px = []
     E_x = E0
     px_size = 0.0055  # in cm
     while E_x > 0.0:
-        dE = rho_Si * dedx_electron(E_x, Z_Si, A_Si, I_Si) * px_size
+        dE = mp.rho_Si * dedx_electron(E_x, mp.Z_Si, mp.A_Si, mp.I_Si) * px_size
         if dE > E_x:
             dE = E_x
         n_px += 1
@@ -132,47 +167,23 @@ def calc_E_vs_depth(E0, rho, Z_over_A, I, z, m):
 
 
 if __name__ == "__main__":  # -------------------------------------------------
-    # Material parameters
-    # --- Silicon
-    Z_Si = 14  # 4.15 # effective atomic number (Z=14)
-    A_Si = 28  # Atommasse
-    rho_Si = 2.33  # g/cm³
-    I_Si = 173  # Ionisation potential in eV
-    w_eh = 3.6e-6  # MeV per e-h-Paar (3.6 eV)
+    # *** initialize material properties
+    mp = material_properties()
 
-    # --- Water/tissue ---
-    Z_H2O = 7.4  # effective atomic number
-    A_H2O = 12.5  # effective atomic masse
-    rho_H2O = 1.0
-    I_H2O = 75.0  # eV
-
-    # --- air
-    rho_air = 1.225e-3  # g/cm³, density of air normal pressure
-    # Composition of air
-    air_composition = {"N2": (0.755, 14.0067 * 2), "O2": (0.231, 15.9994 * 2), "Ar": (0.0128, 39.948)}
-    Z_over_A_air = effective_Z_over_A()
-    I_air = 85.7e-6  # MeV, mean ionization energy of air
-
-    # projectile
-    z_alpha = 2.0  # charge of alpha
-    m_alpha = 3727.4  # mass of alpha in MeV/c^2 (4 u)
-
-    z_mu = 1  # charge of muon
-    m_mu = 105.658  # mass of muon in MeV/c^2
-
-    # graphs
+    # *** produce graphs
 
     # -- dE/dx * rho Grafik
     bw = 0.05  # steps of 50 keV
     nb = 100
     xp = np.linspace(bw, nb * bw, num=nb, endpoint=True) + bw / 2.0
     fig_dEdx = plt.figure()
-    plt.plot(xp, dedx_electron(xp, Z_H2O, A_H2O, I_H2O), '-', label=r"H$_2$O")
-    plt.plot(xp, dedx_electron(xp, Z_Si, A_Si, I_Si), '-', label="Si")
+    plt.plot(xp, dedx_electron(xp, mp.Z_H2O, mp.A_H2O, mp.I_H2O), '-', label=r"H$_2$O")
+    plt.plot(xp, dedx_electron(xp, mp.Z_Si, mp.A_Si, mp.I_Si), '-', label="Si")
+    plt.grid(True)
+    plt.legend()
+    plt.suptitle("Energy loss of electrons (mod. Bethe)")
     plt.xlabel("E [MeV]")
     plt.ylabel(r"enery loss  dE/dx$\,$/$\rho$   [MeV$\,$cm²/g]")
-    plt.suptitle("Energy loss of electrons (mod. Bethe)")
-    plt.legend()
 
     # --- pixel energies
     E0 = 1.5  # in MeV
@@ -180,48 +191,58 @@ if __name__ == "__main__":  # -------------------------------------------------
     n_px = len(E_px)
     fig_px = plt.figure()
     plt.bar(range(n_px), E_px, color='darkred')
+    plt.grid(True)
+    plt.suptitle(f"track energy {E0:.2f} MeV", size="large")
     plt.xlabel("pixel number")
     plt.ylabel(r"pixel energy [keV]")
-    plt.suptitle(f"track energy {E0:.2f} MeV", size="large")
 
     # dE/dx for alpha particles in air
     bw = 0.25
     nb = 40
     xp = np.linspace(bw, nb * bw, num=nb, endpoint=True) + bw / 2.0
     plt.figure()
-    plt.plot(xp, rho_air * bethe_bloch(xp, Z_over_A_air, I_air, z_alpha, m_alpha), '-', label=r"$\alpha$")
-    plt.plot(xp, rho_air * bethe_bloch(xp, Z_over_A_air, I_air, z_mu, m_mu), '-', label="µ")
+    plt.plot(xp, mp.rho_air * bethe_bloch(xp, mp.Z_over_A_air, mp.I_air, mp.z_alpha, mp.m_alpha), '-', label=r"$\alpha$")
+    plt.plot(xp, mp.rho_air * bethe_bloch(xp, mp.Z_over_A_air, mp.I_air, mp.z_mu, mp.m_mu), '-', label="µ")
+    plt.legend()
+    plt.grid(True)
+    plt.suptitle("Energy loss in air (Bethe-Bloch)")
     plt.xlabel(" α energy(MeV)")
     plt.ylabel("dE/dx (MeV/cm)")
-    plt.suptitle("Energy loss in air (Bethe-Bloch)")
-    plt.legend()
 
     # alpha energy after penetration depth in air
     E0 = 5.0  # initial energy in MeV
     dx = 0.05
-    Ex = calc_E_vs_depth(E0, rho_air, Z_over_A_air, I_air, z_alpha, m_alpha)
+    Ex = calc_E_vs_depth(E0, mp.rho_air, mp.Z_over_A_air, mp.I_air, mp.z_alpha, mp.m_alpha)
     plt.figure()
     xp = [dx * i for i in range(len(Ex))]
     plt.bar(xp, Ex, color="darkblue", width=dx * 0.75)
     plt.ylabel("α energy (MeV)")
     plt.xlabel("penetration depth (cm)")
     plt.suptitle(rf"$\alpha$ energy vs. penetration depth in air")
-
-    # --- some control printout (just to compare numbers)
-    E0 = 1.0
-    print(f"Energy loss of electrons of {E0} MeV in water: ", end='')
-    print(f"dE/dx = {rho_H2O * dedx_electron(E0, Z_H2O, A_H2O, I_H2O):.4f} MeV/cm")
-    print(f"                                       in Si: ", end='')
-    dEdx = rho_Si * dedx_electron(E0, Z_Si, A_Si, I_Si)
-    print(f"dE/dx = {dEdx:.4f} MeV/cm   {dEdx / w_eh / 10000:.0f} e-h pairs/µm")
-    print(f"                    alphas of {4} MeV in air: ", end='')
-
-    # print("pixel energies in keV along track with {E0:.2f} MeV initial energy:")
-    # for _i in range(n_px):
-    #    print(f"{_i+1}: {E_px[_i]:.1f} ", end='')
-    # print(f"        total deposited energy {E_px.sum():.1f} keV")
-    # ---
-
     plt.grid(True)
+
+    #  *** some control printout (just to compare numbers)
+    verbose = 1
+    if verbose:
+        E0_e = 1.0
+        print(f"Energy loss of electrons of {E0_e} MeV in water: ", end='')
+        print(f"dE/dx = {mp.rho_H2O * dedx_electron(E0_e, mp.Z_H2O, mp.A_H2O, mp.I_H2O):.2f} MeV/cm")
+        print(f"                                       in Si: ", end='')
+        _dEdx_e = mp.rho_Si * dedx_electron(E0_e, mp.Z_Si, mp.A_Si, mp.I_Si)
+        print(f"dE/dx = {_dEdx_e:.2f} MeV/cm   {_dEdx_e / mp.w_eh / 10000:.0f} e-h pairs/µm")
+        E0_a = 4.0
+        _dEdx_a = mp.rho_air * bethe_bloch(E0_a, mp.Z_over_A_air, mp.I_air, mp.z_alpha, mp.m_alpha)
+        print(f"                    alphas of {E0_a} MeV in air: {_dEdx_a:.2f} MeV/cm", end='')
+        print()
+
+        # print("pixel energies in keV along track with {E0:.2f} MeV initial energy:")
+        # for _i in range(n_px):
+        #    print(f"{_i+1}: {E_px[_i]:.1f} ", end='')
+        # print(f"        total deposited energy {E_px.sum():.1f} keV")
+        # ---
+
+    # *** show plots and wait for user
     plt.tight_layout()
+    plt.ion()
     plt.show()
+    _ = input(25 * ' ' + "type <ret> to end -> ")

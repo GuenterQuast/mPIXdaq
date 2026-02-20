@@ -324,16 +324,16 @@ ASTAR and PStar), see [NIST Standard Reference Database](
 https://www.nist.gov/pml/stopping-power-range-tables-electrons-protons-and-helium-ions).
   
  
- A selection of (tested) experiments is shown in the following sub-chapters.
+ A selection of (tested) experiments is described in the sub-chapters below.
 
 
 ### Penetration depth of α particles in air  
 
 The **penetration depth** of α particles in air and the determination of the 
-energy loss can be directly determined with the *miniPIX* by replacing any existing
-detector. Using *mPIXdaq*, signatures of α particles can be detected without
-any backgrounds and their energies can be measured, which is a clear advantage
-of the *miniPIX*. 
+energy loss can be directly determined with the *miniPIX* by replacing the
+detector in a existing setup. With the *mPIXdaq* package, signatures of α 
+particles can be detected without any backgrounds and their energies can be 
+measured, which is a clear advantage of the *miniPIX*. 
 
 The expected behavior of the measured  α energies as a function of the depth of
 penetrated air, as determined with *calculate_dEdx.py*, is shown in the figure below.
@@ -350,7 +350,7 @@ penetrated air, as determined with *calculate_dEdx.py*, is shown in the figure b
 The energy loss of β radiation in matter can be directly studied with the *mimniPIX*
 by considering the silicon of the pixels as the absorbing material. 
 The energy deposited in the pixels along a β track thus directly shows the energy 
-loss of  electrons (dE/dx) along the track. Because the energy decreases, this can
+loss of  electrons (dE/dx) along the trace. Because the energy decreases, this can
 be reinterpreted as a measurement of the energy dependence of the specific ionization
 loss in silicon. 
 
@@ -358,20 +358,19 @@ The energy loss per pixel shows a strong increase at the end of the tracks where
 the electrons become slow. Expected is an average energy deposition of of about 
 20 keV for electrons with energies between  0.1 and 1.5 MeV, rising to 
 some ten keV for electrons with kinetic energies below 100 keV, as shown in the
-following figure (calculated with *calculate_dEdx.py* using the Behte-Heitler 
-Formula).
+following figure (calculated with *calculate_dEdx.py* using a modified Bethe Formula).
 
   > ![Energy deposit per pixel for β particles](images/beta-dE_per_pixel.png) 
 
 In this experiment, the silicon is the recording medium and the absorber at 
-the same time, and therefore no additional absorbers are needed. If studies of 
-the absorption properties of different materials are desired, absorbers may
-be placed in front of the detector - which then only counts the arriving electrons
-and measures their energies in case the track is fully contained in the 
-sensitive volume. Such signatures are possible when the electron tracks are
-scattered such that they remain within the 300µm tick sensitive volume. Signatures
-of this kind may be selected by detecting the rise of the deposited energy per
-pixel at the end of the track. 
+the same time, and therefore no additional absorber materials are needed. 
+If studies of the absorption properties of different materials are desired, 
+absorbers may be placed in front of the detector - which then only counts 
+the arriving electrons and measures their energies in case the track is fully 
+contained in the sensitive volume. Such signatures are possible when the electron 
+tracks are scattered such that they remain within the 300µm tick sensitive volume. 
+Signatures of this kind may be selected by detecting the rise of the deposited 
+energy per pixel at the end of the track. 
 
 
 #### collection of further ideas
