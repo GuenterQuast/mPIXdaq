@@ -6,10 +6,8 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-# ---------------------------------------------------------
 
-
-class material_properties:
+class materials:
     """Collect properties of target materials and projectiles"""
 
     # dictionaries of material parameters
@@ -131,7 +129,7 @@ def calc_pixel_energies(E0, px_size=0.0055):
        E0: initial energy
        px_size: pixel size (cm)
     """
-    mp = material_properties
+    mp = materials
     n_px = 0
     E_px = []
     E_x = E0
@@ -176,7 +174,7 @@ def calc_E_vs_depth(E0, dx, material, z, m):
 
 def plot_dEdx_electron(material):
     # -- dE/dx * rho Grafik
-    mp = material_properties
+    mp = materials
     bw = 0.05  # steps of 50 keV
     nb = 100
     xp = np.linspace(bw, nb * bw, num=nb, endpoint=True) + bw / 2.0
@@ -205,12 +203,10 @@ def plot_beta_pixel_energies(E0=1.5, px_size=0.0055):
     plt.ylabel(r"pixel energy [keV]")
 
 
-def plot_dEdx_alpha(material):
+def plot_dEdx_alpha(material, bw=0.025, nb=200):
     # dE/dx for alpha particles in air
-    mp = material_properties
-    bw = 0.05
-    nb = 100
-    mn = 0.15
+    mp = materials
+    mn = 0.15  # simple Formula not valid for smaller values
     xp = np.linspace(0.0, nb * bw, num=nb, endpoint=True) + mn
     _mp = material
     plt.figure()
@@ -223,33 +219,32 @@ def plot_dEdx_alpha(material):
     plt.ylabel("dE/dx (MeV/cm)")
 
 
-def plot_alpha_range(material):
-    # alpha energy after penetration depth in air
-    mp = material_properties
-    E0 = 5.0  # initial energy in MeV
-    dx = 0.05
-    # energy loss ber bin
+def plot_alpha_range(material, E0=6.0, dx=0.050):
+    """alpha energy after penetration depth in air
+    E0 : initial energy in MeV
+    dx : step width
+    """
+    mp = materials
+    # calculate energy loss ber bin
     _mp = material
     Ex = calc_E_vs_depth(E0, dx, _mp, mp.z_alpha, mp.m_alpha)
-    # plot particle energy
     fig, ax1 = plt.subplots()
-    fig.suptitle(rf"$\alpha$ energy vs. penetration depth in {_mp['name']}")
+    fig.suptitle(rf"$\alpha$ enery loss & energy vs. penetration depth in {_mp['name']}")
     xp = [dx * i for i in range(len(Ex))]
-    ax1.plot(xp, Ex, color="darkblue")
-    ax1.fill_between(xp, Ex, alpha=0.25)
-    ax1.set_ylabel("α energy (MeV)", color="darkblue")
-    ax1.set_xlabel("material depth (cm)")
-    ax1.set_ylim(0.0, None)
     # plot deposited energy(bin)
+    ax1.bar(xp[:-1], Ex[:-1] - Ex[1:], align='edge', color="darkred", width=dx * 0.85, alpha=0.5)
+    ax1.set_ylabel("deposited energy (MeV)", color="darkred")
+    ax1.set_xlabel("material depth (cm)")
+    # plot particle energy
     ax2 = ax1.twinx()
-    ax2.bar(xp[:-1], Ex[:-1] - Ex[1:], color="darkred", width=dx * 0.75, alpha=0.5)
-    ax2.set_ylabel("deposited energy (MeV)", color="darkred")
+    ax2.bar(xp, Ex, color="darkblue", align='edge', width=dx * 0.5, alpha=0.5)
+    ax2.set_ylabel("α energy (MeV)", color="darkblue")
 
 
 if __name__ == "__main__":  # -------------------------------------------------
     # application example
 
-    mp = material_properties
+    mp = materials
     # *** produce graphs
     plot_dEdx_electron((mp.H2O, mp.Si, mp.Pb))
     plot_dEdx_alpha(mp.air)
