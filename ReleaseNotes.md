@@ -18,4 +18,6 @@
   - added simple GUI and option to remove keyboard control
   - run time (-t option) now refers to live time (not wall-clock time)
   - added an educator's guide
+  - added library physics_tool to calculate energy deposits in matter
+  
 
