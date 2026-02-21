@@ -12,9 +12,8 @@ import matplotlib.pyplot as plt
 import mpixdaq.physics_tools as pt
 
 if __name__ == "__main__":  # -------------------------------------------------
-
     mp = pt.material_properties
-    
+
     # *** produce graphs
     pt.plot_dEdx_electron((mp.H2O, mp.Si, mp.Pb))
     pt.plot_dEdx_alpha(mp.air)

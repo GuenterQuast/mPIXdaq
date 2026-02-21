@@ -8,6 +8,7 @@ import matplotlib.pyplot as plt
 
 # ---------------------------------------------------------
 
+
 class material_properties:
     """Collect properties of target materials and projectiles"""
 
@@ -162,14 +163,14 @@ def calc_E_vs_depth(E0, dx, material, z, m):
     Ex = [E0]
     E_curr = E0  # current energy
     dE_last = 0.0
-    while E_curr > 0.1:
+    while E_curr > 0.0:
         _dE = material['rho'] * dEdx(E_curr, material, z, m) * dx
         dE = _dE if _dE > dE_last else dE_last  # avoid problem of simple Bethe-Bloch at low Energies
         dE_last = dE
         if dE > E_curr:
             dE = E_curr
-        Ex += [E_curr]
         E_curr -= dE
+        Ex += [E_curr]  # add to list
     return np.asarray(Ex)
 
 
@@ -235,8 +236,10 @@ def plot_alpha_range(material):
     fig.suptitle(rf"$\alpha$ energy vs. penetration depth in {_mp['name']}")
     xp = [dx * i for i in range(len(Ex))]
     ax1.plot(xp, Ex, color="darkblue")
+    ax1.fill_between(xp, Ex, alpha=0.25)
     ax1.set_ylabel("α energy (MeV)", color="darkblue")
     ax1.set_xlabel("material depth (cm)")
+    ax1.set_ylim(0.0, None)
     # plot deposited energy(bin)
     ax2 = ax1.twinx()
     ax2.bar(xp[:-1], Ex[:-1] - Ex[1:], color="darkred", width=dx * 0.75, alpha=0.5)
@@ -244,8 +247,7 @@ def plot_alpha_range(material):
 
 
 if __name__ == "__main__":  # -------------------------------------------------
-
-# application example
+    # application example
 
     mp = material_properties
     # *** produce graphs
