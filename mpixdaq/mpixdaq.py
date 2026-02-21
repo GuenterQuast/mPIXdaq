@@ -61,8 +61,7 @@ from scipy import ndimage
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 
-# from phypidaq.mplhelpers import run_controlGUI
-from mpixdaq.mplhelpers import run_controlGUI
+from .mplhelpers import run_controlGUI
 
 plt.style.use("dark_background")
 from matplotlib.colors import LogNorm
