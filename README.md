@@ -423,19 +423,26 @@ eco-system for data analysis:
 - `matplotlib`
   - `.pyplot`
 
-The classes and scripts of the package are
+The components, classes and scripts of the package are
 
-- classes: 
-  - `mpixControl`
-  - `miniPIXdaq`
-  - `frameAnalyzer`
-  - `mpixGraphs` 
-    - `bhist`
-    - `scatterplot`
-   - `runDAQ`
-     - `fileDecoders`
+- `mpixdaq` main code handling read-out, data analysis, visualization and storage
+  - classes: 
+    - `mpixControl`
+    - `miniPIXdaq`
+    - `frameAnalyzer`
+    - `mpixGraphs` 
+      - `bhist`
+      - `scatterplot`
+     - `runDAQ`
+      - `fileDecoders`
 
- - package script `run_mPIXdaq.py`
+- `mplhelpers`  graphical interface for mpixdaq control with  matplotlib
+
+- `physics_tools` for calculations of radiation properties  
+
+- package script `run_mPIXdaq.py`
+
+- script `calculate_dEdx` for plotting of radiation properties 
 
 Details on the classes and their interfaces are given below.
 

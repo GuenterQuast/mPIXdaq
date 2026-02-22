@@ -12,6 +12,8 @@ class materials:
 
     # dictionaries of material parameters
 
+    # *** target materials
+
     # --- Silicon
     Si = {}
     Si['Z'] = 14  # atomic number
@@ -53,19 +55,30 @@ class materials:
     air['I'] = 85.7  # mean ionization energy of air (eV)
     air['name'] = r"air"
 
-    # projectiles
-    z_alpha = 2  # charge of alpha
-    m_alpha = 3727.4  # mass of alpha in MeV/c² (4 u)
-    #
-    z_mu = 1  # charge of muon
-    m_mu = 105.658  # mass of muon in MeV/c²
+    # *** projectiles
 
-    # electron
-    z_e = 1
-    m_e = 0.510999  # electron mass in MeV/c²
+    # --- alpha (He nucleus)
+    alpha = {}
+    alpha['z'] = 2
+    alpha['m'] = 3727.4  # mass of alpha in MeV/c² (4 u)
+
+    # --- proton
+    proton = {}
+    proton['z'] = 1
+    proton['m'] = 938.272
+
+    # --- muon
+    muon = {}
+    muon['z'] = 1  # charge of muon
+    muon['m'] = 105.658  # mass of muon in MeV/c²
+
+    # --- electron
+    electron = {}
+    electron['z'] = 1
+    electron['m'] = 0.510999  # electron mass in MeV/c²
 
 
-def dEdx(T, material, z, m):
+def dEdx(T, material, projectile):
     """calculate energy loss in matter ( or "mass stopping power")
     for heavy projectiles and electrons
 
@@ -96,6 +109,9 @@ def dEdx(T, material, z, m):
 
     Z_over_A = material['Z'] / material['A']
     I = material['I'] * 1e-6
+    z = projectile['z']
+    m = projectile['m']
+
     # constants
     m_e = 0.51099895  # MeV (electron mass)
     K = 0.307075  # 4 pi N_A r_e² m_e c²  (MeV*cm^2/mol)
@@ -130,22 +146,20 @@ def calc_pixel_energies(E0, px_size=0.0055):
        px_size: pixel size (cm)
     """
     mp = materials
-    n_px = 0
     E_px = []
     E_x = E0
     while E_x > 0.0:
-        dE = mp.Si['rho'] * dEdx(E_x, mp.Si, mp.z_e, mp.m_e) * px_size
+        dE = mp.Si['rho'] * dEdx(E_x, mp.Si, mp.electron) * px_size
         if dE > E_x:
             dE = E_x
-        n_px += 1
         E_px += [1000.0 * dE]  # in keV
         E_x -= dE
     else:
         return np.asarray(E_px)
 
 
-def calc_E_vs_depth(E0, dx, material, z, m):
-    """calculate alpha energies after penetrating depth x of air
+def calc_E_vs_depth(E0, dx, material, projectile):
+    """calculate particle energies after penetrating depth x of material
     Parameters:
     E0: initial alpha energy
     dx: step width (cm)
@@ -162,8 +176,8 @@ def calc_E_vs_depth(E0, dx, material, z, m):
     E_curr = E0  # current energy
     dE_last = 0.0
     while E_curr > 0.0:
-        _dE = material['rho'] * dEdx(E_curr, material, z, m) * dx
-        dE = _dE if _dE > dE_last else dE_last  # avoid problem of simple Bethe-Bloch at low Energies
+        _dE = material['rho'] * dEdx(E_curr, material, projectile) * dx
+        dE = _dE if _dE > dE_last else dE_last  # avoid problem of simple Bethe-Bloch at low energies
         dE_last = dE
         if dE > E_curr:
             dE = E_curr
@@ -172,73 +186,114 @@ def calc_E_vs_depth(E0, dx, material, z, m):
     return np.asarray(Ex)
 
 
-def plot_dEdx_electron(material):
-    # -- dE/dx * rho Grafik
+def plot_dEdx_electron(material, nbins=100, bw=0.05, axis=None):
+    """plot dE/dx * rho for electrons as a function of energy
+    nbins: number of bins
+    bw: bin width in MeV
+    axis   : figure axis; a new one is created if not given
+
+    returns: matplotlib figure
+    """
     mp = materials
-    bw = 0.05  # steps of 50 keV
-    nb = 100
-    xp = np.linspace(bw, nb * bw, num=nb, endpoint=True) + bw / 2.0
-    fig_dEdx = plt.figure()
+    xp = np.linspace(bw, nbins * bw, num=nbins, endpoint=True) + bw / 2.0
+    if axis is None:
+        fig_dEdx_e = plt.figure("dEdx_electron", figsize=(7.5, 4.0))
+        ax_dEdx_e = fig_dEdx_e.add_subplot()
+        plt.suptitle("Energy loss of electrons (mod. Bethe)")
+    else:
+        ax_dEdx_e = axis
     for _mp in material:
-        plt.plot(xp, dEdx(xp, _mp, mp.z_e, mp.m_e), '-', label=_mp['name'])
+        ax_dEdx_e.plot(xp, dEdx(xp, _mp, mp.electron), '-', label=_mp['name'])
     plt.grid(True)
     plt.legend()
-    plt.suptitle("Energy loss of electrons (mod. Bethe)")
     plt.xlabel("E [MeV]")
     plt.ylabel(r"enery loss  dE/dx$\,$/$\rho$   [MeV$\,$cm²/g]")
 
+    return plt.gcf()
 
-def plot_beta_pixel_energies(E0=1.5, px_size=0.0055):
+
+def plot_beta_pixel_energies(E0=1.5, px_size=0.0055, axis=None):
     """energy deposits per pixel
     E0: initial energy
     px_size: pixel size in cm
+    axis: figure axis; a new one is created if not given
+
+    returns: matplotlib figure
     """
     E_px = calc_pixel_energies(E0, px_size=px_size)
     n_px = len(E_px)
-    fig_px = plt.figure()
-    plt.bar(range(n_px), E_px, color='darkred', alpha=0.5)
+    if axis is None:
+        fig_dE_pixels = plt.figure("dE_pixels", figsize=(7.5, 4.0))
+        ax_de_pixels = fig_dE_pixels.add_subplot()
+        plt.suptitle(f"Energy deposit Si-pixels for {E0:.2f} MeV β tracks", size="large")
+    else:
+        ax_de_pixels = axis
+    ax_de_pixels.bar(range(n_px), E_px, color='darkred', alpha=0.5)
     plt.grid(True)
-    plt.suptitle(f"Energy deposit Si-pixels for {E0:.2f} MeV β tracks", size="large")
     plt.xlabel(f"pixel number ({px_size * 1e4:.0f} µm / pixel)")
     plt.ylabel(r"pixel energy [keV]")
 
+    return plt.gcf()
 
-def plot_dEdx_alpha(material, bw=0.025, nb=200):
-    # dE/dx for alpha particles in air
+
+def plot_dEdx_alpha(material, nbins=200, bw=0.025, axis=None):
+    """dE/dx for alpha particles in air vs. alpha energy
+    material: target material
+    nbins  : number of bins
+    bw     : bin width
+    axis   : figure axis; a new one is created if not given
+
+    returns: matplotlib figure
+    """
     mp = materials
     mn = 0.15  # simple Formula not valid for smaller values
-    xp = np.linspace(0.0, nb * bw, num=nb, endpoint=True) + mn
-    _mp = material
-    plt.figure()
-    plt.plot(xp, _mp['rho'] * dEdx(xp, _mp, mp.z_alpha, mp.m_alpha), '-', label=r"$\alpha$")
-    plt.plot(xp, _mp['rho'] * dEdx(xp, _mp, mp.z_mu, mp.m_mu), '-', label="µ")
+    xp = np.linspace(0.0, nbins * bw, num=nbins, endpoint=True) + mn
+    if axis is None:
+        fig_dEdx_alpha = plt.figure("dEdx_alpha", figsize=(7.5, 4.0))
+        ax_dEdx_alpha = fig_dEdx_alpha.add_subplot()
+        plt.suptitle("Energy loss in air (Bethe-Bloch)")
+    else:
+        ax_dEdx_alpha = axis
+    ax_dEdx_alpha.plot(xp, material['rho'] * dEdx(xp, material, mp.alpha), '-', label=r"$\alpha$")
+    ax_dEdx_alpha.plot(xp, material['rho'] * dEdx(xp, material, mp.muon), '-', label="µ")
     plt.legend()
     plt.grid(True)
-    plt.suptitle("Energy loss in air (Bethe-Bloch)")
     plt.xlabel(" α energy(MeV)")
     plt.ylabel("dE/dx (MeV/cm)")
 
+    return plt.gcf()
 
-def plot_alpha_range(material, E0=6.0, dx=0.050):
+
+def plot_alpha_range(material, E0=6.0, dx=0.050, axis=None):
     """alpha energy after penetration depth in air
-    E0 : initial energy in MeV
-    dx : step width
+    material : target
+    E0       : initial energy in MeV
+    dx       : step width
+    axis     : figure axis; a new one is created if not given
+
+    returns: matplotlib figure
     """
+
     mp = materials
     # calculate energy loss ber bin
-    _mp = material
-    Ex = calc_E_vs_depth(E0, dx, _mp, mp.z_alpha, mp.m_alpha)
-    fig, ax1 = plt.subplots()
-    fig.suptitle(rf"$\alpha$ enery loss & energy vs. penetration depth in {_mp['name']}")
+    Ex = calc_E_vs_depth(E0, dx, material, mp.alpha)
+    if axis is None:
+        fig_alpha_range_air = plt.figure("alpha_range_air", figsize=(7.5, 4.0))
+        ax1_alpha_range = fig_alpha_range_air.add_subplot()
+        plt.suptitle(rf"$\alpha$ energy loss & energy vs. penetration depth in {material['name']}")
+    else:
+        ax1_alpha_range = axis
     xp = [dx * i for i in range(len(Ex))]
     # plot deposited energy(bin)
-    ax1.bar(xp[:-1], Ex[:-1] - Ex[1:], align='edge', color="darkred", width=dx * 0.85, alpha=0.5)
-    ax1.set_ylabel("deposited energy (MeV)", color="darkred")
-    ax1.set_xlabel("material depth (cm)")
+    ax1_alpha_range.bar(xp[:-1], Ex[:-1] - Ex[1:], align='edge', color="darkred", width=dx * 0.85, alpha=0.5)
+    ax1_alpha_range.set_ylabel("deposited energy (MeV)", color="darkred")
+    ax1_alpha_range.set_xlabel("material depth (cm)")
     # plot particle energy
-    ax2 = ax1.twinx()
-    ax2.bar(xp, Ex, color="darkblue", align='edge', width=dx * 0.5, alpha=0.5)
-    ax2.set_ylabel("α energy (MeV)", color="darkblue")
+    ax2_alpha_range = ax1_alpha_range.twinx()
+    ax2_alpha_range.bar(xp, Ex, color="darkblue", align='edge', width=dx * 0.5, alpha=0.5)
+    ax2_alpha_range.set_ylabel("α energy (MeV)", color="darkblue")
+
+    return plt.gcf()
 
 
 if __name__ == "__main__":  # -------------------------------------------------
@@ -247,8 +302,8 @@ if __name__ == "__main__":  # -------------------------------------------------
     mp = materials
     # *** produce graphs
     plot_dEdx_electron((mp.H2O, mp.Si, mp.Pb))
-    plot_dEdx_alpha(mp.air)
     plot_beta_pixel_energies()
+    plot_dEdx_alpha(mp.air)
     plot_alpha_range(mp.air)
 
     #  *** some control printout (just to compare numbers)
@@ -256,12 +311,12 @@ if __name__ == "__main__":  # -------------------------------------------------
     if verbose:
         E0_e = 1.0
         print(f"Energy loss of electrons of {E0_e} MeV in water: ", end='')
-        print(f"dE/dx = {mp.H2O['rho'] * dEdx(E0_e, mp.H2O, 1, mp.m_e):.2f} MeV/cm")
+        print(f"dE/dx = {mp.H2O['rho'] * dEdx(E0_e, mp.H2O, mp.electron):.2f} MeV/cm")
         print(f"                                       in Si: ", end='')
-        _dEdx_e = mp.Si['rho'] * dEdx(E0_e, mp.Si, mp.z_e, mp.m_e)
+        _dEdx_e = mp.Si['rho'] * dEdx(E0_e, mp.Si, mp.electron)
         print(f"dE/dx = {_dEdx_e:.2f} MeV/cm   {_dEdx_e / mp.Si['w_eh'] / 10000:.0f} e-h pairs/µm")
         E0_a = 4.0
-        _dEdx_a = mp.air['rho'] * dEdx(E0_a, mp.air, mp.z_alpha, mp.m_alpha)
+        _dEdx_a = mp.air['rho'] * dEdx(E0_a, mp.air, mp.alpha)
         print(f"                    alphas of {E0_a} MeV in air: {_dEdx_a:.2f} MeV/cm", end='')
         print()
 
