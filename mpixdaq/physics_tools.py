@@ -197,7 +197,7 @@ def plot_dEdx_electron(material, nbins=100, bw=0.05, axis=None):
     mp = materials
     xp = np.linspace(bw, nbins * bw, num=nbins, endpoint=True) + bw / 2.0
     if axis is None:
-        fig_dEdx_e = plt.figure("dEdx_electron", figsize=(7.5, 4.0))
+        fig_dEdx_e = plt.figure("dEdx_electron", figsize=(7.0, 4.5))
         ax_dEdx_e = fig_dEdx_e.add_subplot()
         plt.suptitle("Energy loss of electrons (mod. Bethe)")
     else:
@@ -206,8 +206,8 @@ def plot_dEdx_electron(material, nbins=100, bw=0.05, axis=None):
         ax_dEdx_e.plot(xp, dEdx(xp, _mp, mp.electron), '-', label=_mp['name'])
     plt.grid(True)
     plt.legend()
-    plt.xlabel("E [MeV]")
-    plt.ylabel(r"enery loss  dE/dx$\,$/$\rho$   [MeV$\,$cm²/g]")
+    plt.xlabel("E [MeV]", size='large')
+    plt.ylabel(r"enery loss  dE/dx$\,$/$\rho$   [MeV$\,$cm²/g]", size='large')
 
     return plt.gcf()
 
@@ -223,15 +223,15 @@ def plot_beta_pixel_energies(E0=1.5, px_size=0.0055, axis=None):
     E_px = calc_pixel_energies(E0, px_size=px_size)
     n_px = len(E_px)
     if axis is None:
-        fig_dE_pixels = plt.figure("dE_pixels", figsize=(7.5, 4.0))
+        fig_dE_pixels = plt.figure("dE_pixels", figsize=(7.0, 4.5))
         ax_de_pixels = fig_dE_pixels.add_subplot()
-        plt.suptitle(f"Energy deposit Si-pixels for {E0:.2f} MeV β tracks", size="large")
+        plt.suptitle(f"Energy deposit Si-pixels for {E0:.2f} MeV β tracks", size='large')
     else:
         ax_de_pixels = axis
     ax_de_pixels.bar(range(n_px), E_px, color='darkred', alpha=0.5)
     plt.grid(True)
-    plt.xlabel(f"pixel number ({px_size * 1e4:.0f} µm / pixel)")
-    plt.ylabel(r"pixel energy [keV]")
+    plt.xlabel(f"pixel number ({px_size * 1e4:.0f} µm / pixel)", size='large')
+    plt.ylabel(r"pixel energy [keV]", size='large')
 
     return plt.gcf()
 
@@ -249,7 +249,7 @@ def plot_dEdx_alpha(material, nbins=200, bw=0.025, axis=None):
     mn = 0.15  # simple Formula not valid for smaller values
     xp = np.linspace(0.0, nbins * bw, num=nbins, endpoint=True) + mn
     if axis is None:
-        fig_dEdx_alpha = plt.figure("dEdx_alpha", figsize=(7.5, 4.0))
+        fig_dEdx_alpha = plt.figure("dEdx_alpha", figsize=(7.0, 4.5))
         ax_dEdx_alpha = fig_dEdx_alpha.add_subplot()
         plt.suptitle("Energy loss in air (Bethe-Bloch)")
     else:
@@ -258,8 +258,8 @@ def plot_dEdx_alpha(material, nbins=200, bw=0.025, axis=None):
     ax_dEdx_alpha.plot(xp, material['rho'] * dEdx(xp, material, mp.muon), '-', label="µ")
     plt.legend()
     plt.grid(True)
-    plt.xlabel(" α energy(MeV)")
-    plt.ylabel("dE/dx (MeV/cm)")
+    plt.xlabel(" α energy(MeV)", size='large')
+    plt.ylabel("dE/dx (MeV/cm)", size='large')
 
     return plt.gcf()
 
@@ -278,20 +278,20 @@ def plot_alpha_range(material, E0=6.0, dx=0.050, axis=None):
     # calculate energy loss ber bin
     Ex = calc_E_vs_depth(E0, dx, material, mp.alpha)
     if axis is None:
-        fig_alpha_range_air = plt.figure("alpha_range_air", figsize=(7.5, 4.0))
+        fig_alpha_range_air = plt.figure("alpha_range_air", figsize=(7.0, 4.5))
         ax1_alpha_range = fig_alpha_range_air.add_subplot()
         plt.suptitle(rf"$\alpha$ energy loss & energy vs. penetration depth in {material['name']}")
     else:
         ax1_alpha_range = axis
     xp = [dx * i for i in range(len(Ex))]
-    # plot deposited energy(bin)
-    ax1_alpha_range.bar(xp[:-1], Ex[:-1] - Ex[1:], align='edge', color="darkred", width=dx * 0.85, alpha=0.5)
-    ax1_alpha_range.set_ylabel("deposited energy (MeV)", color="darkred")
-    ax1_alpha_range.set_xlabel("material depth (cm)")
     # plot particle energy
+    ax1_alpha_range.bar(xp, Ex, color="darkblue", align='edge', width=dx * 0.5, alpha=0.5)
+    ax1_alpha_range.set_ylabel("α energy (MeV)", color="darkblue", size='large')
+    ax1_alpha_range.set_xlabel("material depth (cm)", size='large')
+    # plot deposited energy(bin)
     ax2_alpha_range = ax1_alpha_range.twinx()
-    ax2_alpha_range.bar(xp, Ex, color="darkblue", align='edge', width=dx * 0.5, alpha=0.5)
-    ax2_alpha_range.set_ylabel("α energy (MeV)", color="darkblue")
+    ax2_alpha_range.bar(xp[:-1], Ex[:-1] - Ex[1:], align='edge', color="darkred", width=dx * 0.85, alpha=0.5)
+    ax2_alpha_range.set_ylabel("deposited energy (MeV)", color="darkred", size='large')
 
     return plt.gcf()
 

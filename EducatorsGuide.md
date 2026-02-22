@@ -338,11 +338,11 @@ measured, which is a clear advantage of the *miniPIX*.
 The expected behavior of the measured  α energies as a function of the depth of
 penetrated air, as determined with *calculate_dEdx.py*, is shown in the figure below.
 
-  > ![α energy as a function of the penetration depth in air](images/alpha_energy_vs_depth.png)
+![α energy as a function of the penetration depth in air](images/alpha_range_air.png)
 
- The loss rises at the end of the α reach when the particles become very slower. 
- This behavior illustrates the Bragg peak of the deposited energy, which is relevant 
- for radiation therapy. 
+ The energy loss, equivalent to the deposited energy, is shown in red; it rises at 
+ the end of the α reach when the particles become slower. This behavior illustrates 
+ the Bragg peak of the deposited energy, which is relevant for radiation therapy. 
 
 
 ### Measurement the energy loss of β radiation.  
@@ -360,7 +360,7 @@ the electrons become slow. Expected is an average energy deposition of of about
 some ten keV for electrons with kinetic energies below 100 keV, as shown in the
 following figure (calculated with *calculate_dEdx.py* using a modified Bethe Formula).
 
-  > ![Energy deposit per pixel for β particles](images/beta-dE_per_pixel.png) 
+  > ![Energy deposit per pixel for β particles](images/dE_pixels.png) 
 
 In this experiment, the silicon is the recording medium and the absorber at 
 the same time, and therefore no additional absorber materials are needed. 

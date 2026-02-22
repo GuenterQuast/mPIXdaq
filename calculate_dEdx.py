@@ -14,24 +14,25 @@ import mpixdaq.physics_tools as pt
 if __name__ == "__main__":  # -------------------------------------------------
     mp = pt.materials
 
+    fsize = (7.0, 4.5)
     # *** produce graphs
-    _fig = plt.figure("dEdx_electron", figsize=(6.0, 3.5))
+    _fig = plt.figure("dEdx_electron", figsize=fsize)
     ax_dEdx_e = _fig.add_subplot()
     plt.suptitle("Energy loss of electrons (mod. Bethe)")
     fig_dEdx_e = pt.plot_dEdx_electron((mp.H2O, mp.Si, mp.Pb), axis=ax_dEdx_e)
 
-    _fig = plt.figure("dEdx_alpha", figsize=(6.0, 3.5))
+    _fig = plt.figure("dEdx_alpha", figsize=fsize)
     ax_dEdx_alpha = _fig.add_subplot()
     plt.suptitle(rf"$\alpha$ energy loss & energy vs. penetration depth in air")
     fig_dEdx_alpha = pt.plot_dEdx_alpha(mp.air, axis=ax_dEdx_alpha)
 
-    _fig = plt.figure("dE_pixels", figsize=(6.0, 3.5))
+    _fig = plt.figure("dE_pixels", figsize=fsize)
     ax_dE_pixels = _fig.add_subplot()
     E0 = 1.0
     plt.suptitle(f"Energy deposit Si-pixels for {E0:.2f} MeV β tracks", size="large")
     fig_dE_pixels = pt.plot_beta_pixel_energies(E0, axis=ax_dE_pixels)
 
-    _fig = plt.figure("alpha_range_air", figsize=(6.0, 3.5))
+    _fig = plt.figure("alpha_range_air", figsize=fsize)
     ax_alpha_range = _fig.add_subplot()
     plt.suptitle("Energy loss of α in air (Bethe-Bloch)")
     fig_alpha_range_air = pt.plot_alpha_range(mp.air, axis=ax_alpha_range)
