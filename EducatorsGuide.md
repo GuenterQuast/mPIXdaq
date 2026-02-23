@@ -293,14 +293,46 @@ it thus becomes possible to learn about and use computer-based methods
 to study in detail the properties of energy depositions by different
 types of particles. 
 
+*mPIXdaq* performs an online analysis of recorded data frames and presents
+the results as animated histograms. The cluster properties can also 
+be written to disk for later in-depth analysis.
+
+In a first step, connected areas of pixels, i.e. clusters, are determined 
+in each recorded frame using the *label()* method of the image-processing 
+library *scipy.ndimage". Such clusters represent exactly the signatures 
+of α, β and γ particles shown above. 
+
+The main features of of each cluster are the mean position in pixel coordinates, 
+the number of pixels and the sum of all pixel energies. 
+Further interesting features are the geometrical shape of the cluster area and 
+of the energy distribution over the pixels.
+
+To characterize the geometrical shape, the covariance matrix of the pixel 
+coordinates, $cov(x_i, y_i)$ is used. Stored are the half-lengths of the 
+principal axes (or the semi-major and semi-minor axes) and the angular 
+orientation of the principal axis of the covariance ellipses of the clusters. 
+Almost identical values of the half-length classify a circular geometry, 
+while largely different values are characteristic of liner geometries. 
+This already provides a good separation of α and β particles.
+
+A further, very sensitive variable is the covariance of the energy distribution
+in the clusters, $cov(E(x_i, y_i))$. For α particles, this distribution peaks 
+at the centre and steeply falls off towards the boundary, leading to a small
+variance. The properties of the covariance ellipses of the energy distribution
+are stored analogous to those of the geometrical ellipses.  A small ratio of 
+the lengths of the semi-major axes of the two ellipses is a very prominent 
+signature of α particles.
+
+Optionally, in addition to the cluster properties, a list of contributing pixels
+for each cluster can be stored  for more sophisticated off-line analysis. 
+
 As a starting point, the *mPIXdaq* package offers a *Jupyter Notebook*,
-*analyze_mPIXclusters.ipynb* for use with a local or remote jupyter service.
+*analyze_mPIXclusters.ipynb* for use with a local or remote *Jupyter* service.
 In standard *Python* environments, such a server can easily be set-up, as is
 documented on the project homepage [jupyter .org](https://jupyter.org/).
-
-The analysis example shows how to read the different file formats and 
-also provides examples of simple analyses. The code relies on the
-[pandas](https://pandas.pydata.org/) package which has become a 
+The analysis example provided as part of the *mPIXdaq* package shows how to 
+read the output files and also provides a sample analysis. The code relies
+on the [pandas](https://pandas.pydata.org/) package which has become a 
 well-established standard in data science for the analysis of large datasets. 
 
 ??? more on the jupyter notebook ???
