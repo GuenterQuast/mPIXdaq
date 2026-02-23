@@ -127,7 +127,7 @@ class mpixControl:
 
     # define control method
     kbd_control = True
-    gui_control = True
+    gui_control = False
 
     @staticmethod
     def keyboard_input():
@@ -1431,7 +1431,7 @@ class runDAQ:
         parser.add_argument('-b', '--badpixels', type=str, default='', help='file with bad pixels to mask')
         parser.add_argument('--kbdControl', action='store_true', default=True, help='switch on keyboard contol (on)')
         parser.add_argument('--no-kbdControl', dest='kbdControl', action='store_false', help='switch off keyboard control')
-        parser.add_argument('--guiControl', action='store_true', default=True, help='switch on gui control')
+        parser.add_argument('--guiControl', action='store_true', default=False, help='switch on gui control')
         parser.add_argument('--no-guiControl', dest='guiControl', action='store_false', help='switch off gui control')
 
         args = parser.parse_args()

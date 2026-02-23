@@ -103,6 +103,7 @@ def dEdx(T, material, projectile):
       - pure Bethe loss decreases below 0.4 MeV and becomes even negative
         below 0.15 MeV for alpha particles in air; this can be fixed by adding
         Barkas corrections, which are, however, not implemented here
+      - empirical cut-off to avoid negative values of energy loss at small T
 
     -  modified Bethe-Bloch equation for electrons, ICRU Report 37 (1984).
     """
@@ -116,10 +117,10 @@ def dEdx(T, material, projectile):
     m_e = 0.51099895  # MeV (electron mass)
     K = 0.307075  # 4 pi N_A r_e² m_e c²  (MeV*cm^2/mol)
     # relativistic parameters
-    tau = T / m  # Kinetic energy in units of projectile mass
+    tau = np.maximum(T / m, 1.14e-4)  # kinetic energy in units of projectile mass with cut-off
     gamma = tau + 1  # Lorentz factor
     gamma2 = gamma**2
-    beta2 = 1 - 1 / gamma2  # Velocity squared (v/c)^2
+    beta2 = 1.0 - 1.0 / gamma2  # Velocity squared (v/c)^2
     C = K * Z_over_A * z**2 / beta2
 
     if m > 0.55:  #  Bethe-Bloch relation for heavy projectiles (m_alpha, m_p or m_µ >> m_e)
