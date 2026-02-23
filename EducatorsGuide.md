@@ -45,7 +45,10 @@ sciences and for medical applications.
 
 The affordable miniPIX (EDU) variant from [Advacam](https://advacam.com/camera/minipix-edu/) 
 is based on the [*Timepix*](https://home.cern/tags/timepix) hybrid silicon pixel 
-device developed at CERN. 
+device developed at CERN by the Medipix collaboration. More details on the detector
+and its diverse applications may be found in the [Medipix CERN brochure](
+https://cds.cern.ch/record/2730889/files/CERN-Brochure-2015-007-Eng.pdf).
+
 Thanks to the USB interface and the availability of a user program and drivers for
 various platforms, the detector is easy  to use and allows data analysis in real-time. 
 It is particularly useful to interactively investigate the properties and interactions 
