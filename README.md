@@ -179,36 +179,16 @@ format can be used as an input to this software package.
 Data analysis consists of clustering of pixels in each frame and
 determination of cluster parameters, like the number of pixels, energy
 of clusters, and the shapes of the cluster areas and of the energy 
-distribution over the pixels in the clusters.
-
-The shape of the cluster area is encoded in a quantity called circularity. 
-For discrimination between linear and round clusters, a cut is controlled 
-by the parameter `circularity_cut` ranging from 0. for perfectly linear 
-to 1. for perfectly circular clusters. Technically, the covariance matrix 
-of the cluster area is calculated, and the circularity is defined as the 
-square root of the ratio of the smaller and the larger of the two eigenvalues 
-of the covariance matrix. This simple procedure already provides a good
-separation of α and β particles and of isolated pixels not assigned
-to clusters. The latter ones have a high probability of being produced in
-interactions of γ radiation (keV-photons), while electrons from β radiation 
-or from γ interactions produce long traces. α particles produce large,
-circular clusters due to their very high ionization loss in the
-detector material.  
-
-A further, very sensitive variable is the variance of the energy distribution
-in the clusters. For α particles, this distribution peaks at the centre and
-steeply falls off towards the boundary, leading to a very small variance.
-A small ratio of the variances of the energy distribution and of the area
-covered by pixels is therefore a very prominent signature of α particles.
-The cut separating peaking and flat signatures is controlled by the parameter
-`flatness` with values between 0 and 1. 
+distribution over the pixels in the clusters. Details about the parameters,
+used, "circularity" and "flatness", and the algorithms to determine them 
+are given in the *EducatorsGuide* that is part of this package. 
 
 Properties of clusters, including a list of contributing pixels and
 their energy values,  are optionally written to a file in *yaml* format
-(file extension `.yml`) for later off-line analysis. A more compact version 
+(file extension +.yml*) for later off-line analysis. A more compact version 
 in *.csv* format, containing just the cluster properties, is also available.  
 A *Jupyter* notebook, *analyze_mPIXclusters.ipynb*, illustrates an example 
-analysis based on such file formats.
+analysis based on these file formats.
 
 To test the software without access to a *miniPIX* device or without
 a radioactive source, a file with recorded data is provided. Use the
@@ -249,6 +229,7 @@ dead-time of 50%. The number of objects per frame should not exceed about
 of 2000 particles/s can be handled, which is clearly sufficient for most 
 laboratory experiments with rather weak radioactive sources that comply 
 with radiation protection regulations. 
+
 Read-out of the miniPIX is fastest in callback mode, when the driver 
 is initialized to call a function for data retrieval whenever a new 
 frame is ready to be transferred. To receive *acq_count* frames, only

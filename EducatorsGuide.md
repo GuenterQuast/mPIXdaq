@@ -206,7 +206,6 @@ to electrons via photo-effect are also possible in rare cases.
 
 > ![α, β and γ signatures in *miniPIX* frames](images/alpha-beta-gamma.png)
 
-
 A **thin plastic foil as absorber** leads to complete suppression of all α 
 and of low-energy β signatures. As becomes clear from the image shown below, 
 the rate of recorded objects is significantly reduced, and the typical 
@@ -284,20 +283,19 @@ single pixels is shown below.
 *mPIXdaq* allows highly selective recording of special cluster types, thus
 strongly discriminating the desired signatures against backgrounds. 
 
+
 ## Digital analysis of recorded data  
 
+*mPIXdaq* performs an online analysis of recorded data frames and presents
+the results as animated histograms. 
 Raw or clustered frame data as well as cluster properties in simple 
-*.csv* format can be created wit *mPIXdaq* and stored on disk for 
+*.csv* format can be created with *mPIXdaq* and stored on disk for 
 subsequent analysis. In addition to the very beneficial visual impression 
 it thus becomes possible to learn about and use computer-based methods 
 to study in detail the properties of energy depositions by different
 types of particles. 
 
-*mPIXdaq* performs an online analysis of recorded data frames and presents
-the results as animated histograms. The cluster properties can also 
-be written to disk for later in-depth analysis.
-
-In a first step, connected areas of pixels, i.e. clusters, are determined 
+In a first step, connected areas of pixels, called clusters, are determined 
 in each recorded frame using the *label()* method of the image-processing 
 library *scipy.ndimage". Such clusters represent exactly the signatures 
 of α, β and γ particles shown above. 
@@ -313,27 +311,32 @@ principal axes (or the semi-major and semi-minor axes) and the angular
 orientation of the principal axis of the covariance ellipses of the clusters. 
 Almost identical values of the half-length classify a circular geometry, 
 while largely different values are characteristic of liner geometries. 
-This already provides a good separation of α and β particles.
+The ratio of the two quantifies the "circularity" of the cluster, which 
+already provides a good separation of α and β particles.
 
 A further, very sensitive variable is the covariance of the energy distribution
 in the clusters, $cov(E(x_i, y_i))$. For α particles, this distribution peaks 
 at the centre and steeply falls off towards the boundary, leading to a small
 variance. The properties of the covariance ellipses of the energy distribution
 are stored analogous to those of the geometrical ellipses.  A small ratio of 
-the lengths of the semi-major axes of the two ellipses is a very prominent 
-signature of α particles.
+the lengths of the semi-major axes of the two ellipses, called "flatness",
+is a very prominent signature of α particles.
 
 Optionally, in addition to the cluster properties, a list of contributing pixels
-for each cluster can be stored  for more sophisticated off-line analysis. 
+for each cluster can be stored for more sophisticated off-line analysis. 
 
-As a starting point, the *mPIXdaq* package offers a *Jupyter Notebook*,
-*analyze_mPIXclusters.ipynb* for use with a local or remote *Jupyter* service.
-In standard *Python* environments, such a server can easily be set-up, as is
-documented on the project homepage [jupyter .org](https://jupyter.org/).
+As a starting point for own analyses, the *mPIXdaq* package offers a 
+*Jupyter Notebook*, *analyze_mPIXclusters.ipynb* for use with a local or 
+remote *Jupyter* service. In standard *Python* environments, such a server can 
+easily be set-up, as is documented on the project homepage 
+[jupyter .org](https://jupyter.org/).
 The analysis example provided as part of the *mPIXdaq* package shows how to 
 read the output files and also provides a sample analysis. The code relies
 on the [pandas](https://pandas.pydata.org/) package which has become a 
 well-established standard in data science for the analysis of large datasets. 
+
+The code provided can easily extended to efficiently select α, β and γ 
+signatures, count their rates and determine their energy spectra. 
 
 ??? more on the jupyter notebook ???
 
@@ -352,22 +355,26 @@ also be studied.
 
 To support quantitative experiments, a simple script `calculate_dEdx.py` 
 for the determination of the specific energy losses (dE/dx) of electrons 
-and alpha-particles in air and silicon is provided with this package.
-The presently most authoritative information source are the tabulated data 
-by NIST on energy losses of electrons, photons and Helium nuclei (ESTAR,
-ASTAR and PStar), see [NIST Standard Reference Database](
+and alpha-particles in air and silicon is provided with this package. 
+
+The calculated energy deposits are based on modified versions of the Bethe-Bloch
+relation for the energy loss of charged particles in matter and represent
+reasonable approximations. The presently most authoritative information source 
+are the tabulated data by NIST on energy losses of electrons, photons and 
+Helium nuclei (ESTAR, ASTAR and PStar), see [NIST Standard Reference Database](
 https://www.nist.gov/pml/stopping-power-range-tables-electrons-protons-and-helium-ions).
   
- 
- A selection of (tested) experiments is described in the sub-chapters below.
+
+ A selection of (tested) experiments with the *miniPIX* detector and the *mPIXdaq*
+ package is described in the sub-chapters below.
 
 
 ### Penetration depth of α particles in air  
 
 The **penetration depth** of α particles in air and the determination of the 
 energy loss can be directly determined with the *miniPIX* by replacing the
-detector in a existing setup. With the *mPIXdaq* package, signatures of α 
-particles can be detected without any backgrounds and their energies can be 
+existing detector in a existing setup. With the *mPIXdaq* package, signatures of
+α particles can be detected without any backgrounds and their energies can be 
 measured, which is a clear advantage of the *miniPIX*. 
 
 The expected behavior of the measured  α energies as a function of the depth of
@@ -375,19 +382,22 @@ penetrated air, as determined with *calculate_dEdx.py*, is shown in the figure b
 
 ![α energy as a function of the penetration depth in air](images/alpha_range_air.png)
 
- The energy loss, equivalent to the deposited energy, is shown in red; it rises at 
- the end of the α reach when the particles become slower. This behavior illustrates 
- the Bragg peak of the deposited energy, which is relevant for radiation therapy. 
+ The energy loss per 0,5 mm traversed length of air, equivalent to the deposited energy, 
+ is shown in red; it rises by almost a factor of four at the end of the α reach when the
+particles become very slow. This behavior illustrates  the Bragg peak of the deposited
+energy, which is relevant for radiation therapy. 
+
+!!! Overlay *miniPIX* measurements   !!!
 
 
-### Measurement the energy loss of β radiation.  
+### Measurement of the energy loss of β radiation.  
 
 The energy loss of β radiation in matter can be directly studied with the *mimniPIX*
 by considering the silicon of the pixels as the absorbing material. 
 The energy deposited in the pixels along a β track thus directly shows the energy 
-loss of  electrons (dE/dx) along the trace. Because the energy decreases, this can
-be reinterpreted as a measurement of the energy dependence of the specific ionization
-loss in silicon. 
+loss of  electrons (dE/dx) along the trace. Because the β energy decreases while
+traversing the silicon,, this represents a measurement of the energy dependence 
+of the specific ionization loss in silicon. 
 
 The energy loss per pixel shows a strong increase at the end of the tracks where 
 the electrons become slow. Expected is an average energy deposition of of about 
@@ -401,14 +411,16 @@ In this experiment, the silicon is the recording medium and the absorber at
 the same time, and therefore no additional absorber materials are needed. 
 If studies of the absorption properties of different materials are desired, 
 absorbers may be placed in front of the detector - which then only counts 
-the arriving electrons and measures their energies in case the track is fully 
+the arriving electrons and measures their energies in case the tracks are fully 
 contained in the sensitive volume. Such signatures are possible when the electron 
 tracks are scattered such that they remain within the 300µm tick sensitive volume. 
 Signatures of this kind may be selected by detecting the rise of the deposited 
 energy per pixel at the end of the track. 
 
+!!! show the measured  energies per pixel for long, straight β traces !!!
 
-#### collection of further ideas
+
+### Collection of further ideas
 
 - change **β incidence angle** to demonstrate the effect of the track length
   in the sensitive volume on the deposited energy. 
