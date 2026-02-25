@@ -37,6 +37,11 @@ if __name__ == "__main__":  # -------------------------------------------------
     plt.suptitle("Energy loss of α in air (Bethe-Bloch)")
     fig_alpha_range_air = pt.plot_alpha_range(mp.air, axis=ax_alpha_range)
 
+    _fig = plt.figure("alpha_range_Si", figsize=fsize)
+    ax_alpha_range = _fig.add_subplot()
+    plt.suptitle("Energy loss of α in Si (Bethe-Bloch)")
+    fig_alpha_range_air = pt.plot_alpha_range(mp.Si, dx=1e-4, axis=ax_alpha_range)
+
     #  *** some control printout (just to compare numbers)
     verbose = 1
     if verbose:

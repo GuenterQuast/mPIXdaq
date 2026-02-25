@@ -213,7 +213,7 @@ def plot_dEdx_electron(material, nbins=100, bw=0.05, axis=None):
     return plt.gcf()
 
 
-def plot_beta_pixel_energies(E0=1.5, px_size=0.0055, axis=None):
+def plot_beta_pixel_energies(E0=1.0, px_size=0.0055, axis=None):
     """energy deposits per pixel
     E0: initial energy
     px_size: pixel size in cm
@@ -238,7 +238,7 @@ def plot_beta_pixel_energies(E0=1.5, px_size=0.0055, axis=None):
 
 
 def plot_dEdx_alpha(material, nbins=200, bw=0.025, axis=None):
-    """dE/dx for alpha particles in air vs. alpha energy
+    """dE/dx for alpha  particles in material vs. energy
     material: target material
     nbins  : number of bins
     bw     : bin width
@@ -250,9 +250,9 @@ def plot_dEdx_alpha(material, nbins=200, bw=0.025, axis=None):
     mn = 0.15  # simple Formula not valid for smaller values
     xp = np.linspace(0.0, nbins * bw, num=nbins, endpoint=True) + mn
     if axis is None:
-        fig_dEdx_alpha = plt.figure("dEdx_alpha", figsize=(7.0, 4.5))
+        fig_dEdx_alpha = plt.figure(f"dEdx_{material['name']}", figsize=(7.0, 4.5))
         ax_dEdx_alpha = fig_dEdx_alpha.add_subplot()
-        plt.suptitle("Energy loss in air (Bethe-Bloch)")
+        plt.suptitle(f"Energy loss of alphas in {material['name']} (Bethe-Bloch)")
     else:
         ax_dEdx_alpha = axis
     ax_dEdx_alpha.plot(xp, material['rho'] * dEdx(xp, material, mp.alpha), '-', label=r"$\alpha$")
