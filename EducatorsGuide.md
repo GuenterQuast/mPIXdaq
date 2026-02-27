@@ -284,7 +284,7 @@ single pixels is shown below.
 strongly discriminating the desired signatures against backgrounds. 
 
 
-## Digital analysis of recorded data  
+## Analysis of recorded data  
 
 *mPIXdaq* performs an online analysis of recorded data frames and presents
 the results as animated histograms. 
@@ -327,16 +327,46 @@ for each cluster can be stored for more sophisticated off-line analysis.
 
 As a starting point for own analyses, the *mPIXdaq* package offers a 
 *Jupyter Notebook*, *analyze_mPIXclusters.ipynb* for use with a local or 
-remote *Jupyter* service. In standard *Python* environments, such a server can 
-easily be set-up, as is documented on the project homepage 
+remote *Jupyter* service. In standard *Python* environments, such a server
+can easily be set-up, as is documented on the project homepage 
 [jupyter .org](https://jupyter.org/).
 The analysis example provided as part of the *mPIXdaq* package shows how to 
 read the output files and also provides a sample analysis. The code relies
 on the [pandas](https://pandas.pydata.org/) package which has become a 
 well-established standard in data science for the analysis of large datasets. 
 
-The code provided can easily extended to efficiently select α, β and γ 
-signatures, count their rates and determine their energy spectra. 
+The following variables are derived for each pixel cluster during online-processing:
+
+['time', 'x_mean', 'y_mean', 'n_pix', 'energy', 'var_mx', 'var_mn', 'angle', 'xE_mean', 'yE_mean', 'varE_mx', 'varE_mn']
+
+    time    : time since start of daq when frame was recorded
+    x_mean  : mean x-position of cluster (in pixel numbers)
+    y_mean  : mean y-position of cluster (in pixel numbers)
+    n_pix   : number of pixels in cluster
+    energy  : energy of cluster (= sum of pixel energies) in keV
+    var_mx  : maximum variance of geometrical cluster shape (in pixels)
+    var_mn  : minimum variance of geometrical cluster shape (in pixels)
+    angle   : orientation of cluster (0 = along x-axis, pi/2 = along y-axis)
+    xE_mean : mean x of energy distribution  (in pixel numbers)
+    yE_mean : mean y of energy distribution  (in pixel numbers)
+    varE_mx : maximum variance of energy distribution  
+    varE_mn : minimum variance of energy distribution 
+
+This set of variables permits very detailed studies of the properties of 
+energy deposits in the *miniPIX* and deeper insights into the underlying
+physical principles. An almost perfect separation between the different
+types of radiation becomes possible and permits background-free selections
+of α and β traces, counting their rates and the determination of energy
+spectra of α particles.
+
+*untested idea, to be workded out*:
+
+As a further option, cluster data stored in *.yaml* format contains
+the positions and energies of all contributing pixels, and it becomes
+possible identify β tracks that are stopped in the active volume of
+the detector by using the large enhancement of the deposited energy
+when the electrons come to rest in the material. Explicitely selecting
+such tracks opens up some limited possibilities for β spectroscopy. 
 
 ??? more on the jupyter notebook ???
 
