@@ -19,5 +19,6 @@
   - run time (-t option) now refers to live time (not wall-clock time)
   - added an educator's guide
   - added library physics_tool to calculate energy deposits in matter
+  - some additions (dE/dx studies) in Jupyter notebook
   
 
