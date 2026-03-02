@@ -645,7 +645,7 @@ class frameAnalyzer:
             ( (x, y), n_pix, energy, (var_mx, var_mn), angle, (xEm, yEm), (varE_mx, varE_mn) )
 
           - self.pixel_lists: list of pixel indices contributing to each cluster, where
-             pixel index is x + y
+             pixel index is x + 256 * y
 
         self.cluster_pxl_lst is a list of dimension n_clusters + 1 and contains the pixel
         indices contributing to each of the clusters. self.cluster_pxl_lst[-1] contains
