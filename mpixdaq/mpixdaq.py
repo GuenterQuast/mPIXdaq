@@ -792,10 +792,12 @@ class mpixGraphs:
         self.axim.set_ylabel("# y             ", loc="top")
         self.axim.set_frame_on(False)  # no default frame around graph
         if badpixel_map is not None:
-            _ = self.axim.imshow(badpixel_map, origin="lower", cmap='gray', vmax=10.0)
+            _ = self.axim.imshow(badpixel_map, origin="lower", cmap='gray', vmax=10.0, extent=[0, self.npx, 0, self.npx])
         self.vmin, vmax = 0.5, 500
-        self.img = self.axim.imshow(np.zeros((self.npx, self.npx)), origin="lower", cmap='hot', norm=LogNorm(vmin=self.vmin, vmax=vmax))
-        cbar = self.fig.colorbar(self.img, shrink=0.6, aspect=40, pad=-0.0375)
+        self.img = self.axim.imshow(
+            np.zeros((self.npx, self.npx)), origin="lower", cmap='hot', norm=LogNorm(vmin=self.vmin, vmax=vmax), extent=[0, self.npx, 0, self.npx]
+        )
+        cbar = self.fig.colorbar(self.img, shrink=0.6, aspect=40, pad=0.0075)
         self.img.set_clim(vmin=self.vmin, vmax=vmax)
         # cbar.set_label("Energy " + unit, loc="top", labelpad=-5
         txt_overlay = f"overlay of {int(self.n_overlay)} frames"
@@ -810,9 +812,9 @@ class mpixGraphs:
         _rect = mpl.patches.Rectangle((0, 0), self.npx, self.npx, linewidth=1, edgecolor=col_geom, facecolor='none')
         self.axim.add_patch(_rect)
         #  show detector dimension in mm
-        self.axim.arrow(146, 261.0, 110.0, 0, length_includes_head=True, width=1.5, color=col_geom)
-        self.axim.arrow(110, 261.0, -110.0, 0, length_includes_head=True, width=1.5, color=col_geom)
-        self.axim.text(113.0, 259, f"{size:.2f} mm")
+        self.axim.arrow(146, 259.5, 110.0, 0, length_includes_head=True, width=1.5, color=col_geom)
+        self.axim.arrow(110, 259.5, -110.0, 0, length_includes_head=True, width=1.5, color=col_geom)
+        self.axim.text(113.0, 258, f"{size:.2f} mm")
         #    2nd x-axis in mm
         axim_x2 = self.axim.secondary_xaxis(0.935, functions=(px2x, x2px))
         axim_x2.set_frame_on(False)
