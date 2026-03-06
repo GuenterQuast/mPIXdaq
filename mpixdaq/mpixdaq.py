@@ -1819,7 +1819,7 @@ class runDAQ:
                     print(stat, end="\r")
                 if mpixControl.gui_control:
                     mpixControl.statQ.put(stat)
-            else:  # normal end of end of while
+            else:  # normal end of while
                 if not mpixControl.mplActive.is_set():
                     mpixControl.runActive.clear()
                     print("\033[36m\n" + 20 * ' ' + " Graphics window closed, tpye <ret> ")
@@ -1838,8 +1838,10 @@ class runDAQ:
         except KeyboardInterrupt:
             print("\n keyboard interrupt ")
         except StopIteration:
+            mpixControl.runActive.clear()
             print("\033[36m\n" + 25 * ' ' + "'end-of-file reached, type <ret> ", end='')
         except Exception as e:
+            mpixControl.runActive.clear()
             print("\n exception in daq loop: ", str(e))
 
         finally:  # end everything cleanly
@@ -1859,14 +1861,20 @@ class runDAQ:
                 print("... #end", file=self.out_file_yml)  # footer line
                 self.out_file_yml.flush()
                 self.out_file_yml.close()
+                if self.verbosity > 1:
+                    print("*== yml output file closed")
             if self.csvfile is not None:
                 self.csvfile.flush()
                 self.csvfile.close()
+                if self.verbosity > 1:
+                    print("*== csv output file closed")
             if self.clusterfile is not None:
                 print(yaml.dump(eor_dict), file=self.clusterfile)
                 print("... #end", file=self.clusterfile)  # footer line
                 self.clusterfile.flush()
                 self.clusterfile.close()
+                if self.verbosity > 1:
+                    print("*== cluster output file closed")
 
             time.sleep(1.5)  # give time for processes to finish
             if self.read_filename is None:
