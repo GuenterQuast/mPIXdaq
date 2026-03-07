@@ -359,16 +359,16 @@ types of radiation becomes possible and permits background-free selections
 of α and β traces, counting their rates and the determination of energy
 spectra of α particles.
 
-*untested idea, to be workded out*:
+*untested idea, to be worked out*:
 
 As a further option, cluster data stored in *.yaml* format contains
 the positions and energies of all contributing pixels, and it becomes
 possible identify β tracks that are stopped in the active volume of
 the detector by using the large enhancement of the deposited energy
-when the electrons come to rest in the material. Explicitely selecting
+when the electrons come to rest in the material. Explicitly selecting
 such tracks opens up some limited possibilities for β spectroscopy. 
 
-??? more on the jupyter notebook ???
+??? more on the Jupyter notebook ???
 
 
 ## Advanced topics for university lab courses
@@ -443,11 +443,21 @@ If studies of the absorption properties of different materials are desired,
 absorbers may be placed in front of the detector - which then only counts 
 the arriving electrons and measures their energies in case the tracks are fully 
 contained in the sensitive volume. Such signatures are possible when the electron 
-tracks are scattered such that they remain within the 300µm tick sensitive volume. 
+tracks are scattered such that they remain within the 300µm thick sensitive volume. 
 Signatures of this kind may be selected by detecting the rise of the deposited 
 energy per pixel at the end of the track. 
 
-!!! show the measured  energies per pixel for long, straight β traces !!!
+An example of such a long trace of a β particle is shown in the pixel energy 
+map below. 
+
+  > ![Long β track](images/long_beta-track.png) 
+
+The image was produced with the *Jupyter* notebook *analyze_mPIXclusters* and 
+the function *plot_cluster()* from *mpixdaq.mpixhelpers* by selecting non-α 
+tracks with a large number of pixels. The track enters the detector from the 
+top-left and then loses a constant amount of energy in each pixel as it traverses
+the sensitive silicon volume and finally stops in the lower-left corner, where
+the energy deposit per pixel increases, exactly as expected. 
 
 
 ### Collection of further ideas
