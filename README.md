@@ -49,10 +49,11 @@ a logarithmic color scale representing the deposited energy in each
 pixel. 
 
 The analysis of the recorded signals, i.e. clustering of pixels, energy
-determination and visualization, is achieved with standard open-source
-tools for data analysis. It is therefore well-suited to provide high-school
-or university students with detailed insights into principles of the interaction
-of radiation with matter and to enable them to carry out their own studies.
+determination and visualization, is achieved by means of standard open-source
+tools for data analysis. The *mPIXdaq* package is therefore well-suited for 
+high-school or university students to gain detailed insights into the principles 
+of the interaction of different types of radiation with matter and to carry 
+out their own studies by analyzing data recorded during lab courses.
 
 
 ## Getting ready for data taking

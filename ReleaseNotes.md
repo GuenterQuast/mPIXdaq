@@ -20,5 +20,7 @@
   - added an educator's guide
   - added library physics_tool to calculate energy deposits in matter
   - some additions (dE/dx studies) in Jupyter notebook
+  - added module mpixhelpers and moved fileDecoders, bhist and scatterplot
+ 
   
 

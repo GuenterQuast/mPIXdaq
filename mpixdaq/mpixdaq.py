@@ -61,7 +61,8 @@ from scipy import ndimage
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 
-from .mplhelpers import run_controlGUI
+from .mplhelpers import bhist, scatterplot, run_controlGUI
+from .mpixhelpers import fileDecoders
 
 plt.style.use("dark_background")
 from matplotlib.colors import LogNorm
@@ -1014,382 +1015,6 @@ class mpixGraphs:
             self.dt_last_plot = dt_active
 
 
-#   helper classes and functions for histogramming
-class bhist:
-    """one-dimensional histogram for animation, based on bar graph
-    supports multiple classes as stacked histogram
-
-    Args:
-        * data: tuple of arrays to be histogrammed
-        * bindeges: array of bin edges
-        * xlabel: label for x-axis
-        * ylabel: label for y axis
-        * xscale: "linear" or "log" x-scale
-        * yscale: "linear" or "log" y-scale
-        * labels: labels for classes
-        * colors: colors corresponding to labels
-    """
-
-    def __init__(self, ax=None, data=None, binedges=None, xlabel="x", ylabel="freqeuency", yscale="log", xscale="linear", labels=None, colors=None):
-        # ### own implementation of one-dimensional histogram (numpy + pyplot bar) ###
-
-        if type(data) is not type((1,)):
-            print("! bhist requires a tuple as input, not ", type(data))
-
-        self.n_classes = len(data)
-
-        if ax is None:
-            fig = plt.figure()
-            self.ax = fig.add_subplot()
-        else:
-            self.ax = ax
-
-        if labels is None:
-            if self.n_classes == 1:
-                labels = [None]
-            else:
-                labels = ["class " + str(_ic) for _ic in range(self.n_classes)]
-        if colors is None:
-            colors = self.n_classes * [None]
-
-        self.bheights = []
-        self.bars = []
-        # plot class 1
-        _bc, self.be = np.histogram(data[0], binedges)  # histogram data
-        self.bheights.append(_bc)
-        self.bcnt = (self.be[:-1] + self.be[1:]) / 2.0
-        self.w = 0.8 * (self.be[1:] - self.be[:-1])
-        ec = 'gray'
-        self.bars.append(plt.bar(self.bcnt, _bc, align="center", width=self.w, color=colors[0], label=labels[0], edgecolor=ec, alpha=0.75))
-        sum = _bc
-
-        # plot other classes
-        for _ic in range(1, self.n_classes):
-            _bc, _be = np.histogram(data[_ic], binedges)  # histogram data
-            self.bheights.append(_bc)
-
-            self.bars.append(
-                plt.bar(self.bcnt, _bc, align="center", width=self.w, color=colors[_ic], label=labels[_ic], edgecolor=ec, alpha=0.75, bottom=sum)
-            )
-            sum = sum + _bc
-
-        self.ax.set_xlabel(xlabel)
-        self.ax.set_ylabel(ylabel)
-        _mx = max(sum)
-        self.maxh = _mx if _mx > 0.0 else 1000
-        self.ax.set_ylim(0.75, self.maxh)
-        self.ax.set_xscale(xscale)
-        self.ax.set_yscale(yscale)
-        if labels[0] is not None:
-            self.ax.legend(loc="upper right")
-
-    def set(self, data):
-        """set new histogram data
-
-        Args:
-           * data: heights for each bar
-
-        Action: update pyplot bar graph
-        """
-
-        sum = np.zeros(len(self.bheights[0]))
-        for _i in range(self.n_classes):
-            _ic = self.n_classes - 1 - _i
-            _bc, _be = np.histogram(data[_ic], self.be)  # histogram data ...
-            self.bheights[_ic] = _bc
-            for _b, _h in zip(self.bars[_ic], self.bheights[_ic] + sum):
-                _b.set_height(_h)
-            sum = sum + self.bheights[_ic]
-
-        _mx = max(sum)
-        if _mx > self.maxh:
-            self.maxh = 1.2 * _mx
-            self.ax.set_ylim(0.9, self.maxh)
-
-    def add(self, data):
-        """update histogram data
-
-        Args:
-            * data: heights for each bar
-
-        Action: update pyplot bar objects
-        """
-
-        sum = np.zeros(len(self.bheights[0]))
-        for _i in range(self.n_classes):
-            # plot bars in reverse order
-            _ic = self.n_classes - 1 - _i
-            _bc, _be = np.histogram(data[_ic], self.be)  # histogram data ...
-            self.bheights[_ic] = self.bheights[_ic] + _bc  # and add to existing
-            for _b, _h in zip(self.bars[_ic], self.bheights[_ic] + sum):
-                _b.set_height(_h)
-            sum = sum + self.bheights[_ic]
-
-        _mx = max(sum)
-        if _mx > self.maxh:
-            self.maxh = 1.2 * _mx
-            self.ax.set_ylim(0.9, self.maxh)
-
-
-class scatterplot:
-    """two-dimensional scatter plot for animation, based on numpy.histogram2d
-    The code supports multiple classes of data and plots a '.' in a
-    corresponding color in every non-zero bin of a 2d-histogram
-
-    Args:
-        * data: tuple of pairs of coordinates (([x], [y]), ([], []), ...)
-          per class to be shown
-        * binedges: 2 arrays of bin edges [[bex], [bey]]
-        * xlabel: label for x-axis
-        * ylabel: label for y axis
-        * labels: labels for classes
-        * colors: colors corresponding to labels
-    """
-
-    def __init__(self, ax=None, data=None, binedges=None, xlabel="x", ylabel="y", labels=None, colors=None):
-        #  own implementation of 2d scatter plot (numpy + pyplot.plot() ###
-
-        if type(data) is not type((1,)):
-            print("! scatterplot requires a tuple as input, not", type(data))
-
-        self.n_classes = len(data)
-        # initialize bins
-        self.binedges = binedges
-        self.bex = binedges[0]
-        self.bey = binedges[1]
-        self.bcntx = (self.bex[:-1] + self.bex[1:]) / 2.0
-        self.bcnty = (self.bey[:-1] + self.bey[1:]) / 2.0
-        # bin widths
-        self.bwx = self.bex[1] - self.bex[0]
-        self.bwy = self.bey[1] - self.bey[0]
-        # fraction of bin width as plot off-set for classes
-        self.pofx = [(_i + 1) * self.bwx / (self.n_classes + 1) - self.bwx / 2.0 for _i in range(self.n_classes)]
-        self.pofy = [(_i + 1) * self.bwy / (self.n_classes + 1) - self.bwy / 2.0 for _i in range(self.n_classes)]
-
-        self.H2d = []
-        for _ic in range(self.n_classes):
-            # use numpy histogram2d to creade histogram arrays, one per class
-            _H2d, _bex, _bey = np.histogram2d(data[_ic][0], data[_ic][1], self.binedges)
-            self.H2d.append(_H2d)
-
-        if ax is None:
-            fig = plt.figure()
-            self.ax = fig.add_subplot()
-        else:
-            self.ax = ax
-        self.ax.set_xlabel(xlabel)
-        self.ax.set_ylabel(ylabel)
-        # self.ax.set_facecolor('k')
-
-        # create initial plot
-        if labels is None:
-            if self.n_classes == 1:
-                labels = [None]
-            else:
-                labels = ["class " + str(_ic) for _ic in range(self.n_classes)]
-        if colors is None:
-            colors = self.n_classes * [None]
-
-        self.gr = []
-        for _ic in range(self.n_classes):
-            # _xy_list = np.argwhere(self.H2d[_ic] > 0)
-            # _x = self.bcntx[_xy_list[:, 0]]
-            # _y = self.bcntx[_xy_list[:, 1]]
-            _xidx, _yidx = np.nonzero(self.H2d[_ic])
-            _x = self.bcntx[_xidx]
-            _y = self.bcnty[_yidx]
-            (_gr,) = ax.plot(_x, _y, label=labels[_ic], color=colors[_ic], marker='o', markersize=0.5, ls='', alpha=0.75)
-            self.gr.append(_gr)
-        self.ax.set_xlim(self.bex[0], self.bex[-1])
-        self.ax.set_ylim(self.bey[0], self.bey[-1])
-        if labels[0] is not None:
-            self.ax.legend(loc="upper right")
-
-    def set(self, data):
-        for _ic in range(self.n_classes):
-            _H2d, _bex, _bey = np.histogram2d(data[_ic][0], data[_ic][1], self.binedges)  # numpy 2d histogram function
-            self.H2d[_ic] = _H2d
-            _xidx, _yidx = np.nonzero(self.H2d[_ic])
-            self.gr[_ic].set(data=(self.bcntx[_xidx], self.bcnty[_yidx]))
-
-    def add(self, data):
-        """update scatter-plot data
-
-        Args:
-            * data: new (xy)-paris to be added
-
-        Action: update pyplot line objects
-        """
-
-        for _ic in range(self.n_classes):
-            _H2d, _bex, _bey = np.histogram2d(data[_ic][0], data[_ic][1], self.binedges)  # numpy 2d histogram function
-            self.H2d[_ic] = self.H2d[_ic] + _H2d
-            _xidx, _yidx = np.nonzero(self.H2d[_ic])
-            self.gr[_ic].set(data=(self.bcntx[_xidx] + self.pofx[_ic], self.bcnty[_yidx] + self.pofy[_ic]))
-
-
-class fileDecoders:
-    """Collection of decoders for various input file formats
-    supports mPIXdaq .npy and .yml and Advacam .txt and .clog
-    """
-
-    @classmethod
-    def mPIXdaq_yml(cls, ymlfile):
-        """Read data from yaml file (the default file format of mPIXdaq)
-        and yield individual frames from file
-
-        Args:
-        * ymlfile:  file handle to open file in mPIXdaq .yml format
-        """
-        dtype = "unknown"
-        meta_blk = ''
-        while True:
-            _l = ymlfile.readline()
-            if not _l:
-                break
-            if isinstance(_l, bytes):
-                _l = _l.decode()  # needed for gzip returning bytes objects
-            if _l.startswith("frame_data:"):
-                dtype = "frame"
-                break
-            if _l.startswith("cluster_data"):
-                dtype = "clusters"
-                break
-            meta_blk += _l
-        # decode meta-data
-        _meta = yaml.load(meta_blk, Loader=yaml.CSafeLoader)
-        mdata = _meta["meta_data"]
-        mpixControl.daqSettings['acq_time'] = mdata['acq_time']
-        mpixControl.daqSettings['acq_count'] = mdata['acq_count']
-
-        if "deviceInfo" in _meta.keys():
-            mpixControl.deviceInfo = _meta["deviceInfo"]
-        if "badPixels" in _meta.keys():
-            mpixControl.badpixel_list = _meta["badPixels"]
-
-        if dtype == "frame":
-            return cls.frame_generator(ymlfile)
-        elif dtype == "clusters":
-            return cls.frame_from_clusters_generator(ymlfile)
-
-    @staticmethod
-    def frame_generator(ymlfile):
-        """generator retruning frames from data block of yaml file with frames"""
-        in_datablk = True
-        while in_datablk:
-            data_blk = ''
-            while True:
-                _l = ymlfile.readline()
-                if not _l:
-                    in_datablk = False
-                    break
-                if isinstance(_l, bytes):
-                    _l = _l.decode()  # needed for gzip returning bytes objects
-                if _l == '\n':
-                    break
-                elif _l.startswith("...") or _l.startswith("eor_data:"):
-                    in_datablk = False
-                    break
-                data_blk += _l
-            if not in_datablk:
-                break
-            yield yaml.load(data_blk, Loader=yaml.CSafeLoader)[0]
-
-    @staticmethod
-    def frame_from_clusters_generator(ymlfile):
-        """generator retruning frames from data block of yaml file with clusters"""
-        in_datablk = True
-        t_stamp0 = 0
-        fdata = []
-        while in_datablk:
-            data_blk = ''
-            while True:
-                _l = ymlfile.readline()
-                if not _l:
-                    yield fdata  # deliver last frame
-                    in_datablk = False
-                    break
-                if isinstance(_l, bytes):
-                    _l = _l.decode()  # needed for gzip returning bytes objects
-                if _l == '\n':
-                    break
-                elif _l.startswith("...") or _l.startswith("eor_data:"):
-                    yield fdata  # deliver last frame
-                    in_datablk = False
-                    break
-                data_blk += _l
-            if not in_datablk:
-                break
-            if data_blk != '':
-                cdata = yaml.load(data_blk, Loader=yaml.CSafeLoader)[0]
-            else:
-                continue
-            t_stamp = cdata[0][0]
-            cluster = cdata[1]
-            if t_stamp <= t_stamp0:
-                fdata += cluster  # append new cluster
-            else:
-                t_stamp0 = t_stamp
-                yield fdata  # deliver completed frame
-                fdata = cluster  # initialize next frame
-
-    @staticmethod
-    def Advacam_clog(file):
-        """Read data in Advacam .clog format and yield frame
-
-        Args:
-        * file: file handle
-        """
-
-        width = mpixControl.deviceInfo["width"]
-        frame = []
-        while True:
-            _l = file.readline()
-            if not _l:
-                break
-            if isinstance(_l, bytes):
-                _l = _l.decode()  # needed for gzip returning bytes objects
-            if _l == '':  # skip empty lines between frames
-                pass
-            elif _l[0:5] == "Frame":  # new start-of-frame found
-                if frame != []:
-                    yield frame
-                    frame = []
-            elif _l[0] == '[':  # new cluster
-                _l = re.sub(r"[^0-9, -, \[, \], \.]", '', _l.replace(', ', ','))  # only leave valid chars before eval()
-                for _p in _l.split():
-                    _pxl = eval(_p)
-                    frame.append([int(_pxl[0] + _pxl[1] * width), int(_pxl[2])])
-        file.close()
-
-    # function to read frame data in advacam .txt (sparse matrix) format
-    @staticmethod
-    def Advacam_txt(file):
-        """Read data in Advacam .txt (sparse matrix) format and pixel frames
-
-        A frame contains lines with pairs of pixel number and pixel value;
-        frames are separated by a line containing a '#'
-
-        Args:
-        * file: file handle
-        """
-
-        frame = []
-        while True:
-            _l = file.readline()
-            if not _l:
-                break
-            if isinstance(_l, bytes):
-                _l = _l.decode()  # needed for gzip returning bytes objects
-            if _l != '#\n':  # not end of frame
-                # add pixel number and value to current pixel list
-                frame.append([int(_l.split('\t')[0]), int(_l.split('\t')[1])])
-            else:
-                yield frame
-                frame = []
-        file.close()
-
-
 # - class tying all of the above together - - - - - - - - - -
 class runDAQ:
     """run miniPIX data acquisition, analysis and real-time graphics and data storage
@@ -1624,6 +1249,7 @@ class runDAQ:
         else:
             exit(" Exit - unknown file extension " + suffix2 + suffix)
 
+        meta_data = None
         self.infile = None
         # read uncompressed file formats
         if suffix == ".npy":
@@ -1631,7 +1257,7 @@ class runDAQ:
             frame_iterator = iter(fdata)
         elif suffix == ".yml":
             self.infile = open(self.read_filename, 'r')
-            frame_iterator = fileDecoders.mPIXdaq_yml(self.infile)
+            meta_data, frame_iterator = fileDecoders.mPIXdaq_yml(self.infile)
         elif suffix == ".txt":
             self.infile = open(self.read_filename, 'r')
             frame_iterator = fileDecoders.Advacam_txt(self.infile)
@@ -1645,7 +1271,7 @@ class runDAQ:
                 fdata = np.load(self.infile)
                 frame_iterator = iter(fdata)
             elif suffix2 == '.yml':
-                frame_iterator = fileDecoders.mPIXdaq_yml(self.infile)
+                meta_data, frame_iterator = fileDecoders.mPIXdaq_yml(self.infile)
             elif suffix2 == '.txt':
                 frame_iterator = fileDecoders.Advacam_txt(self.infile)
             elif suffix2 == '.clog':
@@ -1656,7 +1282,7 @@ class runDAQ:
             # _file =) zf.read(fnam)
             self.infile = open(fnam, 'r')
             if suffix2 == '.yml':
-                frame_iterator = fileDecoders.mPIXdaq_yml(self.infile)  # assume there is only one file in archive
+                meta_data, frame_iterator = fileDecoders.mPIXdaq_yml(self.infile)  # assume there is only one file in archive
             elif suffix2 == '.txt':
                 frame_iterator = fileDecoders.Advacam_txt(self.infile)
             elif suffix2 == '.clog':
@@ -1664,6 +1290,14 @@ class runDAQ:
             else:
                 fdata = np.load(self.infile)
                 frame_iterator = iter(fdata)
+        #
+        if meta_data is not None:  # set meta data with run and device conditions
+            mpixControl.daqSettings['acq_time'] = meta_data["meta_data"]['acq_time']
+            mpixControl.daqSettings['acq_count'] = meta_data["meta_data"]['acq_count']
+            if "deviceInfo" in meta_data.keys():
+                mpixControl.deviceInfo = meta_data["deviceInfo"]
+            if "badPixels" in meta_data.keys():
+                mpixControl.badpixel_list = meta_data["badPixels"]
 
         # determine meta-data
         self.npx = mpixControl.deviceInfo["width"]
