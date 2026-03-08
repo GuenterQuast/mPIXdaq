@@ -806,8 +806,8 @@ class mpixGraphs:
             txt_overlay = txt_overlay + f", acquisition time {self.acq_time} s per frame"
         if self.prescale != 1:
             txt_overlay = txt_overlay + f", prescaling factor {self.prescale}"
-        self.axim.text(0.01, -0.06, txt_overlay, transform=self.axim.transAxes, color="royalblue")
-        self.im_text = self.axim.text(0.02, -0.085, "#", transform=self.axim.transAxes, color="orangered", alpha=0.75)
+        self.axim.text(0.01, -0.06, txt_overlay, transform=self.axim.transAxes, color="turquoise")
+        self.im_text = self.axim.text(0.02, -0.085, "#", transform=self.axim.transAxes, color="bisque", alpha=0.75)
         #  show detector geometry
         col_geom = "gray"
         _rect = mpl.patches.Rectangle((0, 0), self.npx, self.npx, linewidth=1, edgecolor=col_geom, facecolor='none')
@@ -1045,7 +1045,7 @@ class runDAQ:
         # - parse command line arguments
         parser = argparse.ArgumentParser(description="read, analyze, display and histogram data from miniPIX device")
         parser.add_argument('-v', '--verbosity', type=int, default=1, help='verbosity level (1)')
-        parser.add_argument('-o', '--overlay', type=int, default=10, help='number of frames to overlay in graph (10)')
+        parser.add_argument('-o', '--overlay', type=int, default=4, help='number of frames to overlay in graph (4)')
         parser.add_argument('-a', '--acq_time', type=float, default=0.5, help='acquisition time/frame in seconds (0.5)')
         parser.add_argument('-c', '--acq_count', type=int, default=20, help='frame count for readout via callback (20)')
         parser.add_argument('-f', '--file', type=str, default='', help='file to store frame data')

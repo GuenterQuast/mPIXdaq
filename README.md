@@ -21,7 +21,7 @@ author: Günter Quast, February 2026
 
 
 ## mPIXdaq Data acquisition and analysis for *miniPIX (EDU)* pixel detector 
-                                                                    Vers. 1.0.1, February 2026  
+                                                                    Vers. 1.0.1, March 2026  
 
 The [miniPIX EDU](https://advacam.com/camera/minipix-edu) is a camera
 for radiation based on the [Timepix](https://home.cern/tags/timepix) 
@@ -294,17 +294,17 @@ for convenience.
 
 ## Data Analysis
 
-The analysis shown in this example is intentionally very simple and based 
-on standard libraries and functions. Clustering of pixels is performed by
+The analysis is intentionally very straight-forward and based on 
+standard libraries and functions. Clustering of pixels is performed by
 finding connected regions in the pixel image with *scipy.ndimage.label()*.
 The shape of the clusters is determined from the ratio of the smaller 
 and the larger one of the two eigenvalues of the covariance matrix 
 calculated from the *x* and *y* coordinates of the pixels in a cluster 
 using *numpy.cov()*. For circular clusters, as typically produced by 
 α radiation, this ratio  is close to one, while it is almost zero for 
-the longer traces from β radiation. In addition, she shape of the energy
-distribution is considered, which shows a sharp maximum at the center 
-for α particles but is rather flat otherwise.
+the longer traces from β radiation. In a similar way, also she shape 
+of the energy distribution is considered, which shows a sharp maximum
+at the center for α particles but is rather flat otherwise.
 
 The figure below shows the graphical display with a pixel image and 
 the typical distributions of the pixel and cluster energies and the 
@@ -312,7 +312,7 @@ number of pixels per cluster. The source used was a weakly radioactive
 stone from the Black Forest containing a small amount of Uranium and 
 its decay products. The pixel map shown in the figure was sampled over 
 a time of five seconds. The histogram in the lower-right corner 
-demonstrates that the cluster types of different types of radiation
+demonstrates that the cluster types of different kinds of radiation
 are well separated: α rays in the green band with relatively low numbers 
 of pixels per cluster, electrons (β) as long tracks with large numbers
 of pixels per cluster and rather low energies. Single pixels not 
@@ -323,10 +323,10 @@ in the detector material (via the Compton process).
 ![The graphical display of miniPIXdaq](images/miniPIXdaq.png)
 
 The frame collection time is chosen to be on the order of seconds, 
-so that analysis results can be displayed in real-time on 
-a sufficiently fast computer including the Raspberry Pi 5.
+so that analysis results can be displayed in real-time on a 
+sufficiently fast computer including the Raspberry Pi 5.
 This is suitable for investigations of natural radiation as emitted by 
-minerals like Pitchblend (=Uraninit),  Columbit, Thorianit and others. 
+minerals like Pitchblend (=Uraninit), Columbit, Thorianit and others. 
 Radon accumulated from the air in basement rooms on the surface
 of an electrostatically charged ballon also work fine.
 
@@ -374,7 +374,7 @@ pixels, i.e.
   >   `list_of_clusterproperties[i] = yaml_dict["cluster_data"][i][0]` and   
   >   `list_of_clusterpixels[i] = yaml_dict["cluster_data"][i][1]`,
 
-A *jupyter* notebook *analyze_mPIXclusters.ipynb* is distributed as part of the 
+A *Jupyter* notebook *analyze_mPIXclusters.ipynb* is distributed as part of the 
 package and illustrates how to read and interpret cluster data.
 
 The keys of the variables in *list_of_clusterproperties* are  
@@ -390,7 +390,7 @@ the control buttons in the *matplotlib* window.
 
 ## Package Structure
 
-This package consists of one *Python* file with several classes providing 
+This package consists of several *Python* file with classes providing 
 the base functionality. As mentioned above, it relies on
 [Advacam libraries](https://wiki.advacam.cz/wiki/Python_API)
 for setting-up and reading the sensor. 
@@ -413,20 +413,28 @@ The components, classes and scripts of the package are
     - `miniPIXdaq`
     - `frameAnalyzer`
     - `mpixGraphs` 
-      - `bhist`
-      - `scatterplot`
-     - `runDAQ`
-      - `fileDecoders`
+    - `runDAQ`
 
 - `mplhelpers`  graphical interface for mpixdaq control with  matplotlib
+
+      - class `bhist` for animated bar-graph histograms
+      - class `scatterplot` for animated scatter-plots
+      - class `controlGUI` for mouse-based control of the data-acquisition process
+
+- `m̀pixhelers` for decoding supported file formats and plotting of cluster data
+    - class `fileDecoders`
+    - function `plot_cluster(pxlist, num=0)`
 
 - `physics_tools` for calculations of radiation properties  
 
 - package script `run_mPIXdaq.py`
 
-- script `calculate_dEdx` for plotting of radiation properties 
+- script `calculate_dEdx` for calculating and plotting the energy loss in matter
+
 
 Details on the classes and their interfaces are given below.
+
+#### mpixdaq.py
 
 ```
 class mpixControl:
@@ -524,7 +532,7 @@ as already described above.
     """
 ```
 
-A helper class implements decoders for the file input formats
+#### mpixhelpers.py  
 
 ```
 class fileDecoders:
@@ -533,8 +541,20 @@ class fileDecoders:
      """
 ```
 
-Two more helper classes implement 1d and 2d histogram functionality for
-efficient and fast animation using methods from `matplotlib.pyplot`.
+```
+plot_cluster(pxlist, num=0):
+    """Plot energy map of pixel cluster
+
+    Args:
+      - pxlist: list of pixels [ ..., [px_idx, px_energy], ...]
+      - num: int, for numbering figures
+
+    Returns:
+      - matplotlib figure
+    """
+```
+
+#### mplhelpers.py
 
 ```
 class bhist:
@@ -565,6 +585,19 @@ class scatterplot:
         * ylabel: label for y axis
         * labels: labels for classes
         * colors: colors corresponding to labels
+    """
+```
+
+```
+class controlGUI:
+    """graphical user interface to control apps via multiprocessing Queue
+
+    Args:
+
+      - cmdQ: a multiprocessing Queue to accept commands
+      - appName: name of app to be controlled
+      - statQ: mp Queue to show status data
+      - confdict: a configuration dictionary for buttons, format {name: [position 0-5, command]}
     """
 ```
 
@@ -618,3 +651,108 @@ It is also possible to start the script as a *Python* module:
 ```
 python -m mpixdaq
 ```
+
+#### physics_tool.py  
+
+contains some code to calulate the energy loss of raidation in matter,
+based on the Bethe-Bloch formula with corrections for the light electron.
+Methods to prduce graphical output are also included.
+
+```
+class materials:
+    """Collect properties of target materials and projectiles"""
+```
+
+
+```
+dEdx(T, material, projectile):
+    """calculate energy loss in matter ( or "mass stopping power")
+    for heavy projectiles and electrons
+
+    Parameters:
+      T: kinetic energy in MeV
+      Material dictionary
+          Z: effective Z
+          A: effective A
+          I: mean ionization energy (MeV)
+      z: charge of projectile
+      m: mass of projectile
+
+    Returns:
+      mass stopping power in units of MeV cm²/g
+      (to be multiplied by material density to obtain energy loss per unit length )
+
+    Formulae:
+    - Bethe-Bloch relation for heavy projectiles (m_alpha, m_p or m_µ >> m_e)
+      Notes:
+      - only collisions considered, no radiation loss (relevant for energy >>1 MeV)
+      - density effect correction (delta) omitted here for simplicity
+      - pure Bethe loss decreases below 0.4 MeV and becomes even negative
+        below 0.15 MeV for alpha particles in air; this can be fixed by adding
+        Barkas corrections, which are, however, not implemented here
+      - empirical cut-off to avoid negative values of energy loss at small T
+
+    -  modified Bethe-Bloch equation for electrons, ICRU Report 37 (1984).
+    """
+```
+
+
+```
+calc_pixel_energies(E0, px_size=0.0055):
+    """calculate pixel energies for an electron track with energy E0 in silicon
+```
+
+
+```
+calc_E_vs_depth(E0, dx, material, projectile):
+    """calculate particle energies after penetrating depth x of material
+```
+
+
+```
+plot_dEdx_electron(material, nbins=100, bw=0.05, axis=None):
+    """plot dE/dx * rho for electrons as a function of energy
+```
+
+
+```
+plot_beta_pixel_energies(E0=1.0, px_size=0.0055, axis=None):
+    """energy deposits per pixel
+    E0: initial energy
+    px_size: pixel size in cm
+    axis: figure axis; a new one is created if not given
+
+    returns: matplotlib figure
+    """
+  
+```
+
+
+```
+plot_dEdx_alpha(material, nbins=200, bw=0.025, axis=None):
+    """dE/dx for alpha  particles in material vs. energy
+    material: target material
+    nbins  : number of bins
+    bw     : bin width
+    axis   : figure axis; a new one is created if not given
+
+    returns: matplotlib figure
+    """
+
+```
+
+
+```
+plot_alpha_range(material, E0=6.0, dx=0.050, axis=None):
+    """alpha energy after penetration depth in material
+    material : target
+    E0       : initial energy in MeV
+    dx       : step width
+    axis     : figure axis; a new one is created if not given
+
+    returns: matplotlib figure
+    """
+```
+
+A *Python* script `calulate_dEdx.py` illustrates how to use 
+these methods and classes.

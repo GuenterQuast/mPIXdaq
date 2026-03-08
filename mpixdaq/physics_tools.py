@@ -266,7 +266,7 @@ def plot_dEdx_alpha(material, nbins=200, bw=0.025, axis=None):
 
 
 def plot_alpha_range(material, E0=6.0, dx=0.050, axis=None):
-    """alpha energy after penetration depth in air
+    """alpha energy after penetration depth in material
     material : target
     E0       : initial energy in MeV
     dx       : step width
