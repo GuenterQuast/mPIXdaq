@@ -387,17 +387,17 @@ are the tabulated data by NIST on energy losses of electrons, photons and
 Helium nuclei (ESTAR, ASTAR and PStar), see [NIST Standard Reference Database](
 https://www.nist.gov/pml/stopping-power-range-tables-electrons-protons-and-helium-ions).
   
- A selection of (tested) experiments with the *miniPIX* detector and the *mPIXdaq*
- package is described in the sub-chapters below.
+ A selection of (proposed and to be tested) experiments with the *miniPIX* detector 
+ and the *mPIXdaq* package is described in the sub-chapters below.
 
 
 ### Penetration depth of α particles in air  
 
-The **penetration depth** of α particles in air and the determination of the 
-energy loss can be directly determined with the *miniPIX* by replacing the
-existing detector in a existing setup. With the *mPIXdaq* package, signatures of
-α particles can be detected without any backgrounds and their energies can be 
-measured, which is a clear advantage of the *miniPIX*. 
+The **penetration depth** of α particles and the energy loss in air can be directly 
+determined with the *miniPIX* by replacing any other detector in an existing setup. 
+With the *mPIXdaq* package, signatures of α particles are identified without any 
+backgrounds and their energies are measured with sufficient precision to observe
+the shift in energies as a function of the distance between the source and the detector.  
 
 The expected behavior of the measured  α energies as a function of the depth of
 penetrated air, as determined with *calculate_dEdx.py*, is shown in the figure below.
@@ -406,43 +406,52 @@ penetrated air, as determined with *calculate_dEdx.py*, is shown in the figure b
 
  The energy loss per 0,5 mm traversed length of air, equivalent to the deposited energy, 
  is shown in red; it rises by almost a factor of four at the end of the α reach when the
-particles become very slow. This behavior illustrates  the Bragg peak of the deposited
+particles become very slow. This behavior illustrates the Bragg peak of the deposited
 energy, which is relevant for radiation therapy. 
 
-!!! Overlay *miniPIX* measurements   !!!
+!!! Overlay *miniPIX* measurements !!!
 
 
 ### Measurement of the energy loss of β radiation.  
 
-The energy loss of β radiation in matter can be directly studied with the *mimniPIX*
-by considering the silicon of the pixels as the absorbing material. 
-The energy deposited in the pixels along a β track thus directly shows the energy 
-loss of  electrons (dE/dx) along the trace. Because the β energy decreases while
-traversing the silicon,, this represents a measurement of the energy dependence 
-of the specific ionization loss in silicon. 
+Absorption curves determined by measuring the rate of β traces as a function 
+of the thicknesses of absorber material placed between a β source (typically
+Sr-29/Yr90) and the *miniPIX* detector.  As in experiments with classical
+detectors, this is a pure rate measurements, because β traces are not fully 
+absorbed in the sensitive volume of the *miniPIX*. 
 
-The mean energy loss per pixel shows a strong increase at the end of the tracks 
-where the electrons become slow. Expected is an average energy deposition of about 
-20 keV for electrons with energies between 0.2 and 1.5 MeV, rising to 
-some ten keV for electrons with kinetic energies below 200 keV, as shown in the
-following figure (calculated with *calculate_dEdx.py* using a modified Bethe Formula).
+The quantity of interest in such measurements ist the mass absorption (or attenuation)
+coefficient, $\mu / \rho$ per unit length in units of cm²/g. It is obtained from the dependence of the count rate on the traversed material thickness. Typically, the 
+absorber material consists of very thin aluminum foils of some ten µm thickness.
+
+In this experiment, the measured absorption rates depend on the energy 
+spectrum of β radiation emitted by the source, which is folded with the 
+absorption properties of the material. 
+
+Fortunately, this can be entangled with the *miniPIX*  device, as is shown next. 
+
+
+#### Absorption in Silicon  
+
+The energy loss of β radiation in Silicon can be directly studied with the 
+*miniPIX*, because the pixels act as detection and absorber material at the 
+same time. The energies deposited in the pixels along a β track directly 
+show the energy loss (dE/dx) along the trace. Because the β energy decreases 
+while traversing the silicon by exactly the measured energy in the pixels, 
+this represents a measurement of the energy dependence of the specific ionization 
+loss in silicon. 
+
+The expected mean energy loss per pixel, as calculated with *calculate_dEdx.py*
+using a modified Bethe Formula, shows a strong increase at the end of the tracks 
+where the electrons become slow. Predicted is an average energy deposition of 
+about 20 keV for electrons with energies between 0.2 and 1.5 MeV, rising to some 
+ten keV for electrons with kinetic energies below 200 keV.
 
   > ![Energy deposit per pixel for β particles](images/dE_pixels.png) 
 
-In this experiment, the silicon is the recording medium and the absorber at 
-the same time, and therefore no additional absorber materials are needed. 
-If studies of the absorption properties of different materials are desired, 
-absorbers may be placed in front of the detector - which then only counts 
-the arriving electrons and measures their energies in case the tracks are fully 
-contained in the sensitive volume. Such signatures are possible when the electron 
-tracks are scattered such that they remain within the 300µm thick sensitive volume. 
-Signatures of this kind may be selected by detecting the rise of the deposited 
-energy per pixel at the end of the track. 
-
 An example of such a long trace of a β particle is shown in the pixel energy 
-map below. Note that fluctuations of the energy deposits per pixel show large
-fluctuations around the mean energy loss, as is expected for thin layers of 
-absorbing material. 
+map below. Note that fluctuations of the energy deposits around the mean are 
+large for thin layers of absorbing material. 
 
   > ![Long β track](images/long_beta-track.png) 
 
@@ -453,6 +462,39 @@ the top-left and then loses energy in each pixel as it traverses the sensitive
 silicon volume. It finally stops in the lower-left corner, where the energy 
 deposit per pixel shows the expected increase. 
 
+In a more comprehensive analysis, the electron energy in a given pixel is obtained
+by adding up all energy losses starting from the stopping-point. If many such
+tracks are sampled, it becomes possible to determine the energy loss per pixel
+as a function of the electron energy. 
+
+!!! to be done: Overlay measurements with *miniPIX* !!!
+
+Note that the path of a track in a pixel is not known, because it may cross the
+sensitive area at an unknown elevation angle w.r.t the pixel plane. Also,  
+traces traversing the pixels not in one of the x- or y-directions have a longer
+path length by up to a factor of $\sqrt{2}$. Furthermore, the energy of tracks 
+passing at the pixel edges my be shared between adjacent pixels. Nonetheless, 
+despite these obstacles, a meaningful distribution of the energy loss per 
+pixel as a function of the electron energy should be possible.
+
+!!! interesting to see an implementation of an algorithm !!!
+
+
+### Interactions of γ rays with silicon 
+
+Wit sufficient shielding, only γ rays reach the sensitive layer of the
+*miniPIX*. A collection of signatures produced by gamma interactions is 
+shown below. The radioactive source was as low-activity stone from the
+Black Forest. All signatures look like electrons at the end of their reach. 
+
+ > ![Energy deposits of electrons produced by γ rays](images/gammaInteractions.png) 
+
+The energy spectrum ist typically very steeply falling, and any modelling strongly
+depends on the properties of ambient radiation under the given environmental conditions.
+With a high-rate γ source, special features may become visible in the energy spectrum
+on top of the background from ambient radiation.  
+
+!!! should try 50keV gammas from Am-241 !!!
 
 ### Collection of further ideas
 
