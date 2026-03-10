@@ -113,7 +113,7 @@ time the signal is over a given threshold in counts of the chip clock (appr. 10 
 
    $ToT\,=\;a\,E +b - {c}/{(E-t)}$
 
-Typial values of the calibrations constants are $a$ = 1.6, $b$=23, $c$=23 and $t$=4.3. 
+Typical values of the calibrations constants are $a$ = 1.6, $b$=23, $c$=23 and $t$=4.3. 
 Each pixel has its individual calibration stored on the chip, 
 which is optionally applied to obtain pixel readings in units of keV.
 The calibration is reliable up to pixel energies of one MeV. 
@@ -123,7 +123,7 @@ time are summed up. For details, see the article by J. Jakubek,
 time-over-threshold mode*, NIM A 633 (2011), 5262-5265.
 
 If particle rates are sufficiently low to avoid overlaps of signatures, all 
-particle interactions occuing during the exposure time of a rrame are individually distinguishable. The deposited energy in the pixels is encoded as a 
+particle interactions occurring during the exposure time of a frame are individually distinguishable. The deposited energy in the pixels is encoded as a 
 color value, resulting in a very intuitive representation of the energy deposits 
 produced by particles in the sensitive volume. 
 
@@ -285,8 +285,8 @@ strongly discriminating the desired signatures against backgrounds.
 
 ## Analysis of recorded data  
 
-*mPIXdaq* performs an online analysis of recorded data frames and presents
-the results as animated histograms which are updated as data collection proceeds.
+*mPIXdaq* performs an online analysis of recorded data frames and presents the
+results as animated histograms which are updated as data collection proceeds.
 Raw or clustered frame data as well as cluster properties in simple 
 *.csv* format can be created with *mPIXdaq* and stored on disk for 
 subsequent analysis. In addition to the very beneficial visual impression 
@@ -298,7 +298,7 @@ In a first step, connected areas of pixels, called clusters, are determined
 in each recorded frame using the *label()* method of the image-processing 
 library *scipy.ndimage". 
 
-The main features of of each cluster are the mean position in pixel coordinates, 
+The main features of each cluster are the mean position in pixel coordinates, 
 the number of pixels and the sum of all pixel energies. 
 Further interesting features are the geometrical shape of the cluster area and 
 of the energy distribution over the pixels.
@@ -492,9 +492,71 @@ Black Forest. All signatures look like electrons at the end of their reach.
 The energy spectrum ist typically very steeply falling, and any modelling strongly
 depends on the properties of ambient radiation under the given environmental conditions.
 With a high-rate γ source, special features may become visible in the energy spectrum
-on top of the background from ambient radiation.  
+on top of the background from ambient radiation.
 
 !!! should try 50keV gammas from Am-241 !!!
+
+
+### Ambient radiation 
+
+Ambient radiation at a normal level of 0.1µSv/h leads to an interaction rate 
+of about 25 photon signals in the active *miniPIX* volume of 0.059 cm³. This 
+represents a respectable detection efficiency outperforming small Geiger
+counter by a factor of two to three, and shows that the *miniPIX* can also be 
+used for precision dosimetry. Still, this rate is low compared with an observed
+count rate of 180 per minute observed in the CsI(Tl) crystal of one cm³ volume
+in a RadiaCode 102 device.
+
+An overlay of 120 *miniPIX* frames with an exposure time of 0.5s each is shown in 
+the figure below. The long, straight track in the upper left part of the image
+is one of the rare cases of a muon from cosmic radiation traversing the detector
+under a flat angle of about 10°. 
+
+ > ![Ambient radiation ](images/ambientRadiation.png) 
+
+
+Tracks from muons can only be distinguished from electron signatures if they
+traverse the sensitive area under a rather flat angle so that many pixels 
+respond. Note that a muon under 45° will fire only 5 pixels, and a muon under 
+30° 10 pixels. Since most muons arrive under 90° from the top, only a
+fraction of the total muon flux is therefore observable in the miniPIX. 
+Because muons are heavy, they do not scatter much in the silicon
+and produce very straight tracks. In addition, their ionization loss per 
+pixel is only around 10 keV, contrary to the typical 20 keV for electrons. 
+With proper orientation of the miniPIX, or better a sequence of measruements
+with different detector orientations, studies of the rate an direction of 
+the arrival of muons become possible, will, however, require long measurement 
+times, because the expected rate of muons at sea level, integrated over 
+all angles if incidence, is only about 1/cm²/min. Two clear muon tracks 
+found in a data set recorded with a total acquisition time of 1000s are 
+shown below.
+
+> ![Tow clear muon tracks ](images/muonTracks.png) 
+
+
+
+### Absorption of γ rays in materials
+
+Studies of the absorption of γ rays in different materials as a function of the
+depth of traversed material and the initial γ energy are also straight-forward
+with the *miniPIX* detector. With a set of gamma sources, like shielded Am-241,
+Cs-137, Na-22 or Co-60, a sufficiently large variation of initial 
+energies ranging from 60 to 1330 keV is available for such measurements. 
+Absorber plates made of lead with thickness in the range from 1 - 25 mm or 
+aluminum blocks of 15 - 25 mm thickness are also useful assets for this experiment.
+
+γ rays only interact very rarely in matter, and typically only one interaction 
+is seen in thin layers of absorber. As the radiation penetrates a depth $l$ of 
+material, the number of remaining photons $N(l)$ decreases by $dN$, while the 
+interaction probability is proportional $N(l)$. This leads to an exponential 
+dependence of the remaining number of photons,  
+$N(l) = N_0 \cdot \exp{(-\mu  l)}$.
+$\mu$ is the mass absorption (or attenuation) coefficient of the material. 
+
+
+!!! show measurements !!!
+
+
 
 ### Collection of further ideas
 
