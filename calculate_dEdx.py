@@ -19,7 +19,7 @@ if __name__ == "__main__":  # -------------------------------------------------
     _fig = plt.figure("dEdx_electron", figsize=fsize)
     ax_dEdx_e = _fig.add_subplot()
     plt.suptitle("Energy loss of electrons (mod. Bethe)")
-    fig_dEdx_e = pt.plot_dEdx_electron((mp.H2O, mp.Si, mp.Pb), axis=ax_dEdx_e)
+    fig_dEdx_e = pt.plot_dEdx((mp.H2O, mp.Si, mp.Pb), mp.electron, axis=ax_dEdx_e)
 
     _fig = plt.figure("dEdx_alpha", figsize=fsize)
     ax_dEdx_alpha = _fig.add_subplot()
@@ -42,25 +42,33 @@ if __name__ == "__main__":  # -------------------------------------------------
     plt.suptitle("Energy loss of α in Si (Bethe-Bloch)")
     fig_alpha_range_air = pt.plot_alpha_range(mp.Si, dx=1e-4, axis=ax_alpha_range)
 
+
     #  *** some control printout (just to compare numbers)
     verbose = 1
     if verbose:
-        E0_e = 1.0
+        E0_e = 0.5
         print(f"Energy loss of electrons of {E0_e} MeV in water: ", end='')
         print(f"dE/dx = {mp.H2O['rho'] * pt.dEdx(E0_e, mp.H2O, mp.electron):.2f} MeV/cm")
         print(f"                                       in Si: ", end='')
         _dEdx_e = mp.Si['rho'] * pt.dEdx(E0_e, mp.Si, mp.electron)
         print(f"dE/dx = {_dEdx_e:.2f} MeV/cm   {_dEdx_e / mp.Si['w_eh'] / 10000:.0f} e-h pairs/µm")
+
+        E0_mu = 300.0
+        print(f"Energy loss of muons of {E0_mu} MeV in water: ", end='')
+        print(f"dE/dx = {mp.H2O['rho'] * pt.dEdx(E0_mu, mp.H2O, mp.muon):.2f} MeV/cm")
+        print(f"                                       in Si: ", end='')
+        _dEdx_mu = mp.Si['rho'] * pt.dEdx(E0_mu, mp.Si, mp.muon)
+        print(f"dE/dx = {_dEdx_mu:.2f} MeV/cm   {_dEdx_mu / mp.Si['w_eh'] / 10000:.0f} e-h pairs/µm")
+
+        E0_K = 100.0
+        print(f"Energy loss of Kaons of {E0_K} MeV in Si: ", end='')
+        _dEdx_K = mp.Si['rho'] * pt.dEdx(E0_K, mp.Si, mp.kaon)
+        print(f"dE/dx = {_dEdx_K:.2f} MeV/cm   {_dEdx_K / mp.Si['w_eh'] / 10000:.0f} e-h pairs/µm")
+
         E0_a = 4.0
         _dEdx_a = mp.air['rho'] * pt.dEdx(E0_a, mp.air, mp.alpha)
         print(f"                    alphas of {E0_a} MeV in air: {_dEdx_a:.2f} MeV/cm", end='')
         print()
-
-        # print("pixel energies in keV along track with {E0:.2f} MeV initial energy:")
-        # for _i in range(n_px):
-        #    print(f"{_i+1}: {E_px[_i]:.1f} ", end='')
-        # print(f"        total deposited energy {E_px.sum():.1f} keV")
-        # ---
 
     # *** show plots and wait for user
     plt.tight_layout()

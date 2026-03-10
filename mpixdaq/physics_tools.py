@@ -72,6 +72,11 @@ class materials:
     muon['z'] = 1  # charge of muon
     muon['m'] = 105.658  # mass of muon in MeV/c²
 
+    # --- charged kaon
+    kaon = {}
+    kaon['z'] = 1  # charge of kaon
+    kaon['m'] = 493.677  # mass of kaon in MeV/c²
+
     # --- electron
     electron = {}
     electron['z'] = 1
@@ -139,18 +144,17 @@ def dEdx(T, material, projectile):
         return C * (term_ln + F_tau)  # MeV cm²/g
 
 
-def calc_pixel_energies(E0, px_size=0.0055):
+def calc_pixel_energies(E0, target=materials.Si, particle=materials.electron, px_size=0.0055):
     """calculate pixel energies for an electron track with energy E0 in silicon
 
     Parameters:
        E0: initial energy
        px_size: pixel size (cm)
     """
-    mp = materials
     E_px = []
     E_x = E0
     while E_x > 0.0:
-        dE = mp.Si['rho'] * dEdx(E_x, mp.Si, mp.electron) * px_size
+        dE = target['rho'] * dEdx(E_x, target, particle) * px_size
         if dE > E_x:
             dE = E_x
         E_px += [1000.0 * dE]  # in keV
@@ -187,8 +191,10 @@ def calc_E_vs_depth(E0, dx, material, projectile):
     return np.asarray(Ex)
 
 
-def plot_dEdx_electron(material, nbins=100, bw=0.05, axis=None):
-    """plot dE/dx * rho for electrons as a function of energy
+def plot_dEdx(material, particle=materials.electron, nbins=100, bw=0.05, axis=None):
+    """plot dE/dx * rho a function of energy
+    material: target material
+    particle: projectile particle
     nbins: number of bins
     bw: bin width in MeV
     axis   : figure axis; a new one is created if not given
@@ -302,7 +308,7 @@ if __name__ == "__main__":  # -------------------------------------------------
 
     mp = materials
     # *** produce graphs
-    plot_dEdx_electron((mp.H2O, mp.Si, mp.Pb))
+    plot_dEdx((mp.H2O, mp.Si, mp.Pb), mp.electron)
     plot_beta_pixel_energies()
     plot_dEdx_alpha(mp.air)
     plot_alpha_range(mp.air)
@@ -316,6 +322,14 @@ if __name__ == "__main__":  # -------------------------------------------------
         print(f"                                       in Si: ", end='')
         _dEdx_e = mp.Si['rho'] * dEdx(E0_e, mp.Si, mp.electron)
         print(f"dE/dx = {_dEdx_e:.2f} MeV/cm   {_dEdx_e / mp.Si['w_eh'] / 10000:.0f} e-h pairs/µm")
+
+        E0_mu = 500.0
+        print(f"Energy loss of muons of {E0_mu} MeV in water: ", end='')
+        print(f"dE/dx = {mp.H2O['rho'] * dEdx(E0_mu, mp.H2O, mp.muon):.2f} MeV/cm")
+        print(f"                                       in Si: ", end='')
+        _dEdx_mu = mp.Si['rho'] * dEdx(E0_mu, mp.Si, mp.muon)
+        print(f"dE/dx = {_dEdx_mu:.2f} MeV/cm   {_dEdx_mu / mp.Si['w_eh'] / 10000:.0f} e-h pairs/µm") 
+
         E0_a = 4.0
         _dEdx_a = mp.air['rho'] * dEdx(E0_a, mp.air, mp.alpha)
         print(f"                    alphas of {E0_a} MeV in air: {_dEdx_a:.2f} MeV/cm", end='')

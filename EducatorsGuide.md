@@ -378,15 +378,17 @@ also be studied.
 
 To support quantitative experiments, a simple script `calculate_dEdx.py` 
 for the determination of the specific energy losses (dE/dx) of electrons 
-and alpha-particles in air and silicon is provided with this package. 
-
+and alpha-particles in air and silicon is provided with this package.
+The calculated energy loss of particles (or, resp. the deposited energy 
+in the absorbing material) are important to relate the measured signals
+to theoretical expectations.     
 The calculated energy deposits are based on modified versions of the Bethe-Bloch
 relation for the energy loss of charged particles in matter and represent
 reasonable approximations. The presently most authoritative information source 
-are the tabulated data by NIST on energy losses of electrons, photons and 
-Helium nuclei (ESTAR, ASTAR and PStar), see [NIST Standard Reference Database](
+on energy losses of electrons, photons and Helium nuclei are the tabulated data
+by NIST (ESTAR, ASTAR and PStar), see [NIST Standard Reference Database](
 https://www.nist.gov/pml/stopping-power-range-tables-electrons-protons-and-helium-ions).
-  
+
  A selection of (proposed and to be tested) experiments with the *miniPIX* detector 
  and the *mPIXdaq* package is described in the sub-chapters below.
 
@@ -404,8 +406,8 @@ penetrated air, as determined with *calculate_dEdx.py*, is shown in the figure b
 
 ![α energy as a function of the penetration depth in air](images/alpha_range_air.png)
 
- The energy loss per 0,5 mm traversed length of air, equivalent to the deposited energy, 
- is shown in red; it rises by almost a factor of four at the end of the α reach when the
+The energy loss per 0,5 mm traversed length of air, equivalent to the deposited energy, 
+is shown in red; it rises by almost a factor of four at the end of the α reach when the
 particles become very slow. This behavior illustrates the Bragg peak of the deposited
 energy, which is relevant for radiation therapy. 
 
@@ -414,21 +416,26 @@ energy, which is relevant for radiation therapy.
 
 ### Measurement of the energy loss of β radiation.  
 
-Absorption curves determined by measuring the rate of β traces as a function 
-of the thicknesses of absorber material placed between a β source (typically
-Sr-29/Yr90) and the *miniPIX* detector.  As in experiments with classical
-detectors, this is a pure rate measurements, because β traces are not fully 
-absorbed in the sensitive volume of the *miniPIX*. 
+Absorption curves are determined by measuring the rate of β traces as a 
+function of the thicknesses of absorber material placed between a β source 
+(typically Sr-29/Yr90) and the *miniPIX* detector.  As in experiments with 
+classical detectors, these are pure rate measurements, because β traces are 
+not fully absorbed in the sensitive volume of the *miniPIX* and a measurement
+of their energy is only possible if the traces are fully contained, i.e. for
+energies below 200 keV.  
 
-The quantity of interest in such measurements ist the mass absorption (or attenuation)
-coefficient, $\mu / \rho$ per unit length in units of cm²/g. It is obtained from the dependence of the count rate on the traversed material thickness. Typically, the 
-absorber material consists of very thin aluminum foils of some ten µm thickness.
+The quantity of interest in such measurements ist the mass absorption 
+(or attenuation) coefficient, $\mu / \rho$ in units of cm²/g. It is 
+obtained from the dependence of the count rate on the traversed material 
+thickness. Typically, the absorber material consists of very thin aluminum 
+foils of some ten µm thickness.
 
-In this experiment, the measured absorption rates depend on the energy 
-spectrum of β radiation emitted by the source, which is folded with the 
-absorption properties of the material. 
+In this experiment, the measured rates depend on the energy spectrum of β 
+radiation emitted by the source, which is folded with the absorption properties 
+of the material. 
 
-Fortunately, this can be entangled with the *miniPIX*  device, as is shown next. 
+Fortunately, this can be disentangled with the *miniPIX*  device, as 
+will be shown next. 
 
 
 #### Absorption in Silicon  
@@ -438,8 +445,8 @@ The energy loss of β radiation in Silicon can be directly studied with the
 same time. The energies deposited in the pixels along a β track directly 
 show the energy loss (dE/dx) along the trace. Because the β energy decreases 
 while traversing the silicon by exactly the measured energy in the pixels, 
-this represents a measurement of the energy dependence of the specific ionization 
-loss in silicon. 
+the recorded energy in each pixel represents a measurement of the energy 
+dependence of the specific ionization loss in silicon. 
 
 The expected mean energy loss per pixel, as calculated with *calculate_dEdx.py*
 using a modified Bethe Formula, shows a strong increase at the end of the tracks 
@@ -451,7 +458,8 @@ ten keV for electrons with kinetic energies below 200 keV.
 
 An example of such a long trace of a β particle is shown in the pixel energy 
 map below. Note that fluctuations of the energy deposits around the mean are 
-large for thin layers of absorbing material. 
+large for thin layers of absorbing material. The energy deposits in each pixel
+are very close to the theoretical expectations. 
 
   > ![Long β track](images/long_beta-track.png) 
 
@@ -471,11 +479,11 @@ as a function of the electron energy.
 
 Note that the path of a track in a pixel is not known, because it may cross the
 sensitive area at an unknown elevation angle w.r.t the pixel plane. Also,  
-traces traversing the pixels not in one of the x- or y-directions have a longer
+traces traversing the pixels not in the x- or y-directions have a longer
 path length by up to a factor of $\sqrt{2}$. Furthermore, the energy of tracks 
 passing at the pixel edges my be shared between adjacent pixels. Nonetheless, 
-despite these obstacles, a meaningful distribution of the energy loss per 
-pixel as a function of the electron energy should be possible.
+despite these obstacles, it should be possible to obtain a meaningful distribution 
+of the energy loss per pixel as a function of the electron energy.
 
 !!! interesting to see an implementation of an algorithm !!!
 
@@ -484,8 +492,9 @@ pixel as a function of the electron energy should be possible.
 
 Wit sufficient shielding, only γ rays reach the sensitive layer of the
 *miniPIX*. A collection of signatures produced by gamma interactions is 
-shown below. The radioactive source was as low-activity stone from the
-Black Forest. All signatures look like electrons at the end of their reach. 
+shown below. The radioactive source was a low-activity stone from the
+Black Forest shielded with 3 mm of Aluminum. All signatures look like 
+electrons at the end of their reach. 
 
  > ![Energy deposits of electrons produced by γ rays](images/gammaInteractions.png) 
 
@@ -500,8 +509,8 @@ on top of the background from ambient radiation.
 ### Ambient radiation 
 
 Ambient radiation at a normal level of 0.1µSv/h leads to an interaction rate 
-of about 25 photon signals in the active *miniPIX* volume of 0.059 cm³. This 
-represents a respectable detection efficiency outperforming small Geiger
+of about 25 photon signals per minute in the active *miniPIX* volume of 0.059 cm³. 
+This represents a respectable detection efficiency outperforming small Geiger
 counter by a factor of two to three, and shows that the *miniPIX* can also be 
 used for precision dosimetry. Still, this rate is low compared with an observed
 count rate of 180 per minute observed in the CsI(Tl) crystal of one cm³ volume
@@ -519,20 +528,19 @@ Tracks from muons can only be distinguished from electron signatures if they
 traverse the sensitive area under a rather flat angle so that many pixels 
 respond. Note that a muon under 45° will fire only 5 pixels, and a muon under 
 30° 10 pixels. Since most muons arrive under 90° from the top, only a
-fraction of the total muon flux is therefore observable in the miniPIX. 
-Because muons are heavy, they do not scatter much in the silicon
-and produce very straight tracks. In addition, their ionization loss per 
-pixel is only around 10 keV, contrary to the typical 20 keV for electrons. 
-With proper orientation of the miniPIX, or better a sequence of measruements
-with different detector orientations, studies of the rate an direction of 
-the arrival of muons become possible, will, however, require long measurement 
-times, because the expected rate of muons at sea level, integrated over 
+fraction of the total muon flux is therefore observable in the *miniPIX*. 
+Because muons are heavy, they do not scatter much in the silicon and 
+produce very straight tracks. In addition, their ionization loss per 
+pixel is only around 15 keV, contrary to the typical 20 keV for electrons. 
+With proper orientation of the miniPIX, or better a sequence of measurements
+with different detector orientations, studies of both the rate an direction 
+of muons become possible. This will, however, require long measurement 
+times because the expected rate of muons at sea level, integrated over 
 all angles if incidence, is only about 1/cm²/min. Two clear muon tracks 
 found in a data set recorded with a total acquisition time of 1000s are 
 shown below.
 
 > ![Tow clear muon tracks ](images/muonTracks.png) 
-
 
 
 ### Absorption of γ rays in materials
@@ -551,7 +559,9 @@ material, the number of remaining photons $N(l)$ decreases by $dN$, while the
 interaction probability is proportional $N(l)$. This leads to an exponential 
 dependence of the remaining number of photons,  
 $N(l) = N_0 \cdot \exp{(-\mu  l)}$.
-$\mu$ is the mass absorption (or attenuation) coefficient of the material. 
+$\mu$ is the mass absorption (or attenuation) coefficient of the material, 
+which can be determined in a sequence of measurements varying absorber 
+thickness and incident γ energy.  
 
 
 !!! show measurements !!!
