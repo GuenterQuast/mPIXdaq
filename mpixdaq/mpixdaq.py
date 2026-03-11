@@ -1429,8 +1429,8 @@ class runDAQ:
                     with NpyAppendArray(self.out_file_npy) as npa:
                         npa.append(np.array([frame2d]))
 
-                # further process (subset of) frames (given by prescaling factor)
-                do_processing = (i_frame - 1) % self.prescale_analysis == 0
+                # further process (subset of) frames (given by prescaling factor) 
+                do_processing = (self.prescale_analysis == 0) or (i_frame - 1) % self.prescale_analysis == 0
 
                 # analyze frame if writing to cluster file or for prescaled fraction of events
                 if do_processing or self.cluster_filename is not None:
