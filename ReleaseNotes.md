@@ -22,5 +22,7 @@
   - some additions (dE/dx studies) in Jupyter notebook
   - added module mpixhelpers and moved fileDecoders, bhist and scatterplot
  
-  
+## 1.1.0
+
+  - based on API 1.18.5 (released 2026/03/09)
 
