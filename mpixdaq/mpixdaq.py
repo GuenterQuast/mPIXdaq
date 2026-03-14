@@ -72,6 +72,7 @@ from matplotlib.colors import LogNorm
 # function for conditional import of ADVACAM libraries
 def import_pixet():
     global pypixet
+    global pixetVersion
     import platform
 
     global pixetVersion
@@ -81,6 +82,7 @@ def import_pixet():
     syst = platform.system()  # system (Linux x84 or arm, or Windows or Darwin)
     advacam_libs = None
     if mach == 'x86_64':
+<<<<<<< HEAD
         advacam_libs = ".advacam_x86_64"
     elif mach == 'aarch64' and arch[0] == "32bit":
         advacam_libs = ".advacam_armhf"
@@ -94,12 +96,27 @@ def import_pixet():
         else:
             print("warning - on MS Windows pypixet only works with 64-bit Python 3.12")
     if advacam_libs is None:
+=======
+        from .advacam_x86_64 import pypixet
+        from .advacam_x86_64.pixetVersion import pixetVersion
+    elif mach == 'aarch64' and arch[0] == "32bit":
+        from .advacam_armhf import pypixet, pixetVersion
+    elif mach == 'aarch64' and arch[0] == "64bit":
+        from .advacam_arm64 import pypixet, pixetVersion
+    elif syst == "Darwin":
+        from .advacam_mac import pypixet, pixetVersion
+    elif "Windows" in arch[1]:
+        if arch[0] == '64bit':
+            if not ("3.12" in sys.version.split()[0]):
+                print("warning - on MS Windows pypixet only works with Python 3.12")
+            from .advacam_win64 import pypixet, pixetVersion
+    else:
+>>>>>>> f6a45f9 (print API version mumber from mpixdaq)
         exit(" !!! pypixet not available for architecture " + mach + arch[0])
     # import Advacam libraries
     pypixet = importlib.import_module(advacam_libs + ".pypixet", package=__package__)
     pixetVersion = importlib.import_module(advacam_libs + ".pixetVersion", package=__package__).pixetVersion
     print(f"*==* loaded miniPIX libraries for platform {mach}, architecture {arch} on system {syst}")
-
 
 # function for conditional import from npy_append_array
 def import_npy_append_array():
@@ -216,7 +233,11 @@ class miniPIXdaq:
         self.pixet = pypixet.pixet
         try:
             print("*==*       pypixet vers.", self.pixet.pixetVersion())
+<<<<<<< HEAD
         except AttributeError:  # printing of version number no more implemented in 1.8.5, so use local one
+=======
+        except AttributeError:
+>>>>>>> f6a45f9 (print API version mumber from mpixdaq)
             print("*==*       pypixet version", pixetVersion)
         devs = self.pixet.devicesByType(self.pixet.PX_DEVTYPE_MPX2)  # miniPIX uses the mediPIX 2 chip
         if len(devs) == 0:
