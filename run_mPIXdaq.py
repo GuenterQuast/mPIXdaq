@@ -35,7 +35,7 @@ if platform.system() != 'Windows':
 wd = os.getcwd()
 
 if os.name == 'nt':
-    # special hack for windows python 3.7: load pypixet and DLLs
+    # special hack for windows: load pypixet and DLLs
     import mpixdaq.advacam_win64.pypixet as pypixet
 from mpixdaq import mpixdaq  # this may change the working directory, depending on system
 
