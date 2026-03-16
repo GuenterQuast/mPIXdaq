@@ -44,6 +44,7 @@ LICENSE
 import argparse
 import gzip
 import os
+import importlib
 import pathlib
 import re
 import sys
@@ -73,31 +74,38 @@ def import_pixet():
     global pypixet
     import platform
 
+    global pixetVersion
+
     mach = platform.machine()  # machine type
     arch = platform.architecture()  # architecture and  linker format
-    syst = platform.system()  # system (Linux, Windows or Darwin
+    syst = platform.system()  # system (Linux x84 or arm, or Windows or Darwin)
+    advacam_libs = None
     if mach == 'x86_64':
-        from .advacam_x86_64 import pypixet
+        advacam_libs = ".advacam_x86_64"
     elif mach == 'aarch64' and arch[0] == "32bit":
-        from .advacam_armhf import pypixet
+        advacam_libs = ".advacam_armhf"
     elif mach == 'aarch64' and arch[0] == "64bit":
-        from .advacam_arm64 import pypixet
+        advacam_libs = ".advacam_arm64"
     elif syst == "Darwin":
-        from .advacam_mac import pypixet
+        advacam_libs = ".advacam_mac"
     elif "Windows" in arch[1]:
-        if arch[0] == '64bit':
-            if sys.version.split()[0] != '3.7.9':
-                print("warning - on MS Windows pypixet only works with Python 3.7.9")
-            from .advacam_win64 import pypixet
-    else:
+        if (arch[0] == '64bit') and ('3.12' in sys.version.split()[0]):
+            advacam_libs = ".advacam_win"
+        else:
+            print("warning - on MS Windows pypixet only works with 64-bit Python 3.12")
+    if advacam_libs is None:
         exit(" !!! pypixet not available for architecture " + mach + arch[0])
+    # import Advacam libraries
+    pypixet = importlib.import_module(advacam_libs + ".pypixet", package=__package__)
+    pixetVersion = importlib.import_module(advacam_libs + ".pixetVersion", package=__package__).pixetVersion
     print(f"*==* loaded miniPIX libraries for platform {mach}, architecture {arch} on system {syst}")
 
 
 # function for conditional import from npy_append_array
 def import_npy_append_array():
     global NpyAppendArray
-    from npy_append_array import NpyAppendArray
+    # NpyAppendArray = importlib.import_module("npy_append_array").NpyAppendArray
+    NpyAppendArray = importlib.import_module("npy_append_array.NpyAppendArray")
 
 
 #
@@ -194,7 +202,7 @@ class miniPIXdaq:
         try:
             import_pixet()
         except Exception as e:
-            print("!!! failed to import pypixet library ", str(e))
+            print("!!! failed to import pypixet library, error: ", str(e))
             return
 
         # start miniPIX software
@@ -206,7 +214,10 @@ class miniPIXdaq:
             print("!!! pipixet did not start!")
             return
         self.pixet = pypixet.pixet
-        print("*==*       pypixet vers.", self.pixet.pixetVersion())
+        try:
+            print("*==*       pypixet vers.", self.pixet.pixetVersion())
+        except AttributeError:  # printing of version number no more implemented in 1.8.5, so use local one
+            print("*==*       pypixet version", pixetVersion)
         devs = self.pixet.devicesByType(self.pixet.PX_DEVTYPE_MPX2)  # miniPIX uses the mediPIX 2 chip
         if len(devs) == 0:
             print("!!! no miniPIX device found")
@@ -1429,7 +1440,7 @@ class runDAQ:
                     with NpyAppendArray(self.out_file_npy) as npa:
                         npa.append(np.array([frame2d]))
 
-                # further process (subset of) frames (given by prescaling factor) 
+                # further process (subset of) frames (given by prescaling factor)
                 do_processing = (self.prescale_analysis == 0) or (i_frame - 1) % self.prescale_analysis == 0
 
                 # analyze frame if writing to cluster file or for prescaled fraction of events
