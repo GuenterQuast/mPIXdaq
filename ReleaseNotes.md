@@ -24,5 +24,5 @@
  
 ## 1.1.0
 
-  - based on API 1.18.5 (released 2026/03/09)
-
+  - based on API 1.8.5 (released 2026/03/09)
+  - supports shared memory (needs Python vers. > 3.7)

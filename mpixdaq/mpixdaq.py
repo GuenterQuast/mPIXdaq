@@ -46,7 +46,6 @@ import gzip
 import os
 import importlib
 import pathlib
-import re
 import sys
 import time
 import yaml
@@ -55,7 +54,7 @@ import zipfile
 #
 # special package requirements
 import numpy as np
-from multiprocessing import Queue, Event, Process
+from multiprocessing import Queue, Event, Process, shared_memory
 from threading import Thread
 from scipy import ndimage
 
@@ -150,6 +149,31 @@ class mpixControl:
     def get_serial_number():
         dn = mpixControl.deviceInfo["dn"]
         return int(dn.split('sn:')[1]) if 'sn:' in dn else None
+
+    # manage shared memory (for multiprocessing)
+    shm_fbuffer = None
+
+    @staticmethod
+    def create_sharedMem(size):
+        """create shared memory block for frame buffer
+        Args:
+          - size: size in bytes
+        """
+        mpixControl.shm_fbuffer = shared_memory.SharedMemory(name='shared_fbuffer', create=True, size=size)
+
+    @staticmethod
+    def close_sharedMem():
+        if mpixControl.shm_fbuffer is not None:
+            mpixControl.shm_fbuffer.close()
+
+    @staticmethod
+    def unlink_sharedMem():
+        if mpixControl.shm_fbuffer is not None:
+            mpixControl.shm_fbuffer.unlink()
+
+    @staticmethod
+    def access_sharedMem():
+        return shared_memory.SharedMemory(name=mpixControl.shm_fbuffer.name)
 
     def __init__(self):
         if mpixControl.kbd_control:  # start a background thread to check for keyboard input
@@ -247,12 +271,17 @@ class miniPIXdaq:
 
         # ring buffer for data collection
         self.Nbuf = 8
+        # as numpy arrary in Python memory ...
         self.fBuffer = np.zeros((self.Nbuf, self.npx * self.npx), dtype=np.float32)
-        self._w_idx = 0
+        # .. or in shared system memory, acessible across processes
+        # mpixControl.create_sharedMem(self.Nbuf * self.npx * self.npx * np.float32().itemsize)
+        # shm = mpixControl.access_sharedMem()
+        # self.fBuffer = np.ndarray((self.Nbuf, self.npx * self.npx), dtype=np.float32, buffer=shm.buf)
 
         # Queue for synchronization & data transfer from buffer,
         #    with fewer slots than buffers to enforce blocking if no buffer space is left
         self.dataQ = Queue(self.Nbuf - 2)
+        self._w_idx = 0
 
     def get_device_info(self):
         """get and store device parameters in dictionary"""
@@ -1391,7 +1420,7 @@ class runDAQ:
                 # wait here if paused
                 if not mpixControl.mpixActive.is_set():
                     if mpixControl.kbd_control:
-                        print(f"  Paused - 'R' to resume     ", end="\r")
+                        print("  Paused - 'R' to resume     ", end="\r")
                     self.mpixgraph_fig.canvas.start_event_loop(0.01)  # keep graphics window alive
                     if mpixControl.gui_control:
                         mpixControl.statQ.put(stat + " - paused")
@@ -1547,6 +1576,10 @@ class runDAQ:
             if self.read_filename is None:
                 # shut-down pypixet
                 pypixet.exit()
+
+            # unlink shared memory
+            self.mpixControl.unlink_sharedMem()
+
             sys.exit(0)
 
 
