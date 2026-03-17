@@ -61,11 +61,11 @@ Homepage = "http://www.etp.kit.edu/~quast/"
 # - - options for linting tools - - - 
 
 [tool.black]
-line-length = 150
+line-length = 120
 
 [tool.ruff]
 # only differences from default 
-line-length = 150
+line-length = 120
 
 [tool.ruff.lint]
 # ignore "unable to detect undefined names", "name may be undefined",
