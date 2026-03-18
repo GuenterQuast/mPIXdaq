@@ -138,52 +138,69 @@ class mpixControl:
     kbd_control = True
     gui_control = False
 
-    @staticmethod
-    def keyboard_input():
+    @classmethod
+    def keyboard_input(cls):
         """Read keyboard input and send to Queue, running as background thread to avoid blocking"""
-        while mpixControl.runActive.is_set():
-            mpixControl.cmdQ.put(input())
+        while cls.runActive.is_set():
+            cls.cmdQ.put(input())
             time.sleep(0.5)  # leave some time for main process to react
 
-    @staticmethod
-    def get_serial_number():
-        dn = mpixControl.deviceInfo["dn"]
+    @classmethod
+    def get_serial_number(cls):
+        dn = cls.deviceInfo["dn"]
         return int(dn.split('sn:')[1]) if 'sn:' in dn else None
 
     # helpers to manage shared memory (for multiprocessing)
     shm_fbuffer = None
 
-    @staticmethod
-    def create_sharedMem(size):
+    @classmethod
+    def create_sharedMem(cls, size, name='shared_fbuffer'):
         """create shared memory block for frame buffer
         Args:
           - size: size in bytes
+          - name of shared data block
+
+        Creates shared memory object shm_fbuffer
         """
-        mpixControl.shm_fbuffer = shared_memory.SharedMemory(name='shared_fbuffer', create=True, size=size)
+        cls.shm_fbuffer = shared_memory.SharedMemory(name=name, create=True, size=size)
 
-    @staticmethod
-    def close_sharedMem():
-        if mpixControl.shm_fbuffer is not None:
-            mpixControl.shm_fbuffer.close()
+    @classmethod
+    def close_sharedMem(cls):
+        """
+        Release link to shared memory of frame buffer
+        """
+        if cls.shm_fbuffer is not None:
+            cls.shm_fbuffer.close()
 
-    @staticmethod
-    def unlink_sharedMem():
-        if mpixControl.shm_fbuffer is not None:
-            mpixControl.shm_fbuffer.unlink()
+    @classmethod
+    def unlink_sharedMem(cls):
+        """
+        Release shared memory of frame buffer
+        """
+        if cls.shm_fbuffer is not None:
+            cls.shm_fbuffer.unlink()
 
-    @staticmethod
-    def access_sharedMem():
-        return shared_memory.SharedMemory(name=mpixControl.shm_fbuffer.name)
+    @classmethod
+    def access_sharedMem(cls):
+        """
+        Returns: shared-memory object for frame buffer
+        """
+        return shared_memory.SharedMemory(name=cls.shm_fbuffer.name)
 
-    @staticmethod
-    def get_fbuffer(nbuf=8):
-        """Create if necessary and  return link to buffer space for frames"""
-        npix = mpixControl.deviceInfo['width']
-        if mpixControl.shm_fbuffer is None:  # create new shared memory block
-            mpixControl.create_sharedMem(nbuf * npix * npix * np.float32().itemsize)
-            return np.ndarray((nbuf, npix * npix), dtype=np.float32, buffer=mpixControl.shm_fbuffer.buf)
+    @classmethod
+    def get_fbuffer(cls, nbuf=8):
+        """Create if necessary and  return link to buffer space for frames
+
+        Parameter: number of buffers
+
+        Returns: ndarray of shape (nbuf, npix**2) with data located in shared memory
+        """
+        npix = cls.deviceInfo['width']
+        if cls.shm_fbuffer is None:  # create new shared memory block
+            cls.create_sharedMem(nbuf * npix * npix * np.float32().itemsize)
+            return np.ndarray((nbuf, npix * npix), dtype=np.float32, buffer=cls.shm_fbuffer.buf)
         else:  # link to existing shared memory block and return as properly shaped ndarray
-            _shm = mpixControl.access_sharedMem()
+            _shm = cls.access_sharedMem()
             return np.ndarray((nbuf, npix * npix), dtype=np.float32, buffer=_shm.buf)
 
     def __init__(self):
@@ -386,8 +403,8 @@ class miniPIXdaq:
                 time.sleep(0.1)
 
         print("miniPIXdaq: endEvent seen")
-
         self.pixet.exitPixet()
+        mpixControl.close_sharedMem()
 
     def __del__(self):
         pypixet.exit()
@@ -1657,7 +1674,8 @@ class runDAQ:
                 # shut-down pypixet
                 pypixet.exit()
 
-            # unlink shared memory
+            # release access to and unlink shared memory
+            self.mpixControl.close_sharedMem()
             self.mpixControl.unlink_sharedMem()
 
             sys.exit(0)
