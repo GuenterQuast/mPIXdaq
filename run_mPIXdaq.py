@@ -7,6 +7,7 @@
 import os
 import platform
 import sys
+import multiprocessing
 
 # on some Linux systems, pypixet requires '.' in LD_LIBRARY_PATH to find C-libraries
 #  - add current directory to LD-LIBRARY_PATH
@@ -40,5 +41,12 @@ if os.name == 'nt':
 from mpixdaq import mpixdaq  # this may change the working directory, depending on system
 
 # finally, start daq in working directory
-rD = mpixdaq.runDAQ(wd)
-rD()
+
+if __name__ == '__main__':  # -------------------
+
+    if sys.platform.startswith("win"):
+        # On Windows calling this function is necessary.
+        multiprocessing.freeze_support()
+
+    rD = mpixdaq.runDAQ(wd)
+    rD()
