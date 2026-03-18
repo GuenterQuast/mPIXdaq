@@ -115,7 +115,7 @@ def import_npy_append_array():
 
 class mpixControl:
     """Provides global variables containing Device Information
-    as well as  Queues, Events and methods to control threads"""
+    as well as  Queues, Events, shared_memory and methods to control threads"""
 
     runActive = Event()  # run active
     mpixActive = Event()  # mPIX active
@@ -179,10 +179,12 @@ class mpixControl:
     def get_fbuffer(nbuf=8):
         """Create if necessary and  return link to buffer space for frames"""
         npix = mpixControl.deviceInfo['width']
-        if mpixControl.shm_fbuffer is None:  # create shared memory block
+        if mpixControl.shm_fbuffer is None:  # create new shared memory block
             mpixControl.create_sharedMem(nbuf * npix * npix * np.float32().itemsize)
-        # link to shared memory block and return as properly shaped ndarray
-        return np.ndarray((nbuf, npix * npix), dtype=np.float32, buffer=mpixControl.access_sharedMem().buf)
+            return np.ndarray((nbuf, npix * npix), dtype=np.float32, buffer=mpixControl.shm_fbuffer.buf)
+        else:  # link to existing shared memory block and return as properly shaped ndarray
+            _shm = mpixControl.access_sharedMem()
+            return np.ndarray((nbuf, npix * npix), dtype=np.float32, buffer=_shm.buf)
 
     def __init__(self):
         if mpixControl.kbd_control:  # start a background thread to check for keyboard input
@@ -286,9 +288,9 @@ class miniPIXdaq:
         # set up shared ring buffer for data collection
         self.Nbuf = 8
         # as numpy arrary in Python memory ...
-        self.fBuffer = np.zeros((self.Nbuf, self.npx * self.npx), dtype=np.float32)
+        # self.fBuffer = np.zeros((self.Nbuf, self.npx * self.npx), dtype=np.float32)
         # .. or in shared system memory, acessible across processes
-        # self.fBuffer = mpixControl.get_fbuffer(nbuf=8)
+        self.fBuffer = mpixControl.get_fbuffer(nbuf=self.Nbuf)
 
         # Queue for synchronization & data transfer from buffer,
         #    with fewer slots than buffers to enforce blocking if no buffer space is left
@@ -1219,8 +1221,8 @@ class runDAQ:
                     if self.prescale_analysis != 1:
                         print(f"      * analysis prescaling factor {self.prescale_analysis}")
                 # access shared frame buffer !!! changen to link to shared memory if multi-processing
-                self.fBuffer = self.daq.fBuffer
-                # self.fBuffer = mpixControl.get_fbuffer()
+                # self.fBuffer = self.daq.fBuffer
+                self.fBuffer = mpixControl.get_fbuffer()
 
         # set path to working directory (relative path for input and output files)
         os.chdir(self.wd_path)
