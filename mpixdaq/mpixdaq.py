@@ -152,6 +152,7 @@ class mpixControl:
 
     # helpers to manage shared memory (for multiprocessing)
     shm_fbuffer = None
+    nbuf = 8
 
     @classmethod
     def create_sharedMem(cls, size, name='shared_fbuffer'):
@@ -195,10 +196,12 @@ class mpixControl:
 
         Returns: ndarray of shape (nbuf, npix**2) with data located in shared memory
         """
+        if cls.nbuf is None:
+            cls.nbuf = nbuf
         npix = cls.deviceInfo['width']
         if cls.shm_fbuffer is None:  # create new shared memory block
-            cls.create_sharedMem(nbuf * npix * npix * np.float32().itemsize)
-            return np.ndarray((nbuf, npix * npix), dtype=np.float32, buffer=cls.shm_fbuffer.buf)
+            cls.create_sharedMem(cls.nbuf.nbuf * npix * npix * np.float32().itemsize)
+            return np.ndarray((cls.nbuf, npix * npix), dtype=np.float32, buffer=cls.shm_fbuffer.buf)
         else:  # link to existing shared memory block and return as properly shaped ndarray
             _shm = cls.access_sharedMem()
             return np.ndarray((nbuf, npix * npix), dtype=np.float32, buffer=_shm.buf)
