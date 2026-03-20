@@ -54,7 +54,7 @@ import zipfile
 #
 # special package requirements
 import numpy as np
-from multiprocessing import Queue, Event, Process, shared_memory
+from multiprocessing import Queue, Event, Process
 from threading import Thread
 from scipy import ndimage
 
@@ -62,7 +62,8 @@ import matplotlib as mpl
 import matplotlib.pyplot as plt
 
 from .mplhelpers import bhist, scatterplot, run_controlGUI
-from .mpixhelpers import fileDecoders
+from .mpixhelpers import fileDecoders, shmManager
+
 
 plt.style.use("dark_background")
 from matplotlib.colors import LogNorm
@@ -155,15 +156,22 @@ class mpixControl:
     nbuf = 8
 
     @classmethod
-    def create_sharedMem(cls, size, name='shared_fbuffer'):
-        """create shared memory block for frame buffer
-        Args:
-          - size: size in bytes
-          - name of shared data block
+    def get_fbuffer(cls, nbuf=8):
+        """Create if necessary and  return link to buffer space for frames
 
-        Creates shared memory object shm_fbuffer
+        Parameter: number of buffers
+
+        Returns: ndarray of shape (nbuf, npix**2) with data located in shared memory
         """
-        cls.shm_fbuffer = shared_memory.SharedMemory(name=name, create=True, size=size)
+        if cls.nbuf is None:
+            cls.nbuf = nbuf
+        npix = cls.deviceInfo['width']
+        if cls.shm_fbuffer is None:  # create new shared memory block
+            cls.shm_fbuffer = shmManager.get_sharedMem('shared_fbuffer', cls.nbuf * npix * npix * np.float32().itemsize)
+            return np.ndarray((cls.nbuf, npix * npix), dtype=np.float32, buffer=cls.shm_fbuffer.buf)
+        else:  # link to existing shared memory block and return as properly shaped ndarray
+            _shm = shmManager.get_sharedMem('shared_fbuffer')
+            return np.ndarray((cls.nbuf, npix * npix), dtype=np.float32, buffer=_shm.buf)
 
     @classmethod
     def close_sharedMem(cls):
@@ -180,31 +188,6 @@ class mpixControl:
         """
         if cls.shm_fbuffer is not None:
             cls.shm_fbuffer.unlink()
-
-    @classmethod
-    def access_sharedMem(cls):
-        """
-        Returns: shared-memory object for frame buffer
-        """
-        return shared_memory.SharedMemory(name=cls.shm_fbuffer.name)
-
-    @classmethod
-    def get_fbuffer(cls, nbuf=8):
-        """Create if necessary and  return link to buffer space for frames
-
-        Parameter: number of buffers
-
-        Returns: ndarray of shape (nbuf, npix**2) with data located in shared memory
-        """
-        if cls.nbuf is None:
-            cls.nbuf = nbuf
-        npix = cls.deviceInfo['width']
-        if cls.shm_fbuffer is None:  # create new shared memory block
-            cls.create_sharedMem(cls.nbuf.nbuf * npix * npix * np.float32().itemsize)
-            return np.ndarray((cls.nbuf, npix * npix), dtype=np.float32, buffer=cls.shm_fbuffer.buf)
-        else:  # link to existing shared memory block and return as properly shaped ndarray
-            _shm = cls.access_sharedMem()
-            return np.ndarray((nbuf, npix * npix), dtype=np.float32, buffer=_shm.buf)
 
     def __init__(self):
         if mpixControl.kbd_control:  # start a background thread to check for keyboard input

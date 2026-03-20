@@ -7,6 +7,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.colors import LogNorm
+from multiprocessing import shared_memory
 import re
 import yaml
 
@@ -205,3 +206,35 @@ def plot_cluster(pxlist, num=0):
     _img.set_clim(vmin=vmin, vmax=vmax)
 
     return _fig
+
+
+class shmManager:
+    """simple management of shared memory blocks
+
+    class methods:
+      - def get_sharedMem(name, size): create or link to shared memory
+
+      do not forget to close() and finally unlink() all requested blocks
+      in calling process
+    """
+
+    # list with names of all created memory blocks
+    shm_names = []
+
+    @classmethod
+    def get_sharedMem(cls, name, size=None):
+        """Create if necessary and return link to buffer
+
+        Args:
+          - name of shared data block
+          - size: size in bytes, not needed if shared memory already created
+
+        Returns: shared memory object
+
+        """
+        if name not in cls.shm_names:  # create new shared memory block
+            _shm = shared_memory.SharedMemory(name=name, create=True, size=size)
+            cls.shm_names.append(_shm.name)
+        else:  # link to existing shared memory block and return as properly shaped ndarray
+            _shm = shared_memory.SharedMemory(name=name)
+        return _shm
