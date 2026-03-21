@@ -42,18 +42,22 @@ the sensitive area, allowing usage of the device as an energy spectrometer.
 The vendor provides a ready-to-use program for different computer
 platforms as well as a software-development kit for own applications. 
 
-The code provided here is a minimalist example to read out single
-frames, i.e. a full set of 256x256 pixel energies accumulated over a 
-given, fixed time interval. Each frame is displayed as an image with
-a logarithmic color scale representing the deposited energy in each
-pixel. 
+The code provided here serves for acquisition and real-time visualization
+of data provided by a *miniPIX* or *miniPIX* *EDU* device in frame mode,
+i.e. read-out of successive single frames consisting of a full set of 
+256x256 pixel energies accumulated over a given, fixed exposure time.
+Collected frames are displayed as images with a logarithmic color scale 
+representing the deposited energy in each pixel. Real-time clustering of 
+pixels and fast analysis of the cluster properties by means of standard 
+open-source tools for data analysis are also performed. Raw data and
+analysis results can be exported to files. A sample analysis based on
+these output data is provided in the form of a Jupyter notebook. 
 
-The analysis of the recorded signals, i.e. clustering of pixels, energy
-determination and visualization, is achieved by means of standard open-source
-tools for data analysis. The *mPIXdaq* package is therefore well-suited for 
-high-school or university students to gain detailed insights into the principles 
-of the interaction of different types of radiation with matter and to carry 
-out their own studies by analyzing data recorded during lab courses.
+The *mPIXdaq* package is therefore well-suited for high-school or 
+university students to gain detailed insights into the principles 
+of the interaction of different types of radiation with matter and 
+to carry out their own studies by analyzing data recorded during lab 
+courses.
 
 
 ## Getting ready for data taking
