@@ -220,6 +220,7 @@ class shmManager:
 
     # list with names of all created memory blocks
     shm_names = []
+    shms = []
 
     @classmethod
     def get_sharedMem(cls, name, size=None):
@@ -234,7 +235,27 @@ class shmManager:
         """
         if name not in cls.shm_names:  # create new shared memory block
             _shm = shared_memory.SharedMemory(name=name, create=True, size=size)
-            cls.shm_names.append(_shm.name)
+            cls.shms.append(_shm)
+            cls.shm_names.append(cls.shms[-1].name)
+            return _shm
         else:  # link to existing shared memory block and return as properly shaped ndarray
             _shm = shared_memory.SharedMemory(name=name)
         return _shm
+
+    @classmethod
+    def close_sharedMem(cls, name):
+        """close shared memory block by name"""
+        for _i in range(len(cls.shms)):
+            if name == cls.shm_names[_i]:
+                cls.shms[_i].close()
+                break
+
+    @classmethod
+    def unlink_sharedMem(cls, name):
+        """unlink shared memory block by name and remove from lists"""
+        for _i in range(len(cls.shms)):
+            if name == cls.shm_names[_i]:
+                cls.shms[_i].unlink()
+                del cls.shms[_i]
+                del cls.shm_names[_i]
+                break
