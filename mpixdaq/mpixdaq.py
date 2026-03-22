@@ -54,7 +54,7 @@ import zipfile
 #
 # special package requirements
 import numpy as np
-from multiprocessing import Queue, Event, Process
+from multiprocessing import Queue, Event, Process, shared_memory
 from threading import Thread
 from scipy import ndimage
 
@@ -153,7 +153,7 @@ class mpixControl:
 
     # helpers to manage shared memory (for multiprocessing)
     shm_fbuffer = None
-    nbuf = 8
+    nbuf = None
 
     @classmethod
     def get_fbuffer(cls, nbuf=8):
@@ -166,12 +166,15 @@ class mpixControl:
         if cls.nbuf is None:
             cls.nbuf = nbuf
         npix = cls.deviceInfo['width']
+
         if cls.shm_fbuffer is None:  # create new shared memory block
             cls.shm_fbuffer = shmManager.get_sharedMem('shared_fbuffer', cls.nbuf * npix * npix * np.float32().itemsize)
+            #  print("created new shared memory, size ", cls.shm_fbuffer.size)
             return np.ndarray((cls.nbuf, npix * npix), dtype=np.float32, buffer=cls.shm_fbuffer.buf)
         else:  # link to existing shared memory block and return as properly shaped ndarray
-            _shm = shmManager.get_sharedMem('shared_fbuffer')
-            return np.ndarray((cls.nbuf, npix * npix), dtype=np.float32, buffer=_shm.buf)
+            cls._shm = shmManager.get_sharedMem('shared_fbuffer')
+            #  print("linked to shared memory, size ", _shm.size)
+            return np.frombuffer(cls._shm.buf, dtype=np.float32).reshape(-1, npix * npix)
 
     @classmethod
     def close_sharedMem(cls):
@@ -288,11 +291,11 @@ class miniPIXdaq:
         self.ac_count = mpixControl.daqSettings['acq_count']
         self.ac_time = mpixControl.daqSettings['acq_time']
 
-        # set up shared ring buffer for data collection
+        # set up shared ring buffer for data collection ...
         self.Nbuf = 8
-        # as numpy arrary in Python memory ...
-        # self.fBuffer = np.zeros((self.Nbuf, self.npx * self.npx), dtype=np.float32)
-        # .. or in shared system memory, acessible across processes
+        # ... as numpy arrary from daq process ...
+        ## self.fBuffer = np.zeros((self.Nbuf, self.npx * self.npx), dtype=np.float32)
+        # ... or in shared system memory, accessible across processes
         self.fBuffer = mpixControl.get_fbuffer(nbuf=self.Nbuf)
 
         # Queue for synchronization & data transfer from buffer,
@@ -308,8 +311,10 @@ class miniPIXdaq:
         self.deviceInfo["type"] = self.dev.sensorType(self.id)
         self.deviceInfo["pitch"] = self.dev.sensorPitch(self.id)
         self.deviceInfo["thickness"] = self.dev.sensorThickness(self.id)
-        self.deviceInfo["width"] = self.dev.width(self.id)
-        self.deviceInfo["height"] = self.dev.height(self.id)
+        #!v184        self.deviceInfo["width"] = self.dev.width(self.id)
+        #!v184        self.deviceInfo["height"] = self.dev.height(self.id)
+        self.deviceInfo["width"] = self.dev.width()
+        self.deviceInfo["height"] = self.dev.height()
         pars = self.dev.parameters()
         self.deviceInfo["dn"] = pars.get("DeviceName").getString()
         self.deviceInfo["fw"] = pars.get("Firmware").getString()
@@ -365,7 +370,7 @@ class miniPIXdaq:
         frame = self.dev.lastAcqFrameRefInc()
         if mpixControl.mpixActive.is_set():
             # store data while running
-            self.fBuffer[self._w_idx, :] = np.asarray(frame.data())
+            self.fBuffer[self._w_idx, :] = np.asarray(frame.data())[:]
             # remove noisy pixels from (linear) data frame based on bad-pixel list
             if mpixControl.badpixel_list is not None:
                 self.fBuffer[self._w_idx][mpixControl.badpixel_list] = -1
@@ -378,8 +383,8 @@ class miniPIXdaq:
         return pointer to data in buffer via Queue
         """
         # register call-back function
-        self.dev.registerEvent(self.pixet.PX_EVENT_ACQ_FINISHED, 0, self.clb_acq_done)
-
+        #!v184        self.dev.registerEvent(self.pixet.PX_EVENT_ACQ_FINISHED, 0, self.clb_acq_done)
+        self.dev.registerEvent(self.pixet.PX_EVENT_ACQ_FINISHED, self.clb_acq_done)
         while not mpixControl.endEvent.is_set():  # keep running while active
             if mpixControl.mpixActive.is_set():  # read ac_count individual frames in one burst
                 rc_clb = self.dev.doSimpleAcquisition(self.ac_count, self.ac_time, self.pixet.PX_FTYPE_NONE, "")
@@ -389,7 +394,7 @@ class miniPIXdaq:
                 time.sleep(0.1)
 
         print("miniPIXdaq: endEvent seen")
-        self.pixet.exitPixet()
+        #!v184        self.pixet.exitPixet()
         mpixControl.close_sharedMem()
 
     def __del__(self):
@@ -1219,12 +1224,12 @@ class runDAQ:
                     self.daq.print_device_info()
                 if self.verbosity > 0:
                     print()
-                    print(f"     -> reading frames of {self.acq_time} s duration")
+                    print(f"     -> frames of {self.acq_time} s duration")
                     print(f"     -> graphics overlay of {self.n_overlay} frames with {self.acq_time} s")
                     if self.prescale_analysis != 1:
                         print(f"      * analysis prescaling factor {self.prescale_analysis}")
-                # access shared frame buffer !!! changen to link to shared memory if multi-processing
-                # self.fBuffer = self.daq.fBuffer
+                # access shared frame buffer !!! changed to link to shared memory if multi-processing
+                # self.fBuffer = self.daq.fBuffer  # version from daq
                 self.fBuffer = mpixControl.get_fbuffer()
 
         # set path to working directory (relative path for input and output files)
@@ -1472,10 +1477,14 @@ class runDAQ:
         frame2d = np.zeros((self.npx, self.npx), dtype=np.int32)
         i_frame = 0
 
-        # start daq as a Thread
+        # start daq as a Thread ...
+        daqProc = None
         if self.read_filename is None:
             daq_thread = Thread(target=self.daq, daemon=True)
             daq_thread.start()
+        # ... or start daq as a Thread ...
+        # daqProc = Process(name="daq", target=self.daq)
+        # ddaqProc.start()
 
         # link to fiugure
         self.mpixgraph_fig = self.mpixvis.fig  # keep graphics window alive
@@ -1657,10 +1666,12 @@ class runDAQ:
 
             # finally, close down pypixet and exit
             if self.read_filename is None:
-                # shut-down pypixet
+                # shut-down pypixet and daq process
                 pypixet.exit()
+                if daqProc is not None and daqProc.is_alive():
+                    daqProc.terminate()
 
-            # release access to and unlink shared memory
+            # finally, release access and unlink shared memory
             self.mpixControl.close_sharedMem()
             self.mpixControl.unlink_sharedMem()
 

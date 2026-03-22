@@ -234,11 +234,21 @@ class shmManager:
 
         """
         if name not in cls.shm_names:  # create new shared memory block
-            _shm = shared_memory.SharedMemory(name=name, create=True, size=size)
+            try:
+                _shm = shared_memory.SharedMemory(name=name, create=True, size=size)
+            except FileExistsError:
+                print(f"!!! warning: shared memory '{name}' already existed")
+                _shm = shared_memory.SharedMemory(name=name, create=False, size=size)
+                if _shm.size != size:  # wrong size, delete and re-create
+                    _shm.close()
+                    _shm.unlink()
+                    _shm = shared_memory.SharedMemory(name=name, create=True, size=size)
+            except Exception as e:
+                print(f"!!! failed to create shared memory, Error: " + str(e))
             cls.shms.append(_shm)
             cls.shm_names.append(cls.shms[-1].name)
             return _shm
-        else:  # link to existing shared memory block and return as properly shaped ndarray
+        else:  # link to existing shared memory block
             _shm = shared_memory.SharedMemory(name=name)
         return _shm
 
