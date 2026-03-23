@@ -382,6 +382,7 @@ class miniPIXdaq:
         """Read *ac_count* frames with *ac_time* exposure time each;
         return pointer to data in buffer via Queue
         """
+
         # register call-back function
         #!v184        self.dev.registerEvent(self.pixet.PX_EVENT_ACQ_FINISHED, 0, self.clb_acq_done)
         self.dev.registerEvent(self.pixet.PX_EVENT_ACQ_FINISHED, self.clb_acq_done)
@@ -1482,9 +1483,9 @@ class runDAQ:
         if self.read_filename is None:
             daq_thread = Thread(target=self.daq, daemon=True)
             daq_thread.start()
-        # ... or start daq as a Thread ...
-        # daqProc = Process(name="daq", target=self.daq)
-        # ddaqProc.start()
+        # ... or as a sub-process (no performance gain, unfortunately)
+        #    daqProc = Process(name="daq", target=self.daq)
+        #    daqProc.start()
 
         # link to fiugure
         self.mpixgraph_fig = self.mpixvis.fig  # keep graphics window alive
