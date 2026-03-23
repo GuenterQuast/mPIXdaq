@@ -1,6 +1,6 @@
 ---
-title: Educators Guide for the Advacam miniPIX (EDU) silicon pixel detector with mPIXdaq  
-author: Günter Quast, February 2026
+title: Educators Guide for *mPIXdaq* 
+author: Günter Quast, March 2026
 ...
 
 <head>
@@ -19,16 +19,16 @@ author: Günter Quast, February 2026
 <!-- ------------------------------------------------------------------ -->
 
 # Educators Guide for *mPIXdaq*
-## &nbsp; &nbsp; using the Advacam miniPIX (EDU) silicon pixel detector    
+### &nbsp; &nbsp; Data acquisition, visualization and analysis for the Advacam *miniPIX* (EDU) silicon pixel detector    
                                                                     Vers. 1.0.1, March 2026  
 
 This document is meant to be a guide for educators who want to explore the possibilities
-af a modern radiation detection sensor and its implications on new ways to teach the 
+of a modern radiation detection sensor and its implications on new ways to teach the 
 subject of radioactivity at secondary and high-school level. 
 
 While installation, general purpose and use of the *mPIXdaq* software as well as the 
 options for data acquisition, data analysis and visualization are described in the 
-*README* document of the *mPIXdaq* package, this guides concentrates on practical 
+*README* document of the *mPIXdaq* package, this guide focuses on practical 
 applications in laboratory courses.
 
 
@@ -44,17 +44,17 @@ fields for particle detection, radiation dose measurements and imaging in materi
 sciences and medical applications.  
 
 The affordable miniPIX (EDU) variant from 
-[Advacam](https://advacam.com/camera/minipix-edu/) 
-is based on the [*Timepix*](https://home.cern/tags/timepix) hybrid silicon pixel 
+[_Advacam_](https://advacam.com/camera/minipix-edu/) 
+is based on the [_Timepix_](https://home.cern/tags/timepix) hybrid silicon pixel 
 device developed at CERN by the Medipix collaboration. More details on the detector
-and its diverse applications may be found in the [Medipix CERN brochure](
+and its diverse applications may be found in the [_Medipix CERN brochure_](
 https://cds.cern.ch/record/2730889/files/CERN-Brochure-2015-007-Eng.pdf).
 
 Thanks to the USB interface and the availability of a user program and drivers for
 various platforms, the detector is easy  to use and allows data visualization in real-time. 
 It is particularly useful to interactively investigate the properties and interactions 
-with matter of α, β and γ radiation and muons from cosmic rays in educational contexts,
-opening new and very intuitive ways of teaching nuclear physics.  
+with matter of α, β and γ radiation and of muons from cosmic rays in educational contexts,
+opening new and very intuitive ways of teaching nuclear and particle physics.  
 The visual impression of recorded energy depositions in the pixel sensor resembles 
 images produced by cloud chambers, but the *miniPIX* is much easier to set-up and use
 and offers the additional advantage that quantitative, digital information with accurate 
@@ -73,10 +73,10 @@ how radiation interacts with matter: strongly localized energy deposits for α p
 long, bent traces from β particles, and - typically small - energy deposits from γ rays,
 which also stem from electrons (i.e. β particles) produced via the Compton process or 
 the photo effect. At rather low rates, also muons from cosmic rays are observed, which
-are characterized by straight tracks with constant mean ionization loss along the trace.
+are characterized by straight tracks with constant mean ionization along the trace.
 
 A schematic view of a charged-particle track in the sensitive detector material and the
-projection of the energy deposits on the pixels readout plane is shown in the figure below.
+projection of the energy deposits on the pixel readout-plane is shown in the figure below.
 
 > ![3d-View of pixel cells and example of a particle track](images/pixels-with-track.png)
 
@@ -177,7 +177,7 @@ More details on the real-time analysis method will be given below.
   images/mPIXdaq_Columbit.png)
 
 Energy spectra of γ rays cannot be measured with the *miniPIX* owing to the small 
-overall sensor volume which is to small to contain all energy deposits.  
+overall sensor volume which is to small to contain all energy deposits.
 Therefore a gamma spectrometer with a scintillating crystal is recommended 
 for γ spectroscopy, e.g. one of the very cost-effective and sufficiently 
 precise devices made by [RadiaCode](https://radiacode.com/).
@@ -217,7 +217,7 @@ to electrons via photo-effect are also possible in rare cases.
 
 > ![α, β and γ signatures in *miniPIX* frames](images/alpha-beta-gamma.png)
 
-A **thin plastic foil as absorber** leads to complete suppression of all α 
+A **thin plastic foil** as absorber leads to complete suppression of all α 
 and of low-energy β signatures. As becomes clear from the image shown below, 
 the rate of recorded objects is significantly reduced, and the typical 
 signatures from α particles are completely missing. 
@@ -300,28 +300,27 @@ strongly discriminating the desired signatures against backgrounds.
 
 *mPIXdaq* performs an online analysis of recorded data frames and presents the
 results as animated histograms which are updated as data collection proceeds.
-Raw or clustered frame data as well as cluster properties in simple 
-*.csv* format can be created with *mPIXdaq* and stored on disk for 
-subsequent analysis. In addition to the very beneficial visual impression 
-it thus becomes possible to learn about and use computer-based methods 
-to study in detail the properties of energy depositions by different
-types of particles. 
+Raw or clustered frame data as well as cluster properties in *.csv* format 
+can be created with *mPIXdaq* and stored on disk for subsequent analysis. 
+In addition to the very beneficial visual impression it thus becomes 
+possible to use computer-based methods to study in detail the properties 
+of energy depositions by different types of particles. 
 
 In a first step, connected areas of pixels, called clusters, are determined 
 in each recorded frame using the *label()* method of the image-processing 
-library *scipy.ndimage". 
+library *scipy.ndimage*. 
 
 The main features of each cluster are the mean position in pixel coordinates, 
 the number of pixels and the sum of all pixel energies. 
 
-Further interesting features are the geometrical shape of the cluster area and 
-of the energy distribution over the pixels.
+Further interesting features are the geometrical shape of the cluster area 
+and the shape of the energy distribution over the pixels.
 To characterize the geometrical shape, the covariance matrix of the pixel 
 coordinates, ${\rm cov}(x_i, y_i)$ is used. Stored are the half-lengths of 
 the principal axes (or the semi-major and semi-minor axes) and the angular 
 orientation of the principal axis of the covariance ellipses of the clusters. 
 Almost identical values of the half-lengths classify a circular geometry, 
-while largely different values are characteristic of liner geometries. 
+while largely different values are characteristic of liner topologies. 
 The ratio of the two half-length it therefore used as a measure of  
 the "circularity" of the cluster, which already provides a good separation 
 of α and β particles.
@@ -338,13 +337,13 @@ Optionally, in addition to the cluster properties, a list of pixels contributing
 to each cluster can be stored for more sophisticated off-line analysis. 
 
 As a starting point for own analyses, the *mPIXdaq* package offers a 
-*Jupyter Notebook*, *analyze_mPIXclusters.ipynb* for use with a local or 
+*Jupyter Notebook*, *analyze_mPIXclusters.ipynb*, for use with a local or 
 remote *Jupyter* service. In standard *Python* environments, such a server
 can easily be set-up, as is documented on the project homepage 
-[jupyter .org](https://jupyter.org/).
+[_jupyter .org_](https://jupyter.org/).
 The analysis example provided as part of the *mPIXdaq* package shows how to 
 read the output files and also provides a sample analysis. The code relies
-on the [pandas](https://pandas.pydata.org/) package which has become a 
+on the [_pandas_](https://pandas.pydata.org/) package which has become a 
 well-established standard in data science for the analysis of large datasets. 
 
 The following variables are derived for each pixel cluster during online-processing:
@@ -365,17 +364,19 @@ The following variables are derived for each pixel cluster during online-process
     varE_mn : minimum variance of energy distribution 
 
 This set of variables permits very detailed studies of the properties of 
-energy deposits in the *miniPIX* and deeper insights into the underlying
+energy deposits in the *miniPIX* , providing deeper insights into the underlying
 physics. An almost perfect separation of the different types of radiation 
 becomes possible and permits background-free selections of α and β traces, 
 counting their rates and determining energy spectra of α particles.
 
 As a further option, a file with cluster data stored in *.yaml* format 
-contains the positions and energies of all contributing pixels, and makes it
-possible to identify β tracks that are stopped in the active volume of
-the detector by using the large enhancement of the deposited energy
-when the electrons come to rest in the material. Explicitly selecting
-such tracks opens up some limited possibilities for β spectroscopy.
+contains the positions and energies of all contributing pixels. More 
+sophisticated analysis strategies can thus be explored. As an example, 
+it is possible to identify β tracks that are stopped in the active 
+volume of the detector by using the large enhancement of the deposited 
+energy when the electrons come to rest in the material. 
+Explicitly selecting such tracks opens up some limited possibilities 
+for β spectroscopy.
 
 
 ## Advanced topics for university lab courses
@@ -384,13 +385,9 @@ Typical (classical) experiments in nuclear physics, like energy spectra
 and energy loss in air of α particles or the penetration power and absorption 
 of β radiation can comfortably be performed with the *miniPX* detector. 
 Its granular spatial resolution allows further insights to be gained that 
-are not achievable otherwise. Possible are the background-free counting
-and energy determination of α particles, or detailed studies of the
-energy deposition in silicon of electrons in each pixel along a trace.
-The results of photon interactions in the sensitive detector volume can
-also be studied.
+are not achievable otherwise. 
 
-To support quantitative experiments, a simple script `calculate_dEdx.py` 
+To support quantitative experiments, the *Python* script `calculate_dEdx.py` 
 for the determination of the (mean) specific energy losses (dE/dx) of 
 electrons and alpha-particles in air and silicon is provided with this 
 package. The calculated energy loss of particles (or, resp. the deposited 
@@ -400,7 +397,7 @@ The calculated energy deposits are based on modified versions of the Bethe-Bloch
 relation for the energy loss of charged particles in matter and represent
 reasonable approximations. The presently most authoritative information source 
 on energy losses of electrons, photons and Helium nuclei are the tabulated data
-by NIST (ESTAR, ASTAR and PStar), see [NIST Standard Reference Database](
+by NIST (ESTAR, ASTAR and PStar), see [_NIST Standard Reference Database_](
 https://www.nist.gov/pml/stopping-power-range-tables-electrons-protons-and-helium-ions).
 
  A selection of (proposed and to be tested) experiments with the *miniPIX* detector 
@@ -554,7 +551,7 @@ over all angles of incidence, is only about 1/cm²/min. Two clear muon tracks
 found in a data set recorded with a total acquisition time of 1000s are 
 shown below.
 
-> ![Tow clear muon tracks ](images/muonTracks.png) 
+> ![Two clear muon tracks ](images/muonTracks.png) 
 
 Signatures from α particles are also seen at very low rates. They stem
 from decays of the noble gas Radon (Rn-222 and Ra-224) from the Uranium and 
