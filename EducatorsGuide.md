@@ -126,7 +126,8 @@ time are summed up. For details, see the article by J. Jakubek,
 time-over-threshold mode*, NIM A 633 (2011), 5262-5265.
 
 If particle rates are sufficiently low to avoid overlaps of signatures, all 
-particle interactions occurring during the exposure time of a frame are individually distinguishable. The deposited energy in the pixels is encoded as a 
+particle interactions occurring during the exposure time of a frame are 
+individually distinguishable. The deposited energy in the pixels is encoded as a 
 color value, resulting in a very intuitive representation of the energy deposits 
 produced by particles in the sensitive volume. 
 
@@ -166,8 +167,9 @@ of the classical arsenal of detection techniques like electrometer, ionization
 chamber, Geiger counter, scintillation counter or mono-crystal silicon detectors.  
 
 As an example, the graphical display of a data collection run with *mPIXdaq* is 
-shown below with an overlay of 10 frames, each recorded with an exposure time of 1 s. Clustering of connected pixels and classification of the patterns are performed in 
-real time during data acquisition and results are shown as histograms. The history 
+shown below with an overlay of 10 frames, each recorded with an exposure time of
+1 s. Clustering of connected pixels and classification of the patterns are performed 
+in real time during data acquisition and results are shown as histograms. The history 
 over the last 300 frames of the numbers of observed objects per frame is also displayed 
 and demonstrates the Poisson nature of the underlying processes of production and
 detection of radioactive particles.
