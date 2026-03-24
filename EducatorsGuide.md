@@ -20,7 +20,7 @@ author: Günter Quast, March 2026
 
 # Educators Guide for *mPIXdaq*
 ### &nbsp; &nbsp; Data acquisition, visualization and analysis for the Advacam *miniPIX* (EDU) silicon pixel detector    
-                                                                    Vers. 1.0.1, March 2026  
+                                                                              Vers. 1.0.1, March 2026  
 
 This document is meant to be a guide for educators who want to explore the possibilities
 of a modern radiation detection sensor and its implications on new ways to teach the 
@@ -37,7 +37,7 @@ applications in laboratory courses.
 The miniPIX (EDU) device is a modern silicon pixel detector that precisely measures 
 the spacial distribution and magnitude of energy depositions caused by ionizing 
 particles traversing the sensitive volume consisting of 256x256 pixels 
-of 55x55x300µm³ each.       
+of 55x55x300µm³ volume each.       
 Segmented silicon detectors like the *miniPIX* were originally developed for tracking
 of charged particles in high-energy physics. They are now also widely used in diverse
 fields for particle detection, radiation dose measurements and imaging in material 
@@ -119,11 +119,12 @@ a frequency of appr. 10 MHz.
 Typical values of the calibrations constants are $a$ = 1.6, $b$=23, $c$=23 and $t$=4.3. 
 Each pixel has its individual calibration stored on the chip, 
 which is optionally applied to obtain pixel readings in units of keV.
-The calibration is reliable up to pixel energies of one MeV. 
-Higher pixel energies may result when frames with short acquisition 
-time are summed up. For details, see the article by J. Jakubek, 
-*Precise energy calibration of pixel detector working in 
-time-over-threshold mode*, NIM A 633 (2011), 5262-5265.
+The calibration is reliable up to pixel energies of about one MeV and
+shows a strong nonlinearity at higher values.  
+For details, see the articles by J. Jakubek, *Precise energy calibration 
+of pixel detector working in time-over-threshold mode*, NIM A 633 (2011), 5262-5265
+and M. Sommer et al., *High-energy per-pixel calibration of timepix pixel detector 
+with laboratory alpha source*, NIM A 1022 (2022) 165957.
 
 If particle rates are sufficiently low to avoid overlaps of signatures, all 
 particle interactions occurring during the exposure time of a frame are 
@@ -282,10 +283,10 @@ or also with the *Pixet* (basic) program the vendor provides together with
 the *minPIX* detector. 
 *mPIXdaq*, however, provides a transparent algorithm for clustering 
 of pixels and for the characterization of cluster properties that rely 
-solely on basic methods that are mastered already by 
-undergraduate students. The *miniPIX* data may also serve as a motivation 
-for younger high-school students to learn such techniques and gain experience 
-in more complex methods of digital data processing and analysis.
+solely on basic methods that are mastered already by  undergraduate students. 
+The *miniPIX* data may also serve as a motivation for younger high-school 
+students to learn such techniques and gain experience in more complex 
+methods of digital data processing and analysis.
 
 The algorithms are fast enough to be deployed on-line in low-rate scenarios,
 thus providing quantitative results on particle rates and energy spectra. 
