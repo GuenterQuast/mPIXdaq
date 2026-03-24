@@ -34,16 +34,11 @@ if platform.system() != 'Windows':
 
 # get current working directory (before importing minipix libraries)
 wd = os.getcwd()
-
-if os.name == 'nt':
-    # special hack for windows: load pypixet and DLLs
-    import mpixdaq.advacam_win64.pypixet as pypixet
 from mpixdaq import mpixdaq  # this may change the working directory, depending on system
 
+
 # finally, start daq in working directory
-
 if __name__ == '__main__':  # -------------------
-
     if sys.platform.startswith("win"):
         # On Windows calling this function is necessary.
         multiprocessing.freeze_support()
