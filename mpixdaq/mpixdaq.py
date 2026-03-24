@@ -91,7 +91,7 @@ def import_pixet():
         advacam_libs = ".advacam_mac"
     elif "Windows" in arch[1]:
         if (arch[0] == '64bit') and ('3.12' in sys.version.split()[0]):
-            advacam_libs = ".advacam_win"
+            advacam_libs = ".advacam_win64"
         else:
             print("warning - on MS Windows pypixet only works with 64-bit Python 3.12")
     if advacam_libs is None:
