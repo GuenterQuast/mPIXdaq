@@ -56,15 +56,15 @@ of the interaction of different types of radiation with matter and to carry
 out their own studies by analyzing data recorded during lab courses.
 
 
-## Getting ready for data taking
+## Getting ready for data taking - package installation
 
 This code has been tested on *Ubuntu*, *openSuse*, *Fedora*, on
-Windows 64bit with *Python3.7.9* and on *Raspberry Pi* for the 
-32- and 64-bit versions of *OS12* and *OS13*. Other Linux distributions 
+Windows 64bit with *Python3.12.x and on *Raspberry Pi* for the 
+64-bit versions of *OS12* and *OS13*. Other Linux distributions 
 should not pose any unsurmountable problems.  
-On MS Windows, the libraries provided by the vendor only support
-*Python* vers. 3.7.9; such a rather historic version can be set up
-using e.g. the *miniconda* framework. 
+
+On MS Windows, the libraries provided by the vendor support *Python* 
+vers. 3.12, which is easiest to set up with the *miniconda* framework. 
 
 The code also supports devices other than the miniPIX EDU if the 
 configuration files are available and copied to the *factory/*
@@ -81,25 +81,28 @@ To get started, follow the steps below:
 
  - Next, `cd` to the `mPIXdaq` directory you just downloaded.
 
- - Set up the USB interface of your computer to recognize the miniPIX detector:  
+ - On Linux systems, set up the USB interface of your computer to 
+   recognize the miniPIX detector:  
    ``sudo install_driver_rules.sh`` (to be done only once),
    then connect the *miniPIX* to your computer.  
 
 The package may also be installed in your virtual python environment:
 
+  - `python -m pip install -r requirements.txt`
   - `python -m pip install .`
 
 
 Now everything is set up to enjoy your *miniPIX*. Just run the *Python* 
 program from any working directory by typing   
 
-   > ``run_mPIXdaq.py``.
+   > ``python run_mPIXdaq.py``.
 
 If you plan to record data, note that the path to the output file
 is relative to the current working directory. 
 
 *Note* also that the *pypixet* initialization is set up to write log-files
-and configuration data to the directory */tmp/mPIX/*.
+and configuration data to the directory `/tmp/mPIX/` rsp. `C:\tmp\mPIX` on 
+MS Windows systems. Make sure they exist.
 
 It is also worth mentioning that on some systems the current directory,
 ".", needs to be contained in the `LD_LIBRARY_PATH` so that the Advacam 
