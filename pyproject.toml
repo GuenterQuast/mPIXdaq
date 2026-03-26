@@ -65,6 +65,7 @@ line-length = 120
 
 [tool.ruff]
 # only differences from default 
+target-version = "py312"
 line-length = 120
 
 [tool.ruff.lint]

@@ -54,7 +54,7 @@ import zipfile
 #
 # special package requirements
 import numpy as np
-from multiprocessing import Queue, Event, Process, shared_memory
+from multiprocessing import Queue, Event, Process
 from threading import Thread
 from scipy import ndimage
 

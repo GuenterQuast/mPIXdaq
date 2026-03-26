@@ -244,7 +244,7 @@ class shmManager:
                     _shm.unlink()
                     _shm = shared_memory.SharedMemory(name=name, create=True, size=size)
             except Exception as e:
-                print(f"!!! failed to create shared memory, Error: " + str(e))
+                print("!!! failed to create shared memory, Error: " + str(e))
             cls.shms.append(_shm)
             cls.shm_names.append(cls.shms[-1].name)
             return _shm
