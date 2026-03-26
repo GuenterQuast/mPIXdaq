@@ -62,8 +62,10 @@ spatial resolution of the deposited energy is also available. Besides visual ins
 recorded data sets can thus be analyzed in detail to quantitatively explore the properties 
 of radiation. 
 
-The size of the sensitive area of the pixel sensor is 14.1 x 14.1 x 0.3 mm³, segmented 
-into 256 x 256 square pixels covering an area of 55 µm² each. 
+The size of the sensitive volume of the pixel sensor is 14.1 x 14.1 x 0.3 mm³, segmented 
+into 256 x 256 square pixels covering an area of 55 µm² each.
+The chip is covered by a very thin aluminum foil of 0.5µm thickness, and, in addition, 
+there is a dead silicon layer thinner than 1µm in front of the sensitive volume.  
 Bump-bonded to the sensor is a readout chip connecting each element of the pixel matrix 
 to its own preamplifier, discriminator and digital counter integrated on the readout chip. 
 
@@ -119,8 +121,9 @@ a frequency of appr. 10 MHz.
 Typical values of the calibrations constants are $a$ = 1.6, $b$=23, $c$=23 and $t$=4.3. 
 Each pixel has its individual calibration stored on the chip, 
 which is optionally applied to obtain pixel readings in units of keV.
-The calibration is reliable up to pixel energies of about one MeV and
-shows a strong nonlinearity at higher values.  
+The calibration is reliable up to pixel energies of about one MeV; beyond this
+the response shows a strong nonlinearity, overshooting between about one and
+two MeV and saturating beyond two MeV.
 For details, see the articles by J. Jakubek, *Precise energy calibration 
 of pixel detector working in time-over-threshold mode*, NIM A 633 (2011), 5262-5265
 and M. Sommer et al., *High-energy per-pixel calibration of timepix pixel detector 
