@@ -20,7 +20,10 @@ author: Günter Quast, March 2026
 
 # Educators Guide for *mPIXdaq*
 ### &nbsp; &nbsp; Data acquisition, visualization and analysis for the Advacam *miniPIX* (EDU) silicon pixel detector    
-                                                                              Vers. 1.0.1, March 2026  
+                                                                        Vers. 1.0.1, March 2026  
+
+  [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.19280859.svg)](
+  https://doi.org/10.5281/zenodo.19280859)
 
 This document is meant to be a guide for educators who want to explore the possibilities
 of a modern radiation detection sensor and its implications on new ways to teach the 

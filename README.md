@@ -1,7 +1,7 @@
 ---
 title: Recording, analysis and visualization of data 
        from Advacam miniPIX (EDU) silicon pixel detector  
-author: Günter Quast, February 2026
+author: Günter Quast, March 2026
 ...
 
 <head>
@@ -19,12 +19,13 @@ author: Günter Quast, February 2026
 
 <!-- ------------------------------------------------------------------ -->
 
-
 ## mPIXdaq Data acquisition and analysis for *miniPIX (EDU)* pixel detector 
-                                                                    Vers. 1.0.1, March 2026  
 
-Reference to the first published (v1.0.1) and all subsequent releases 
-[DOI: https://doi.org/10.5281/zenodo.19280859](https://doi.org/10.5281/zenodo.19280859)
+&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;
+&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; Vers. 1.0.1, March 2026
+&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; 
+[![DOI](images/DOI-badge.png)](https://doi.org/10.5281/zenodo.19280859)
+
 
 The [miniPIX EDU](https://advacam.com/camera/minipix-edu) is a camera
 for radiation based on the [Timepix](https://home.cern/tags/timepix) 
