@@ -7,6 +7,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.colors import LogNorm
+from multiprocessing import shared_memory
 import re
 import yaml
 
@@ -205,3 +206,66 @@ def plot_cluster(pxlist, num=0):
     _img.set_clim(vmin=vmin, vmax=vmax)
 
     return _fig
+
+
+class shmManager:
+    """simple management of shared memory blocks
+
+    class methods:
+      - def get_sharedMem(name, size): create or link to shared memory
+
+      do not forget to close() and finally unlink() all requested blocks
+      in calling process
+    """
+
+    # list with names of all created memory blocks
+    shm_names = []
+    shms = []
+
+    @classmethod
+    def get_sharedMem(cls, name, size=None):
+        """Create if necessary and return link to buffer
+
+        Args:
+          - name of shared data block
+          - size: size in bytes, not needed if shared memory already created
+
+        Returns: shared memory object
+
+        """
+        if name not in cls.shm_names:  # create new shared memory block
+            try:
+                _shm = shared_memory.SharedMemory(name=name, create=True, size=size)
+            except FileExistsError:
+                print(f"!!! warning: shared memory '{name}' already existed")
+                _shm = shared_memory.SharedMemory(name=name, create=False, size=size)
+                if _shm.size != size:  # wrong size, delete and re-create
+                    _shm.close()
+                    _shm.unlink()
+                    _shm = shared_memory.SharedMemory(name=name, create=True, size=size)
+            except Exception as e:
+                print("!!! failed to create shared memory, Error: " + str(e))
+            cls.shms.append(_shm)
+            cls.shm_names.append(cls.shms[-1].name)
+            return _shm
+        else:  # link to existing shared memory block
+            _shm = shared_memory.SharedMemory(name=name)
+        return _shm
+
+    @classmethod
+    def close_sharedMem(cls, name):
+        """close shared memory block by name"""
+        for _i in range(len(cls.shms)):
+            if name == cls.shm_names[_i]:
+                cls.shms[_i].close()
+                break
+
+    @classmethod
+    def unlink_sharedMem(cls, name):
+        """unlink shared memory block by name and remove from lists"""
+        for _i in range(len(cls.shms)):
+            if name == cls.shm_names[_i]:
+                cls.shms[_i].unlink()
+                del cls.shms[_i]
+                del cls.shm_names[_i]
+                break

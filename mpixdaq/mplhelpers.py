@@ -24,7 +24,18 @@ class bhist:
         * colors: colors corresponding to labels
     """
 
-    def __init__(self, ax=None, data=None, binedges=None, xlabel="x", ylabel="freqeuency", yscale="log", xscale="linear", labels=None, colors=None):
+    def __init__(
+        self,
+        ax=None,
+        data=None,
+        binedges=None,
+        xlabel="x",
+        ylabel="freqeuency",
+        yscale="log",
+        xscale="linear",
+        labels=None,
+        colors=None,
+    ):
         # ### own implementation of one-dimensional histogram (numpy + pyplot bar) ###
 
         if type(data) is not type((1,)):
@@ -54,7 +65,11 @@ class bhist:
         self.bcnt = (self.be[:-1] + self.be[1:]) / 2.0
         self.w = 0.8 * (self.be[1:] - self.be[:-1])
         ec = 'gray'
-        self.bars.append(plt.bar(self.bcnt, _bc, align="center", width=self.w, color=colors[0], label=labels[0], edgecolor=ec, alpha=0.75))
+        self.bars.append(
+            plt.bar(
+                self.bcnt, _bc, align="center", width=self.w, color=colors[0], label=labels[0], edgecolor=ec, alpha=0.75
+            )
+        )
         sum = _bc
 
         # plot other classes
@@ -63,7 +78,17 @@ class bhist:
             self.bheights.append(_bc)
 
             self.bars.append(
-                plt.bar(self.bcnt, _bc, align="center", width=self.w, color=colors[_ic], label=labels[_ic], edgecolor=ec, alpha=0.75, bottom=sum)
+                plt.bar(
+                    self.bcnt,
+                    _bc,
+                    align="center",
+                    width=self.w,
+                    color=colors[_ic],
+                    label=labels[_ic],
+                    edgecolor=ec,
+                    alpha=0.75,
+                    bottom=sum,
+                )
             )
             sum = sum + _bc
 
@@ -192,7 +217,9 @@ class scatterplot:
             _xidx, _yidx = np.nonzero(self.H2d[_ic])
             _x = self.bcntx[_xidx]
             _y = self.bcnty[_yidx]
-            (_gr,) = ax.plot(_x, _y, label=labels[_ic], color=colors[_ic], marker='o', markersize=0.5, ls='', alpha=0.75)
+            (_gr,) = ax.plot(
+                _x, _y, label=labels[_ic], color=colors[_ic], marker='o', markersize=0.5, ls='', alpha=0.75
+            )
             self.gr.append(_gr)
         self.ax.set_xlim(self.bex[0], self.bex[-1])
         self.ax.set_ylim(self.bey[0], self.bey[-1])

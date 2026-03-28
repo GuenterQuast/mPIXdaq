@@ -44,8 +44,8 @@ LICENSE
 import argparse
 import gzip
 import os
+import importlib
 import pathlib
-import re
 import sys
 import time
 import yaml
@@ -62,7 +62,8 @@ import matplotlib as mpl
 import matplotlib.pyplot as plt
 
 from .mplhelpers import bhist, scatterplot, run_controlGUI
-from .mpixhelpers import fileDecoders
+from .mpixhelpers import fileDecoders, shmManager
+
 
 plt.style.use("dark_background")
 from matplotlib.colors import LogNorm
@@ -71,33 +72,41 @@ from matplotlib.colors import LogNorm
 # function for conditional import of ADVACAM libraries
 def import_pixet():
     global pypixet
+    global pixetVersion
     import platform
+
+    global pixetVersion
 
     mach = platform.machine()  # machine type
     arch = platform.architecture()  # architecture and  linker format
-    syst = platform.system()  # system (Linux, Windows or Darwin
+    syst = platform.system()  # system (Linux x84 or arm, or Windows or Darwin)
+    advacam_libs = None
     if mach == 'x86_64':
-        from .advacam_x86_64 import pypixet
+        advacam_libs = ".advacam_x86_64"
     elif mach == 'aarch64' and arch[0] == "32bit":
-        from .advacam_armhf import pypixet
+        advacam_libs = ".advacam_armhf"
     elif mach == 'aarch64' and arch[0] == "64bit":
-        from .advacam_arm64 import pypixet
+        advacam_libs = ".advacam_arm64"
     elif syst == "Darwin":
-        from .advacam_mac import pypixet
+        advacam_libs = ".advacam_mac"
     elif "Windows" in arch[1]:
-        if arch[0] == '64bit':
-            if sys.version.split()[0] != '3.7.9':
-                print("warning - on MS Windows pypixet only works with Python 3.7.9")
-            from .advacam_win64 import pypixet
-    else:
+        if (arch[0] == '64bit') and ('3.12' in sys.version.split()[0]):
+            advacam_libs = ".advacam_win64"
+        else:
+            print("warning - on MS Windows pypixet only works with 64-bit Python 3.12")
+    if advacam_libs is None:
         exit(" !!! pypixet not available for architecture " + mach + arch[0])
+    # import Advacam libraries
+    pypixet = importlib.import_module(advacam_libs + ".pypixet", package=__package__)
+    pixetVersion = importlib.import_module(advacam_libs + ".pixetVersion", package=__package__).pixetVersion
     print(f"*==* loaded miniPIX libraries for platform {mach}, architecture {arch} on system {syst}")
 
 
 # function for conditional import from npy_append_array
 def import_npy_append_array():
     global NpyAppendArray
-    from npy_append_array import NpyAppendArray
+    # NpyAppendArray = importlib.import_module("npy_append_array").NpyAppendArray
+    NpyAppendArray = importlib.import_module("npy_append_array.NpyAppendArray")
 
 
 #
@@ -107,7 +116,7 @@ def import_npy_append_array():
 
 class mpixControl:
     """Provides global variables containing Device Information
-    as well as  Queues, Events and methods to control threads"""
+    as well as  Queues, Events, shared_memory and methods to control threads"""
 
     runActive = Event()  # run active
     mpixActive = Event()  # mPIX active
@@ -130,17 +139,58 @@ class mpixControl:
     kbd_control = True
     gui_control = False
 
-    @staticmethod
-    def keyboard_input():
+    @classmethod
+    def keyboard_input(cls):
         """Read keyboard input and send to Queue, running as background thread to avoid blocking"""
-        while mpixControl.runActive.is_set():
-            mpixControl.cmdQ.put(input())
+        while cls.runActive.is_set():
+            cls.cmdQ.put(input())
             time.sleep(0.5)  # leave some time for main process to react
 
-    @staticmethod
-    def get_serial_number():
-        dn = mpixControl.deviceInfo["dn"]
+    @classmethod
+    def get_serial_number(cls):
+        dn = cls.deviceInfo["dn"]
         return int(dn.split('sn:')[1]) if 'sn:' in dn else None
+
+    # helpers to manage shared memory (for multiprocessing)
+    shm_fbuffer = None
+    nbuf = None
+
+    @classmethod
+    def get_fbuffer(cls, nbuf=8):
+        """Create if necessary and  return link to buffer space for frames
+
+        Parameter: number of buffers
+
+        Returns: ndarray of shape (nbuf, npix**2) with data located in shared memory
+        """
+        if cls.nbuf is None:
+            cls.nbuf = nbuf
+        npix = cls.deviceInfo['width']
+
+        if cls.shm_fbuffer is None:  # create new shared memory block
+            cls.shm_fbuffer = shmManager.get_sharedMem('shared_fbuffer', cls.nbuf * npix * npix * np.float32().itemsize)
+            #  print("created new shared memory, size ", cls.shm_fbuffer.size)
+            return np.ndarray((cls.nbuf, npix * npix), dtype=np.float32, buffer=cls.shm_fbuffer.buf)
+        else:  # link to existing shared memory block and return as properly shaped ndarray
+            cls._shm = shmManager.get_sharedMem('shared_fbuffer')
+            #  print("linked to shared memory, size ", _shm.size)
+            return np.frombuffer(cls._shm.buf, dtype=np.float32).reshape(-1, npix * npix)
+
+    @classmethod
+    def close_sharedMem(cls):
+        """
+        Release link to shared memory of frame buffer
+        """
+        if cls.shm_fbuffer is not None:
+            cls.shm_fbuffer.close()
+
+    @classmethod
+    def unlink_sharedMem(cls):
+        """
+        Release shared memory of frame buffer
+        """
+        if cls.shm_fbuffer is not None:
+            cls.shm_fbuffer.unlink()
 
     def __init__(self):
         if mpixControl.kbd_control:  # start a background thread to check for keyboard input
@@ -151,7 +201,11 @@ class mpixControl:
             # define dict for up to 8 buttons, key=name, values = [position, command]
             button_dict = {"End": [5, "E"], "Pause": [3, "P"], "Resume": [2, "R"]}
             # queue for status text
-            self.guiProc = Process(name="ControlGUI", target=run_controlGUI, args=(mpixControl.cmdQ, "miniPIX DAQ", mpixControl.statQ, button_dict))
+            self.guiProc = Process(
+                name="ControlGUI",
+                target=run_controlGUI,
+                args=(mpixControl.cmdQ, "miniPIX DAQ", mpixControl.statQ, button_dict),
+            )
             self.guiProc.start()
 
     def __del__(self):
@@ -194,7 +248,7 @@ class miniPIXdaq:
         try:
             import_pixet()
         except Exception as e:
-            print("!!! failed to import pypixet library ", str(e))
+            print("!!! failed to import pypixet library, error: ", str(e))
             return
 
         # start miniPIX software
@@ -206,7 +260,10 @@ class miniPIXdaq:
             print("!!! pipixet did not start!")
             return
         self.pixet = pypixet.pixet
-        print("*==*       pypixet vers.", self.pixet.pixetVersion())
+        try:
+            print("*==*       pypixet vers.", self.pixet.pixetVersion())
+        except AttributeError:  # printing of version number no more implemented in 1.8.5, so use local one
+            print("*==*       pypixet version", pixetVersion)
         devs = self.pixet.devicesByType(self.pixet.PX_DEVTYPE_MPX2)  # miniPIX uses the mediPIX 2 chip
         if len(devs) == 0:
             print("!!! no miniPIX device found")
@@ -216,6 +273,7 @@ class miniPIXdaq:
         self.dev = devs[self.id]
         print("*==* found device " + self.dev.parameters().get("DeviceName").getString())
         self.get_device_info()
+        mpixControl.deviceInfo = self.deviceInfo  # set mpixcontrol sensor info
         self.npx = self.deviceInfo["width"]
         # options for data acquisition
         # OPMs = ["PX_TPXMODE_MEDIPIX", "PX_TPXMODE_TOT", "PX_TPXMODE_1HIT", "PX_TPXMODE_TIMEPIX"]
@@ -233,14 +291,17 @@ class miniPIXdaq:
         self.ac_count = mpixControl.daqSettings['acq_count']
         self.ac_time = mpixControl.daqSettings['acq_time']
 
-        # ring buffer for data collection
+        # set up shared ring buffer for data collection ...
         self.Nbuf = 8
-        self.fBuffer = np.zeros((self.Nbuf, self.npx * self.npx), dtype=np.float32)
-        self._w_idx = 0
+        # ... as numpy arrary from daq process ...
+        ## self.fBuffer = np.zeros((self.Nbuf, self.npx * self.npx), dtype=np.float32)
+        # ... or in shared system memory, accessible across processes
+        self.fBuffer = mpixControl.get_fbuffer(nbuf=self.Nbuf)
 
         # Queue for synchronization & data transfer from buffer,
         #    with fewer slots than buffers to enforce blocking if no buffer space is left
         self.dataQ = Queue(self.Nbuf - 2)
+        self._w_idx = 0
 
     def get_device_info(self):
         """get and store device parameters in dictionary"""
@@ -250,8 +311,10 @@ class miniPIXdaq:
         self.deviceInfo["type"] = self.dev.sensorType(self.id)
         self.deviceInfo["pitch"] = self.dev.sensorPitch(self.id)
         self.deviceInfo["thickness"] = self.dev.sensorThickness(self.id)
-        self.deviceInfo["width"] = self.dev.width(self.id)
-        self.deviceInfo["height"] = self.dev.height(self.id)
+        #!v184        self.deviceInfo["width"] = self.dev.width(self.id)
+        #!v184        self.deviceInfo["height"] = self.dev.height(self.id)
+        self.deviceInfo["width"] = self.dev.width()
+        self.deviceInfo["height"] = self.dev.height()
         pars = self.dev.parameters()
         self.deviceInfo["dn"] = pars.get("DeviceName").getString()
         self.deviceInfo["fw"] = pars.get("Firmware").getString()
@@ -261,7 +324,9 @@ class miniPIXdaq:
     def print_device_info(self):
         print("miniPIX device info:")
         print(f"   {self.deviceInfo['dn']}, Firmware: {self.deviceInfo['fw']}")
-        print(f"   Temp: {self.deviceInfo['temp']:.1f}, Bias: {self.deviceInfo['bias']:.1f}, frequency: {self.deviceInfo['frq']:.2f} MHz")
+        print(
+            f"   Temp: {self.deviceInfo['temp']:.1f}, Bias: {self.deviceInfo['bias']:.1f}, frequency: {self.deviceInfo['frq']:.2f} MHz"
+        )
         print(
             f"   sensor type: {self.deviceInfo['type']}"
             + f"  pitch: {self.deviceInfo['pitch']} µm"
@@ -305,7 +370,7 @@ class miniPIXdaq:
         frame = self.dev.lastAcqFrameRefInc()
         if mpixControl.mpixActive.is_set():
             # store data while running
-            self.fBuffer[self._w_idx, :] = np.asarray(frame.data())
+            self.fBuffer[self._w_idx, :] = np.asarray(frame.data())[:]
             # remove noisy pixels from (linear) data frame based on bad-pixel list
             if mpixControl.badpixel_list is not None:
                 self.fBuffer[self._w_idx][mpixControl.badpixel_list] = -1
@@ -317,9 +382,10 @@ class miniPIXdaq:
         """Read *ac_count* frames with *ac_time* exposure time each;
         return pointer to data in buffer via Queue
         """
-        # register call-back function
-        self.dev.registerEvent(self.pixet.PX_EVENT_ACQ_FINISHED, 0, self.clb_acq_done)
 
+        # register call-back function
+        #!v184        self.dev.registerEvent(self.pixet.PX_EVENT_ACQ_FINISHED, 0, self.clb_acq_done)
+        self.dev.registerEvent(self.pixet.PX_EVENT_ACQ_FINISHED, self.clb_acq_done)
         while not mpixControl.endEvent.is_set():  # keep running while active
             if mpixControl.mpixActive.is_set():  # read ac_count individual frames in one burst
                 rc_clb = self.dev.doSimpleAcquisition(self.ac_count, self.ac_time, self.pixet.PX_FTYPE_NONE, "")
@@ -329,8 +395,8 @@ class miniPIXdaq:
                 time.sleep(0.1)
 
         print("miniPIXdaq: endEvent seen")
-
-        self.pixet.exitPixet()
+        #!v184        self.pixet.exitPixet()
+        mpixControl.close_sharedMem()
 
     def __del__(self):
         pypixet.exit()
@@ -551,7 +617,10 @@ class frameAnalyzer:
                 round(float(_varE[1]), 3),
             ]
             # concatenate cluster properties and list with [pixel, energy] values
-            print(' - ' + yaml.dump([_c_props] + [np.column_stack((_l, frame[_l])).tolist()], default_flow_style=True), file=file)
+            print(
+                ' - ' + yaml.dump([_c_props] + [np.column_stack((_l, frame[_l])).tolist()], default_flow_style=True),
+                file=file,
+            )
 
     @staticmethod
     def write_csvheader(file):
@@ -563,7 +632,20 @@ class frameAnalyzer:
     def write_clusterheader(file):
         """Write header for cluster data to file"""
         print("# format of list entry with cluster properties:", file=file)
-        keylist = ["time", "x_mean", "y_mean", "n_pix", "energy", "var_mx", "var_mn", "angle", "xE_mean", "yE_mean", "varE_mx", "varE_mn"]
+        keylist = [
+            "time",
+            "x_mean",
+            "y_mean",
+            "n_pix",
+            "energy",
+            "var_mx",
+            "var_mn",
+            "angle",
+            "xE_mean",
+            "yE_mean",
+            "varE_mx",
+            "varE_mn",
+        ]
         print("keys: ", yaml.dump(keylist, default_flow_style=True), file=file)
 
     @staticmethod
@@ -793,10 +875,16 @@ class mpixGraphs:
         self.axim.set_ylabel("# y             ", loc="top")
         self.axim.set_frame_on(False)  # no default frame around graph
         if badpixel_map is not None:
-            _ = self.axim.imshow(badpixel_map, origin="lower", cmap='gray', vmax=10.0, extent=[0, self.npx, 0, self.npx])
+            _ = self.axim.imshow(
+                badpixel_map, origin="lower", cmap='gray', vmax=10.0, extent=[0, self.npx, 0, self.npx]
+            )
         self.vmin, vmax = 0.5, 500
         self.img = self.axim.imshow(
-            np.zeros((self.npx, self.npx)), origin="lower", cmap='hot', norm=LogNorm(vmin=self.vmin, vmax=vmax), extent=[0, self.npx, 0, self.npx]
+            np.zeros((self.npx, self.npx)),
+            origin="lower",
+            cmap='hot',
+            norm=LogNorm(vmin=self.vmin, vmax=vmax),
+            extent=[0, self.npx, 0, self.npx],
         )
         cbar = self.fig.colorbar(self.img, shrink=0.6, aspect=40, pad=0.0075)
         self.img.set_clim(vmin=self.vmin, vmax=vmax)
@@ -835,7 +923,9 @@ class mpixGraphs:
         self.axRate.set_ylim(-self.num_history_points, 0.0)
         self.hrates = self.num_history_points * [None]
         _yplt = np.linspace(-self.num_history_points, 0.0, self.num_history_points)
-        (self.line_rate,) = self.axRate.plot(self.hrates, _yplt, '.--', lw=1, markersize=4, color="#F0F0FC", mec="orange")
+        (self.line_rate,) = self.axRate.plot(
+            self.hrates, _yplt, '.--', lw=1, markersize=4, color="#F0F0FC", mec="orange"
+        )
         self.line_avrate = self.axRate.axvline(0.0, linestyle='--', lw=1, color="red")
         self.rate_mx = 5
         self.axRate.set_xlim(-0.25, self.rate_mx)
@@ -930,7 +1020,9 @@ class mpixGraphs:
 
         # update histogram 2 with cluster energies
         if n_clusters > 0:
-            self.bhist2.add((cluster_energies[:n_clusters][~is_alpha], cluster_energies[:n_clusters][is_alpha], single_energies))
+            self.bhist2.add(
+                (cluster_energies[:n_clusters][~is_alpha], cluster_energies[:n_clusters][is_alpha], single_energies)
+            )
 
         # update scatter
         #    protect because of large memory need of scatter plot
@@ -986,7 +1078,14 @@ class mpixGraphs:
             self.i_buf += 1
         else:
             # buffer filled, visualize data
-            summary = (self.n_clusters, self.n_cpixels, self.circularity, self.flatness, self.cluster_energies, self.single_energies)
+            summary = (
+                self.n_clusters,
+                self.n_cpixels,
+                self.circularity,
+                self.flatness,
+                self.cluster_energies,
+                self.single_energies,
+            )
             self.upd_histograms(self.cimage, summary)
             # reset buffer index and cumulative variables
             self.i_buf = 0
@@ -1051,13 +1150,17 @@ class runDAQ:
         parser.add_argument('-f', '--file', type=str, default='', help='file to store frame data')
         parser.add_argument('-w', '--writefile', type=str, default='', help='file to write cluster data')
         parser.add_argument('-t', '--time', type=int, default=36000, help='run time in seconds (36000)')
-        parser.add_argument('--circularity_cut', type=float, default=0.5, help='cut on circularity for alpha detection (0.5)')
+        parser.add_argument(
+            '--circularity_cut', type=float, default=0.5, help='cut on circularity for alpha detection (0.5)'
+        )
         parser.add_argument('--flatness_cut', type=float, default=0.6, help='cut on flatness for alpha detection (0.6)')
         parser.add_argument('-p', '--prescale', type=int, default=1, help='prescaling factor for frame analysis')
         parser.add_argument('-r', '--readfile', type=str, default='', help='file to read frame data')
         parser.add_argument('-b', '--badpixels', type=str, default='', help='file with bad pixels to mask')
         parser.add_argument('--kbdControl', action='store_true', default=True, help='switch on keyboard contol (on)')
-        parser.add_argument('--no-kbdControl', dest='kbdControl', action='store_false', help='switch off keyboard control')
+        parser.add_argument(
+            '--no-kbdControl', dest='kbdControl', action='store_false', help='switch off keyboard control'
+        )
         parser.add_argument('--guiControl', action='store_true', default=False, help='switch on gui control')
         parser.add_argument('--no-guiControl', dest='guiControl', action='store_false', help='switch off gui control')
 
@@ -1109,7 +1212,6 @@ class runDAQ:
                 else:
                     exit("Exiting")
             else:  # library and device are ok
-                mpixControl.deviceInfo = self.daq.deviceInfo  # overwrite default sensor info
                 # set path to working directory (config and output)
                 os.chdir(self.wd_path)
                 # check for bad-pixels file
@@ -1123,10 +1225,13 @@ class runDAQ:
                     self.daq.print_device_info()
                 if self.verbosity > 0:
                     print()
-                    print(f"     -> reading frames of {self.acq_time} s duration")
+                    print(f"     -> frames of {self.acq_time} s duration")
                     print(f"     -> graphics overlay of {self.n_overlay} frames with {self.acq_time} s")
                     if self.prescale_analysis != 1:
                         print(f"      * analysis prescaling factor {self.prescale_analysis}")
+                # access shared frame buffer !!! changed to link to shared memory if multi-processing
+                # self.fBuffer = self.daq.fBuffer  # version from daq
+                self.fBuffer = mpixControl.get_fbuffer()
 
         # set path to working directory (relative path for input and output files)
         os.chdir(self.wd_path)
@@ -1155,13 +1260,23 @@ class runDAQ:
                 self.out_file_yml = open(self.out_filename, "w", buffering=8192)
                 print("--- #frame data", file=self.out_file_yml)  # header line
                 meta_dict = dict(
-                    meta_data=dict(acq_time=self.acq_time, acq_count=self.acq_count, npixels_x=self.npx, npixels_y=self.npx, time=time.asctime())
+                    meta_data=dict(
+                        acq_time=self.acq_time,
+                        acq_count=self.acq_count,
+                        npixels_x=self.npx,
+                        npixels_y=self.npx,
+                        time=time.asctime(),
+                    )
                 )
                 print(yaml.dump(meta_dict), file=self.out_file_yml)
                 sensor_dict = dict(deviceInfo=mpixControl.deviceInfo)
                 print(yaml.dump(sensor_dict), file=self.out_file_yml)
                 if mpixControl.badpixel_list is not None:
-                    print("badPixels:\n", yaml.dump(mpixControl.badpixel_list, default_flow_style=True), file=self.out_file_yml)
+                    print(
+                        "badPixels:\n",
+                        yaml.dump(mpixControl.badpixel_list, default_flow_style=True),
+                        file=self.out_file_yml,
+                    )
                 # tag for data blocks
                 print("frame_data:", file=self.out_file_yml)
             if self.verbosity > 0:
@@ -1179,13 +1294,23 @@ class runDAQ:
                 print("--- #cluster data", file=self.clusterfile)  # header line
                 frameAnalyzer.write_clusterheader(self.clusterfile)
                 meta_dict = dict(
-                    meta_data=dict(acq_time=self.acq_time, acq_count=self.acq_count, npixels_x=self.npx, npixels_y=self.npx, time=time.asctime())
+                    meta_data=dict(
+                        acq_time=self.acq_time,
+                        acq_count=self.acq_count,
+                        npixels_x=self.npx,
+                        npixels_y=self.npx,
+                        time=time.asctime(),
+                    )
                 )
                 print(yaml.dump(meta_dict), file=self.clusterfile)
                 sensor_dict = dict(deviceInfo=mpixControl.deviceInfo)
                 print(yaml.dump(sensor_dict), file=self.clusterfile)
                 if mpixControl.badpixel_list is not None:
-                    print("badPixels:\n", yaml.dump(mpixControl.badpixel_list, default_flow_style=True), file=self.clusterfile)
+                    print(
+                        "badPixels:\n",
+                        yaml.dump(mpixControl.badpixel_list, default_flow_style=True),
+                        file=self.clusterfile,
+                    )
                 # tag for data blocks
                 print("cluster_data:", file=self.clusterfile)
             elif _suffix == '.csv':
@@ -1282,7 +1407,9 @@ class runDAQ:
             # _file =) zf.read(fnam)
             self.infile = open(fnam, 'r')
             if suffix2 == '.yml':
-                meta_data, frame_iterator = fileDecoders.mPIXdaq_yml(self.infile)  # assume there is only one file in archive
+                meta_data, frame_iterator = fileDecoders.mPIXdaq_yml(
+                    self.infile
+                )  # assume there is only one file in archive
             elif suffix2 == '.txt':
                 frame_iterator = fileDecoders.Advacam_txt(self.infile)
             elif suffix2 == '.clog':
@@ -1351,10 +1478,14 @@ class runDAQ:
         frame2d = np.zeros((self.npx, self.npx), dtype=np.int32)
         i_frame = 0
 
-        # start daq as a Thread
+        # start daq as a Thread ...
+        daqProc = None
         if self.read_filename is None:
             daq_thread = Thread(target=self.daq, daemon=True)
             daq_thread.start()
+        # ... or as a sub-process (no performance gain, unfortunately)
+        #    daqProc = Process(name="daq", target=self.daq)
+        #    daqProc.start()
 
         # link to fiugure
         self.mpixgraph_fig = self.mpixvis.fig  # keep graphics window alive
@@ -1379,7 +1510,7 @@ class runDAQ:
                 # wait here if paused
                 if not mpixControl.mpixActive.is_set():
                     if mpixControl.kbd_control:
-                        print(f"  Paused - 'R' to resume     ", end="\r")
+                        print("  Paused - 'R' to resume     ", end="\r")
                     self.mpixgraph_fig.canvas.start_event_loop(0.01)  # keep graphics window alive
                     if mpixControl.gui_control:
                         mpixControl.statQ.put(stat + " - paused")
@@ -1390,7 +1521,7 @@ class runDAQ:
                 if self.read_filename is None:
                     _idx = self.daq.dataQ.get()
                     timestamp = time.time() - self.t_start
-                    frame[:] = self.daq.fBuffer[_idx]
+                    frame[:] = self.fBuffer[_idx]
                     frame2d = frame.reshape(self.npx, self.npx)
                     self.dt_alive += self.acq_time
                     i_frame += 1
@@ -1421,7 +1552,8 @@ class runDAQ:
                 if self.out_file_yml is not None:
                     pixel_idxs = np.argwhere(frame > 0)
                     print(
-                        '  - ' + yaml.dump(np.column_stack((pixel_idxs, frame[pixel_idxs])).tolist(), default_flow_style=True),
+                        '  - '
+                        + yaml.dump(np.column_stack((pixel_idxs, frame[pixel_idxs])).tolist(), default_flow_style=True),
                         file=self.out_file_yml,
                     )
                 elif self.out_file_npy is not None:
@@ -1429,7 +1561,7 @@ class runDAQ:
                     with NpyAppendArray(self.out_file_npy) as npa:
                         npa.append(np.array([frame2d]))
 
-                # further process (subset of) frames (given by prescaling factor) 
+                # further process (subset of) frames (given by prescaling factor)
                 do_processing = (self.prescale_analysis == 0) or (i_frame - 1) % self.prescale_analysis == 0
 
                 # analyze frame if writing to cluster file or for prescaled fraction of events
@@ -1491,7 +1623,9 @@ class runDAQ:
                 self.infile.close()
 
             # write ond-of-run record and close all output files
-            eor_dict = dict(eor_data=dict(Nframes=i_frame, Twall=round(self.dt_active, 1), Talive=round(self.dt_alive, 1)))
+            eor_dict = dict(
+                eor_data=dict(Nframes=i_frame, Twall=round(self.dt_active, 1), Talive=round(self.dt_alive, 1))
+            )
             if self.out_file_yml is not None:
                 print(yaml.dump(eor_dict), file=self.out_file_yml)
                 print("... #end", file=self.out_file_yml)  # footer line
@@ -1533,8 +1667,15 @@ class runDAQ:
 
             # finally, close down pypixet and exit
             if self.read_filename is None:
-                # shut-down pypixet
+                # shut-down pypixet and daq process
                 pypixet.exit()
+                if daqProc is not None and daqProc.is_alive():
+                    daqProc.terminate()
+
+            # finally, release access and unlink shared memory
+            self.mpixControl.close_sharedMem()
+            self.mpixControl.unlink_sharedMem()
+
             sys.exit(0)
 
 

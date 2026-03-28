@@ -1,1 +1,2 @@
-pixetVersion = "1.8.4"
+# version of pixet API
+pixetVersion = "1.8.5"

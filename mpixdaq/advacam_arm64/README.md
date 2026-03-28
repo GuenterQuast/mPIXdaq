@@ -1,4 +1,4 @@
-Libraries taken from the ADVACAM PIXet_Pro API, vers. 1.8.4
+Libraries taken from the ADVACAM PIXet_Pro API, vers. 1.8.5 (released 2026/03/09)
 
 **Note** that the copyright of these libraries belongs to ADVACAM. 
 The libraries may be downloaded from their web page, 

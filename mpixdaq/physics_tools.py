@@ -319,16 +319,16 @@ if __name__ == "__main__":  # -------------------------------------------------
         E0_e = 1.0
         print(f"Energy loss of electrons of {E0_e} MeV in water: ", end='')
         print(f"dE/dx = {mp.H2O['rho'] * dEdx(E0_e, mp.H2O, mp.electron):.2f} MeV/cm")
-        print(f"                                       in Si: ", end='')
+        print("                                       in Si: ", end='')
         _dEdx_e = mp.Si['rho'] * dEdx(E0_e, mp.Si, mp.electron)
         print(f"dE/dx = {_dEdx_e:.2f} MeV/cm   {_dEdx_e / mp.Si['w_eh'] / 10000:.0f} e-h pairs/µm")
 
         E0_mu = 500.0
         print(f"Energy loss of muons of {E0_mu} MeV in water: ", end='')
         print(f"dE/dx = {mp.H2O['rho'] * dEdx(E0_mu, mp.H2O, mp.muon):.2f} MeV/cm")
-        print(f"                                       in Si: ", end='')
+        print("                                       in Si: ", end='')
         _dEdx_mu = mp.Si['rho'] * dEdx(E0_mu, mp.Si, mp.muon)
-        print(f"dE/dx = {_dEdx_mu:.2f} MeV/cm   {_dEdx_mu / mp.Si['w_eh'] / 10000:.0f} e-h pairs/µm") 
+        print(f"dE/dx = {_dEdx_mu:.2f} MeV/cm   {_dEdx_mu / mp.Si['w_eh'] / 10000:.0f} e-h pairs/µm")
 
         E0_a = 4.0
         _dEdx_a = mp.air['rho'] * dEdx(E0_a, mp.air, mp.alpha)
