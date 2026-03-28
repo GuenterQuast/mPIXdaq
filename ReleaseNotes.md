@@ -26,3 +26,5 @@
 
   - based on API 1.8.5 (released 2026/03/09)
   - supports shared memory (needs Python vers. > 3.7)
+  - fixed single pixel statistics in graphical display
+  
