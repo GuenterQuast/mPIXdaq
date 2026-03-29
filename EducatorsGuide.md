@@ -554,7 +554,8 @@ from the Uranium and Thorium decay chains. Radon is produced from radioactive
 decays in the inner of the Earth and reaches the atmosphere through cracks in 
 the Earth's crust. Radon and its daughter-nuclei (Po, Tl, Bi, Pb) produce 
 α particles with typical energies around 5 - 7 MeV. As they rapidly loose 
-energy through collisions with air molecules the energies observed in the *miniPIX*observed are typically smaller. Seven clear α signatures are 
+energy through collisions with air molecules the energies observed in the
+*miniPIX*observed are typically smaller. Seven clear α signatures are 
 identified in the overlay frame below covering 300s of data acquisition time.
 
 The long, straight track near the centre at the right-hand side of the image
@@ -562,7 +563,8 @@ is a clear example of a muon from cosmic radiation traversing the detector
 under a flat angle of about 10°. The sensor was oriented such that the *x*-axis
 pointed vertically. 
 Muons are heavy, and therefore they do not scatter much in the silicon, leading
-to very straight tracks. In addition, they are high-energetic and minimum-ionizing, and therefore their ionization loss along the track is constant. This is in
+to very straight tracks. In addition, they are high-energetic and minimum-ionizing, 
+and therefore their ionization loss along the track is constant. This is in
 contrast to electrons, which show a rise in ionization when they are slowed down
 in the material and lose a large fraction of their initial energy.  
 Tracks from muons can only be distinguished from electron signatures if the
@@ -586,6 +588,14 @@ to monitor radioactive environments. Different conditions outdoors, in
 a well-ventilated room or in the typically badly ventilated basements
 of buildings interesting locations to study. 
 
+Another common source of environmental radioactivity stems from
+Radon and its decay products, which can easily be accumulated
+on a paper towel with a vacuum cleaner or on the surface
+of an electrostatically chared balloon. An increase by factors of 
+three to five compared to natural radiation levels for both α, β 
+particles and γ radiation is easily achievable. The radiation level
+returns to normal after about 2 hours, when the original and the 
+produced radioactive daughter nuclei decayed. 
 
 ### Absorption of γ rays in materials
 

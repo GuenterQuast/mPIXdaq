@@ -338,8 +338,9 @@ so that analysis results can be displayed in real-time on a
 sufficiently fast computer including the Raspberry Pi 5.
 This is suitable for investigations of natural radiation as emitted by 
 minerals like Pitchblend (=Uraninit), Columbit, Thorianit and others. 
-Radon accumulated from the air in basement rooms on the surface
-of an electrostatically charged ballon also work fine.
+Radon and its decay products from the air in basement rooms accumulated 
+on a paper towel with a vacuum cleaner on the surface of an electrostatically 
+charged ballon also works fine.
 
 For applications at higher rates, the analysis may have to
 be done off-line by reading data from recorded files. The option
