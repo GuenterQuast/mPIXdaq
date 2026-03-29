@@ -682,8 +682,8 @@ class frameAnalyzer:
         # create arrays to store info
         n_cpixels = np.zeros(n_multipix + 1, dtype=np.int32)
         cluster_energies = np.zeros(n_multipix + 1, dtype=np.float32)
-        circularity = np.zeros(n_multipix + 1, dtype=np.float32)
-        flatness = np.zeros(n_multipix + 1, dtype=np.float32)
+        circularity = np.zeros(n_multipix, dtype=np.float32)
+        flatness = np.zeros(n_multipix, dtype=np.float32)
         single_energies = np.zeros(max(1, n_singlepix), dtype=np.int32)
         # collect summary info
         _idx_mlt = 0
@@ -1036,17 +1036,19 @@ class mpixGraphs:
         self.framebuf[self.i_buf, :, :] = frame2d[:, :]
         # and add actual data to cumulated values
         self.cimage += frame2d
-        # add resp. concatenate information on cluster properties
+        # accumulate information on cluster properties
         if cluster_summary is not None:
             n_clusters, n_cpixels, circularity, flatness, cluster_energies, single_energies = cluster_summary
-            n_objects = n_clusters + n_cpixels[n_clusters]
+            n_single = n_cpixels[n_clusters]
+            E_single = cluster_energies[n_clusters]
+            n_objects = n_clusters + n_single
             self.n_clusters += n_clusters
             self.n_cpixels = np.concatenate((self.n_cpixels, n_cpixels[:n_clusters]))
-            self.circularity = np.concatenate((self.circularity, circularity[:n_clusters]))
-            self.flatness = np.concatenate((self.flatness, flatness[:n_clusters]))
+            self.circularity = np.concatenate((self.circularity, circularity))
+            self.flatness = np.concatenate((self.flatness, flatness))
             self.cluster_energies = np.concatenate((self.cluster_energies, cluster_energies[:n_clusters]))
-            self.n_singles_per_frame = np.concatenate((self.n_singles_per_frame, np.array([len(single_energies)])))
-            self.single_energies = np.concatenate((self.single_energies, np.array([single_energies.sum()])))
+            self.n_singles_per_frame = np.concatenate((self.n_singles_per_frame, [n_single]))
+            self.single_energies = np.concatenate((self.single_energies, [E_single]))
         else:
             n_objects = 0
             n_clusters = 0
