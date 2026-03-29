@@ -536,42 +536,55 @@ Ambient radiation at a normal level of 0.1µSv/h leads to an interaction rate
 of about 25 photon signals per minute in the active *miniPIX* volume of 0.059 cm³. 
 This represents a respectable detection efficiency outperforming small Geiger
 counter by a factor of two to three, and shows that the *miniPIX* can also be 
-used for precision dosimetry. Still, this rate is low compared with an observed
-count rate of 180 per minute observed in the CsI(Tl) crystal of one cm³ volume
+used for precision dosimetry. Still, this rate is low compared to typical 
+count rates of 180 per minute observed in a CsI(Tl) crystal of one cm³ volume
 in a RadiaCode 102 device.
 
-An overlay of 120 *miniPIX* frames with an exposure time of 0.5s each is shown in 
-the figure below. The long, straight track in the upper left part of the image
-is one of the rare cases of a muon from cosmic radiation traversing the detector
-under a flat angle of about 10°. 
+An overlay of 300 *miniPIX* frames with an exposure time of 1s each is shown in 
+the figure below. This very feature-rich image shows clear signatures of photons. 
+The rate of single pixels is about 0.5Hz - other signatures with a small number of pixels also originate from γ interactions, which dominate the rate. 
+Other then the above-mentioned scintillation counters, clear signatures of
+α, β particles are also visible.  
 
- > ![Ambient radiation ](images/ambientRadiation.png) 
 
+![Ambient radiation ](images/ambientRadiation.png) 
 
-Tracks from muons can only be distinguished from electron signatures if they
-traverse the sensitive area under a rather flat angle so that many pixels 
-respond. Note that a muon under 45° will fire only 5 pixels, and a muon under 
-30° 10 pixels. Since most muons arrive under 90° from the top, only a
-fraction of the total muon flux is observable in the *miniPIX*. 
-Because muons are heavy, they do not scatter much in the silicon and 
-produce very straight tracks. In addition, their ionization loss per 
-pixel is only around 15 keV, contrary to the typical 20 keV for low-energy 
-electrons. With proper orientation of the miniPIX, or better a sequence of 
-measurements with different detector orientations, studies of both the rate 
-and direction of muons become possible. This will, however, require long 
-measurement times because the expected rate of muons at sea level, integrated 
-over all angles of incidence, is only about 1/cm²/min. Two clear muon tracks 
-found in a data set recorded with a total acquisition time of 1000s are 
-shown below.
+The α signatures stem from decays of the noble gas Radon (Rn-222 and Ra-224) 
+from the Uranium and Thorium decay chains. Radon is produced from radioactive 
+decays in the inner of the Earth and reaches the atmosphere through cracks in 
+the Earth's crust. Radon and its daughter-nuclei (Po, Tl, Bi, Pb) produce 
+α particles with typical energies around 5 - 7 MeV. As they rapidly loose 
+energy through collisions with air molecules the energies observed in the *miniPIX*observed are typically smaller. Seven clear α signatures are 
+identified in the overlay frame below covering 300s of data acquisition time.
+
+The long, straight track near the centre at the right-hand side of the image
+is a clear example of a muon from cosmic radiation traversing the detector
+under a flat angle of about 10°. The sensor was oriented such that the *x*-axis
+pointed vertically. 
+Muons are heavy, and therefore they do not scatter much in the silicon, leading
+to very straight tracks. In addition, they are high-energetic and minimum-ionizing, and therefore their ionization loss along the track is constant. This is in
+contrast to electrons, which show a rise in ionization when they are slowed down
+in the material and lose a large fraction of their initial energy.  
+Tracks from muons can only be distinguished from electron signatures if the
+tracks are long enough, i.e. if they traverse the sensitive area under a 
+rather flat angle so that many pixels respond. Note that a muon under 45° 
+will fire only 5 pixels, and a muon under 30° 10 pixels. 
+Most muons arrive under 90° from the top, and if the sensor is properly 
+oriented, a noticeable fraction of the total muon flux is observable in 
+the *miniPIX*.  
+With a proper sequence of measurements with different detector orientations 
+studies of both the rate and direction of muons become possible. This will, 
+however, require long measurement times because the expected rate of muons 
+at sea level, integrated over all angles of incidence, is only about 1/cm²/min. 
+Two clear muon tracks found in a data set recorded with a total acquisition 
+time of 1000s are shown below.
 
 > ![Two clear muon tracks ](images/muonTracks.png) 
 
-Signatures from α particles are also seen at very low rates. They stem
-from decays of the noble gas Radon (Rn-222 and Ra-224) from the Uranium and 
-Thorium decay chains. Radon is produced from radioactive decays in the 
-inner of the Earth and reaches the atmosphere through cracks in the Earth's 
-crust. Radon and its daughter-nuclei (Po, Tl, Bi, Pb) produce α particles 
-with typical energies around 5 MeV.    
+This example illustrate the usefulness of the *miniPIX* as a dosimeter 
+to monitor radioactive environments. Different conditions outdoors, in
+a well-ventilated room or in the typically badly ventilated basements
+of buildings interesting locations to study. 
 
 
 ### Absorption of γ rays in materials
