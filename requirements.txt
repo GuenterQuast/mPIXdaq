@@ -16,7 +16,6 @@
 matplotlib
 numpy
 npy_append_array
+pyqt5
 pyyaml
 scipy
-
-

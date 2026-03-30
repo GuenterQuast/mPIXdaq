@@ -17,6 +17,7 @@ dependencies = [
     "matplotlib",
     "NumPy",
     "npy_append_array",
+    "pyqt5",
     "pyyaml",
     "Scipy",
     ]
