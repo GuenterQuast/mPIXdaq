@@ -100,7 +100,7 @@ class bhist:
         self.ax.set_xscale(xscale)
         self.ax.set_yscale(yscale)
         if labels[0] is not None:
-            self.ax.legend(loc="upper right")
+            self.ax.legend(loc="upper right", prop={'size': 7})
 
     def set(self, data):
         """set new histogram data
@@ -145,7 +145,7 @@ class bhist:
             sum = sum + self.bheights[_ic]
 
         _mx = max(sum)
-        if _mx > self.maxh:
+        if _mx > 0.9 * self.maxh:
             self.maxh = 1.2 * _mx
             self.ax.set_ylim(0.9, self.maxh)
 
@@ -224,7 +224,7 @@ class scatterplot:
         self.ax.set_xlim(self.bex[0], self.bex[-1])
         self.ax.set_ylim(self.bey[0], self.bey[-1])
         if labels[0] is not None:
-            self.ax.legend(loc="upper right")
+            self.ax.legend(loc="upper right", prop={'size': 7})
 
     def set(self, data):
         for _ic in range(self.n_classes):

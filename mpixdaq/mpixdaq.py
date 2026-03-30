@@ -384,8 +384,10 @@ class miniPIXdaq:
         """
 
         # register call-back function
+        #      this is ugly, but needed due to Advacam breaking the interface
+        clbArgs = (0, self.clb_acq_done,) if ((pixetVersion == "1.8.3") or (pixetVersion == "1.8.4")) else (self.clb_acq_done,)
         #!v184        self.dev.registerEvent(self.pixet.PX_EVENT_ACQ_FINISHED, 0, self.clb_acq_done)
-        self.dev.registerEvent(self.pixet.PX_EVENT_ACQ_FINISHED, self.clb_acq_done)
+        self.dev.registerEvent(self.pixet.PX_EVENT_ACQ_FINISHED, *clbArgs)
         while not mpixControl.endEvent.is_set():  # keep running while active
             if mpixControl.mpixActive.is_set():  # read ac_count individual frames in one burst
                 rc_clb = self.dev.doSimpleAcquisition(self.ac_count, self.ac_time, self.pixet.PX_FTYPE_NONE, "")
