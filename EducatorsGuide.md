@@ -593,9 +593,21 @@ Radon and its decay products, which can easily be accumulated
 on a paper towel with a vacuum cleaner or on the surface
 of an electrostatically chared balloon. An increase by factors of 
 three to five compared to natural radiation levels for both α, β 
-particles and γ radiation is easily achievable. The radiation level
-returns to normal after about 2 hours, when the original and the 
-produced radioactive daughter nuclei decayed. 
+particles and γ radiation is easily achievable. 
+
+An example of decay products registered with a paper towel that had
+been exposed to the air flow of a vacuum cleaner for 10min is shown below.
+
+> ![Rate of Radon decay products. vs. Time ](images/Radon-decayRate.png) 
+
+Starting fromm a background rate of about 0.3 Hz (the first bin in the graph)
+the rate of recorded clusters or single pixels jumps to over 10 HZ when the
+sensor is exposed to the towel, and then drops exponentially with time. 
+The short-lived nuclei produced from Radon decays offer one of the rare cases 
+to directly observe an  exponential decay. Note that this is not an
+exact exponential function because of the production of radioactive 
+daughter nuclei which contribute to the recorded decay products.  
+
 
 ### Absorption of γ rays in materials
 
