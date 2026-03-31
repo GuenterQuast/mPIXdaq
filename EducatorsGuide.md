@@ -583,30 +583,29 @@ time of 1000s are shown below.
 
 > ![Two clear muon tracks ](images/muonTracks.png) 
 
-This example illustrate the usefulness of the *miniPIX* as a dosimeter 
-to monitor radioactive environments. Different conditions outdoors, in
-a well-ventilated room or in the typically badly ventilated basements
-of buildings interesting locations to study. 
+The example of a recording of ambient radiatoin also illustrate the usefulness 
+of the *miniPIX* as a **dosimeter** to monitor radioactive environments. 
+Different conditions outdoors, in a well-ventilated room or in the typically 
+badly ventilated basements of buildings interesting locations to study. 
 
-Another common source of environmental radioactivity stems from
-Radon and its decay products, which can easily be accumulated
-on a paper towel with a vacuum cleaner or on the surface
-of an electrostatically chared balloon. An increase by factors of 
-three to five compared to natural radiation levels for both α, β 
-particles and γ radiation is easily achievable. 
+Another common source of environmental radioactivity stems from the noble gas 
+Radon and its decay products, which can easily be accumulated on a paper towel 
+with a vacuum cleaner or on the surface of an electrostatically chared balloon. 
+An increase by a factor of ten compared to natural radiation levels for both 
+α, β particles and γ radiation is easily achievable. 
 
-An example of decay products registered with a paper towel that had
+An example of particle rates registered with a paper towel that had
 been exposed to the air flow of a vacuum cleaner for 10min is shown below.
 
 > ![Rate of Radon decay products. vs. Time ](images/Radon-decayRate.png) 
 
-Starting fromm a background rate of about 0.3 Hz (the first bin in the graph)
-the rate of recorded clusters or single pixels jumps to over 10 HZ when the
-sensor is exposed to the towel, and then drops exponentially with time. 
-The short-lived nuclei produced from Radon decays offer one of the rare cases 
-to directly observe an  exponential decay. Note that this is not an
-exact exponential function because of the production of radioactive 
-daughter nuclei which contribute to the recorded decay products.  
+Starting from a background rate of about 0.5HZ the rate of detected clusters
+or single pixels jumps to over 10 HZ when the sensor is exposed to the towel, 
+and then drops exponentially with time. The short-lived nuclei produced from 
+Radon decays offer one of the rare cases to directly observe an  exponential 
+decay. Note that this is not an exact exponential function because of the
+production of radioactive daughter nuclei which contribute to the recorded 
+decay products.  
 
 
 ### Absorption of γ rays in materials
@@ -626,7 +625,7 @@ interaction probability is proportional $N(l)$. This leads to an exponential
 dependence of the remaining number of photons,  
 $N(l) = N_0 \cdot \exp{(-\mu  l)}$.
 $\mu$ is the mass absorption (or attenuation) coefficient of the material, 
-which can be determined in a sequence of measurements varying absorber 
+which can be determined in a sequence of measurements with varying absorber 
 thickness and incident γ energy.  
 
 
