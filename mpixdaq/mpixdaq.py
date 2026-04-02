@@ -123,6 +123,8 @@ class mpixControl:
     endEvent = Event()  # end signal for all processes
     mplActive = Event()  # set while interactive plotting is active
 
+    from_file = False  # set to True if data from  file
+
     cmdQ = Queue()
     statQ = Queue()
 
@@ -385,7 +387,10 @@ class miniPIXdaq:
 
         # register call-back function
         #      version-dependent code needed due to Advacam breaking the interface
-        clbArgs = (0, self.clb_acq_done,) if pixetVersion in ("1.8.3", "1.8.4") else (self.clb_acq_done,)
+        if pixetVersion in ("1.8.3", "1.8.4"):
+            clbArgs = (0, self.clb_acq_done)
+        else:
+            clbArgs = (self.clb_acq_done,)
         self.dev.registerEvent(self.pixet.PX_EVENT_ACQ_FINISHED, *clbArgs)
         while not mpixControl.endEvent.is_set():  # keep running while active
             if mpixControl.mpixActive.is_set():  # read ac_count individual frames in one burst
@@ -1100,9 +1105,12 @@ class mpixGraphs:
 
         # update, redraw and show all subplots in figure
         if dt_active - self.dt_last_plot > 0.08:  # limit number of graphics updates
-            # dead_time_fraction = 1.0 - dt_alive / dt_active
+            _ta = "" if dt_alive == 0.0 else f" acq. alive {dt_alive:.1f}s"
+            _taf = "   " if mpixControl.from_file else f"|{100. * dt_alive / dt_active:.0f}%   "
             status = (
-                f"#{self.i_frame}  {dt_active:.1f}s   acq. alive {dt_alive:.1f}s|{100 * dt_alive / dt_active:.0f}%"
+                f"#{self.i_frame}  {dt_active:.1f}s "
+                + _ta
+                + _taf
                 + f"  clusters {self.N_clusters:.0f}|{self.ClusterEnergy:.0f}keV "
                 + f"  single {self.N_singles:.0f}|{self.SingleEnergy:.0f}keV"
                 + 10 * " "
@@ -1189,6 +1197,7 @@ class runDAQ:
         self.write_mode = "list"  # write pixel list, alternative "2d"
 
         # set global daq parameters
+        mpixControl.from_file = False if self.read_filename is None else True
         mpixControl.daqSettings['acq_time'] = self.acq_time
         mpixControl.daqSettings['acq_count'] = self.acq_count
         mpixControl.kbd_control = args.kbdControl  # switch keyboard control on/of
@@ -1202,15 +1211,15 @@ class runDAQ:
         if self.verbosity > 0:
             print(f"\n*==* script {sys.argv[0]} executing in working directory {self.wd_path}")
 
-        # - load pypixet library and connect to miniPIX
-        if self.read_filename is None:
-            # initialize data acquisition object
+        if not mpixControl.from_file:
+            # - load pypixet library and connect to miniPIX
             self.daq = miniPIXdaq()
             if self.daq.dev is None:
                 _a = input("  Problem with miniPIX device - read data from file ? (y/n) > ")
                 if _a in {'y', 'Y', 'j', 'J'}:
                     path = os.path.dirname(os.path.realpath(__file__)) + '/'
                     self.read_filename = path + "data/BlackForestStone.yml.gz"
+                    mpixControl.from_file = True
                 else:
                     exit("Exiting")
             else:  # library and device are ok
@@ -1240,7 +1249,7 @@ class runDAQ:
 
         # - set-up input and output files
 
-        if self.read_filename is not None:  # prepare reading from file
+        if mpixControl.from_file:  # prepare reading from file
             if self.verbosity > 0:
                 print("*==* reading pixel frames from file ", self.read_filename)
             self.frame_iterator = self.read_frames_from_file()
@@ -1452,7 +1461,7 @@ class runDAQ:
         if not mpixControl.mpixActive.is_set():  # already in Paused state
             return
         mpixControl.mpixActive.clear()
-        if self.read_filename is None:
+        if not mpixControl.from_file:
             while not self.daq.dataQ.empty():  # drain dataQ of remaining events
                 _ = self.daq.dataQ.get()
         self.t_pause = time.time()
@@ -1468,7 +1477,7 @@ class runDAQ:
     def __call__(self):
         """run daq loop"""
 
-        # put miniPIXsaq / frame reading  in active state
+        # put miniPIXdaq / frame reading  in active state
         mpixControl.mpixActive.set()
 
         # set up daq
@@ -1482,7 +1491,7 @@ class runDAQ:
 
         # start daq as a Thread ...
         daqProc = None
-        if self.read_filename is None:
+        if not mpixControl.from_file:
             daq_thread = Thread(target=self.daq, daemon=True)
             daq_thread.start()
         # ... or as a sub-process (no performance gain, unfortunately)
@@ -1529,6 +1538,7 @@ class runDAQ:
                     i_frame += 1
                 else:  # from file
                     timestamp = i_frame * self.acq_time
+                    self.dt_alive = timestamp
                     i_frame += 1
                     if self.read_mode == 'list':
                         frame[:] = 0  # empty frame
@@ -1615,7 +1625,7 @@ class runDAQ:
             print("\n exception in daq loop: ", str(e))
 
         finally:  # end everything cleanly
-            if self.read_filename is None:  # minipix is still active, pause reading and signal end
+            if not mpixControl.from_file:  # minipix is still active, pause reading and send end-signal
                 mpixControl.mpixActive.clear()
                 mpixControl.endEvent.set()
                 # drain dataQ of remaining events
@@ -1649,14 +1659,14 @@ class runDAQ:
                     print("*== cluster output file closed")
 
             time.sleep(1.5)  # give time for processes to finish
-            if self.read_filename is None:
+            if not mpixControl.from_file:
                 # last chance to drain dataQ
                 while not self.daq.dataQ.empty():
                     _ = self.daq.dataQ.get()
 
             # terminate control gui if still active
-            if mpixControl.gui_control and self.mpixControl.guiProc.is_alive():
-                self.mpixControl.guiProc.terminate()
+            if mpixControl.gui_control and mpixControl.guiProc.is_alive():
+                mpixControl.guiProc.terminate()
 
             # wait for kbd control to exit
             if mpixControl.kbd_control:
@@ -1668,15 +1678,15 @@ class runDAQ:
                 _a = input("*==* mPIXdaq finished - type <ret> to close graphics window -> ")
 
             # finally, close down pypixet and exit
-            if self.read_filename is None:
+            if not mpixControl.from_file:
                 # shut-down pypixet and daq process
                 pypixet.exit()
                 if daqProc is not None and daqProc.is_alive():
                     daqProc.terminate()
 
             # finally, release access and unlink shared memory
-            self.mpixControl.close_sharedMem()
-            self.mpixControl.unlink_sharedMem()
+            mpixControl.close_sharedMem()
+            mpixControl.unlink_sharedMem()
 
             sys.exit(0)
 
