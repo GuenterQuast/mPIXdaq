@@ -384,9 +384,8 @@ class miniPIXdaq:
         """
 
         # register call-back function
-        #      this is ugly, but needed due to Advacam breaking the interface
-        clbArgs = (0, self.clb_acq_done,) if ((pixetVersion == "1.8.3") or (pixetVersion == "1.8.4")) else (self.clb_acq_done,)
-        #!v184        self.dev.registerEvent(self.pixet.PX_EVENT_ACQ_FINISHED, 0, self.clb_acq_done)
+        #      version-dependent code needed due to Advacam breaking the interface
+        clbArgs = (0, self.clb_acq_done,) if pixetVersion in ("1.8.3", "1.8.4") else (self.clb_acq_done,)
         self.dev.registerEvent(self.pixet.PX_EVENT_ACQ_FINISHED, *clbArgs)
         while not mpixControl.endEvent.is_set():  # keep running while active
             if mpixControl.mpixActive.is_set():  # read ac_count individual frames in one burst
@@ -895,7 +894,7 @@ class mpixGraphs:
         txt_overlay = f"overlay of {int(self.n_overlay)} frames"
         if self.acq_time is not None and self.acq_time > 0.0:
             txt_overlay = txt_overlay + f", acquisition time {self.acq_time} s per frame"
-        if self.prescale != 1:
+        if self.prescale > 1:
             txt_overlay = txt_overlay + f", prescaling factor {self.prescale}"
         self.axim.text(0.01, -0.06, txt_overlay, transform=self.axim.transAxes, color="turquoise")
         self.im_text = self.axim.text(0.02, -0.085, "#", transform=self.axim.transAxes, color="bisque", alpha=0.75)
