@@ -369,6 +369,10 @@ The following variables are derived for each pixel cluster during online-process
     n_pix   : number of pixels in cluster
     energy  : energy of cluster (= sum of pixel energies) in keV
     e_mx    : maximum pixel energy
+    x_mn    : minimum x of bounding box
+    y_mn    : minimum y of bounding box
+    w       : width of bounding box
+    h       : height of bounding box
     var_mx  : maximum variance of geometrical cluster shape (in pixels)
     var_mn  : minimum variance of geometrical cluster shape (in pixels)
     angle   : orientation of cluster (0 = along x-axis, pi/2 = along y-axis)

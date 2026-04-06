@@ -490,7 +490,7 @@ class frameAnalyzer:
     Output:
 
       pixel_clusters: a list of tuples of format
-        (x, y), n_pix, energy, (var_mx, var_mn), angle, (xEm, yEm), (varE_mx, varE_mn) 
+        (x, y), n_pix, energy, e_mx, (x_mn, y_mn, w, h), (var_mx, var_mn), angle, (xEm, yEm), (varE_mx, varE_mn) 
       with cluster properties
 
     Helper functions to store analysis results are included as static methods
