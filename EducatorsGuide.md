@@ -361,13 +361,14 @@ well-established standard in data science for the analysis of large datasets.
 
 The following variables are derived for each pixel cluster during online-processing:
 
-['time', 'x_mean', 'y_mean', 'n_pix', 'energy', 'var_mx', 'var_mn', 'angle', 'xE_mean', 'yE_mean', 'varE_mx', 'varE_mn']
+['time', 'x_mean', 'y_mean', 'n_pix', 'energy', 'e_mx', 'var_mx', 'var_mn', 'angle', 'xE_mean', 'yE_mean', 'varE_mx', 'varE_mn']
 
     time    : time since start of daq when frame was recorded
     x_mean  : mean x-position of cluster (in pixel numbers)
     y_mean  : mean y-position of cluster (in pixel numbers)
     n_pix   : number of pixels in cluster
     energy  : energy of cluster (= sum of pixel energies) in keV
+    e_mx    : maximum pixel energy
     var_mx  : maximum variance of geometrical cluster shape (in pixels)
     var_mn  : minimum variance of geometrical cluster shape (in pixels)
     angle   : orientation of cluster (0 = along x-axis, pi/2 = along y-axis)

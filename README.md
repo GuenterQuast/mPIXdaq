@@ -390,7 +390,7 @@ A *Jupyter* notebook *analyze_mPIXclusters.ipynb* is distributed as part of the
 package and illustrates how to read and interpret cluster data.
 
 The keys of the variables in *list_of_clusterproperties* are  
->['time', 'x_mean', 'y_mean', 'n_pix', 'energy', 'var_mx', 'var_mn', 'angle', 'xE_mean', 'yE_mean', 'varE_mx', 'varE_mn']
+>['time', 'x_mean', 'y_mean', 'n_pix', 'energy',  'e_mx, 'var_mx', 'var_mn', 'angle', 'xE_mean', 'yE_mean', 'varE_mx', 'varE_mn']
 
 It is also possible to store the cluster properties in simple *.csv* format by
 explicitly specifying the file extension:

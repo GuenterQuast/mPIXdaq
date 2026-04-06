@@ -415,10 +415,10 @@ class frameAnalyzer:
 
         Args:  2d frame data, as obtained from miniPIXdaq.__call__()
 
-        Output:
+        Produces:
 
           pixel_clusters: a list of tuples of format
-            (x, y), n_pix, energy, (var_mx, var_mn), angle, (xEm, yEm), (varE_mx, varE_mn)
+            (x, y), n_pix, energy, e_mx, (var_mx, var_mn), angle, (xEm, yEm), (varE_mx, varE_mn)
           with cluster properties
 
         Helper functions to store analysis results are included as static methods
@@ -524,8 +524,16 @@ class frameAnalyzer:
         Returns:
             pixel_indices: list of pixel indices contributing to cluster
             cluster_properties: tuple with cluster properties; format
-            (x, y), n_pix, energy, (var_mx, var_mn), angle, (xEm, yEm), (varE_mx, varE_mn) )
+            (x, y), n_pix, energy, e_mx, (var_mx, var_mn), angle, (xEm, yEm), (varE_mx, varE_mn) )
 
+            x, y             : mean x- and y-position of cluster (in pixel numbers)
+            n_pix            : number of pixels in cluster
+            energy           : energy of cluster (= sum of pixel energies) in keV
+            e_mx             : maximum pixel energy
+            var_mx, var_mn   : maximum and minimum variance of geometrical cluster shape (in pixels)
+            angle            : orientation of cluster (0 = along x-axis, pi/2 = along y-axis)
+            xE_mean, yE_mean : mean x and y of energy distribution  (in pixel numbers)
+            varE_mx, varE_mn : maximum and minimum variance of energy distribution
         """
 
         npix = len(pl)
@@ -536,6 +544,8 @@ class frameAnalyzer:
             _v = f[_y, _x]
             # energy in cluster
             energy = _v.sum()
+            # maximum pixel energy
+            e_mx = _v.max()
             #  - mean values of x and y and covariance matrix of pixel area
             x_mean = _x.mean(dtype=np.float32)
             y_mean = _y.mean(dtype=np.float32)
@@ -565,24 +575,34 @@ class frameAnalyzer:
             x_mean = _x
             y_mean = _y
             energy = f[_y, _x]
+            e_mx = energy
             var_mx, var_mn = (0, 0)
             angle = 0.0
             xEm, yEm = _x, _y
             varE_mx, varE_mn = (0, 0)
 
-        pixel_properties = ((x_mean, y_mean), npix, energy, (var_mx, var_mn), angle, (xEm, yEm), (varE_mx, varE_mn))
+        pixel_properties = (
+            (x_mean, y_mean),
+            npix,
+            energy,
+            e_mx,
+            (var_mx, var_mn),
+            angle,
+            (xEm, yEm),
+            (varE_mx, varE_mn),
+        )
         return pixel_indices, pixel_properties
 
     # helper functions to store analyis results
     @staticmethod
     def write_csv(file, timestamp, clusters):
         """Write properites of all clusters in frame to csv file"""
-        for _xym, _npix, _energy, _var, _angle, _xyEm, _varE in clusters:
+        for _xym, _npix, _energy, _e_mx, _var, _angle, _xyEm, _varE in clusters:
             if _npix == 0:
                 return
             print(
                 f"{timestamp:.3f}, {_xym[0]:.2f}, {_xym[1]:.2f}, {_npix}, {_energy:.1f}"
-                + f", {_var[0]:.3f}, {_var[1]:.3f}, {_angle:.3f}"
+                + f", {_e_mx:.1f}, {_var[0]:.3f}, {_var[1]:.3f}, {_angle:.3f}"
                 + f", {_xyEm[0]:.2f}, {_xyEm[1]:.2f}, {_varE[0]:.3f}, {_varE[1]:.3f}",
                 file=file,
             )
@@ -604,7 +624,7 @@ class frameAnalyzer:
           written to output file
         """
         for _i, _l in enumerate(clustered_pixels):
-            _xym, _npix, _energy, _var, _angle, _xyEm, _varE = clusters[_i]
+            _xym, _npix, _energy, _e_mx, _var, _angle, _xyEm, _varE = clusters[_i]
             if _npix == 0:
                 continue
             # create list of cluster properties
@@ -614,6 +634,7 @@ class frameAnalyzer:
                 round(float(_xym[1]), 2),
                 _npix,
                 round(float(_energy), 1),
+                round(float(_e_mx), 1),
                 round(float(_var[0]), 3),
                 round(float(_var[1]), 3),
                 round(float(_angle), 3),
@@ -631,7 +652,7 @@ class frameAnalyzer:
     @staticmethod
     def write_csvheader(file):
         """Write csv header line to file"""
-        csvHeader = "time,x_mean,y_mean,n_pix,energy,var_mx,var_mn,angle,xE_mean,yE_mean,varE_mx,varE_mn"
+        csvHeader = "time,x_mean,y_mean,n_pix,energy,e_mx,var_mx,var_mn,angle,xE_mean,yE_mean,varE_mx,varE_mn"
         file.write(csvHeader + '\n')
 
     @staticmethod
@@ -644,6 +665,7 @@ class frameAnalyzer:
             "y_mean",
             "n_pix",
             "energy",
+            "e_mx",
             "var_mx",
             "var_mn",
             "angle",
@@ -657,7 +679,7 @@ class frameAnalyzer:
     @staticmethod
     def get_cluster_summary(pixel_clusters):
         """summarize cluster properties from cluster tuples of format
-              ( (x,y), n_pix, energy, (var_mx, var_mn), angle, (xE, yE), (varE_mx, VarE_mn))
+              ( (x,y), n_pix, energy, e_mx, (var_mx, var_mn), angle, (xE, yE), (varE_mx, VarE_mn))
 
         Args:
 
@@ -675,8 +697,8 @@ class frameAnalyzer:
 
         id_npix = 1
         id_e = 2
-        id_var = 3
-        id_varE = 6
+        id_var = 4
+        id_varE = 7
 
         if pixel_clusters is None:
             return None
@@ -731,7 +753,7 @@ class frameAnalyzer:
             coordinates, the number of pixels, energy, eigenvalues of covariance matrix and
             their orientation as an angle in range [-pi/2, pi/2] and the minimal and maximal
             eigenvalues of the covariance matrix of the energy distribution. The format is:
-            ( (x, y), n_pix, energy, (var_mx, var_mn), angle, (xEm, yEm), (varE_mx, varE_mn) )
+            ( (x, y), n_pix, energy, e_mx,  (var_mx, var_mn), angle, (xEm, yEm), (varE_mx, varE_mn) )
 
           - self.pixel_lists: list of pixel indices contributing to each cluster, where
              pixel index is x + 256 * y
@@ -769,7 +791,7 @@ class frameAnalyzer:
         self.n_single = len(self.cluster_pxl_lst[-1])
 
         # - crate list of properties per cluster in format
-        #      ( (x,y), n_pix, energy, (var_mx, var_mn), angle, (xE, yE), (varE_mx, VarE_mn))
+        #      ( (x,y), n_pix, energy, e_mx, (var_mx, var_mn), angle, (xE, yE), (varE_mx, VarE_mn))
         # loop over clusters ...
         for _i in range(self.n_clusters):
             # pixels in cluster
