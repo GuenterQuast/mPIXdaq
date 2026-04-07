@@ -430,6 +430,7 @@ class frameAnalyzer:
             - n_cpixels: number of pixels per cluster
             - circularity: circularity per cluster (ranging from 0. for linear, 1. for circular)
             - flatness:  ratio of maximum variances of pixel and energy distributions in clusters
+            - straightness: max of width and height of bounding box divided by number of pixels
             - cluster_energies: energy per cluster
             - single_energies: energies in single pixels
         """
@@ -714,12 +715,14 @@ class frameAnalyzer:
           - n_cpixels: number of pixels per cluster
           - circularity: circularity per cluster (0. for linear, 1. for circular)
           - flatness:  ratio of maximum variances of pixel and energy distributions in clusters
+          - straightness: max of width and height of bounding box divided by number of pixels
           - cluster_energies: energy per cluster
           - single_energies: energies in single pixels
         """
 
         id_npix = 1
         id_e = 2
+        id_bb = 4
         id_var = 5
         id_varE = 8
 
@@ -735,6 +738,7 @@ class frameAnalyzer:
         cluster_energies = np.zeros(n_multipix + 1, dtype=np.float32)
         circularity = np.zeros(n_multipix, dtype=np.float32)
         flatness = np.zeros(n_multipix, dtype=np.float32)
+        straightness = np.zeros(n_multipix, dtype=np.float32)
         single_energies = np.zeros(max(1, n_singlepix), dtype=np.int32)
         # collect summary info
         _idx_mlt = 0
@@ -746,6 +750,7 @@ class frameAnalyzer:
                 cluster_energies[_idx_mlt] = c[id_e]
                 circularity[_idx_mlt] = np.sqrt(c[id_var][1] / c[id_var][0])
                 flatness[_idx_mlt] = np.sqrt(c[id_varE][0] / c[id_var][0])
+                straightness[_idx_mlt] = np.maximum(c[id_bb][2], c[id_bb][3]) / _npx
                 _idx_mlt += 1
             else:
                 # single pixels
@@ -754,7 +759,7 @@ class frameAnalyzer:
         # finally, add summary of single-pixel-clusters
         n_cpixels[n_multipix] = n_singlepix
         cluster_energies[n_multipix] = single_energies.sum()
-        return n_multipix, n_cpixels, circularity, flatness, cluster_energies, single_energies
+        return n_multipix, n_cpixels, circularity, flatness, straightness, cluster_energies, single_energies
 
     def __call__(self, f):
         """Analyze frame data
@@ -895,6 +900,7 @@ class mpixGraphs:
         self.n_cpixels = np.array([])
         self.circularity = np.array([])
         self.flatness = np.array([])
+        self.straightness = np.array([])
         self.cluster_energies = np.array([])
         self.single_energies = np.array([])
         self.n_singles_per_frame = np.array([])
@@ -1049,19 +1055,20 @@ class mpixGraphs:
         """update histograms"""
 
         # unpack input
-        n_clusters, n_cpixels, circularity, flatness, cluster_energies, n_singles, single_energies = c_summary
+        n_clusters, n_cpixels, circularity, flatness, straightness, c_energies, n_singles, s_energies = c_summary
 
         # boolean indices for linear and circular, spiky objects
         is_round = circularity > self.circularity_cut
         is_flat = flatness > self.flatness_cut
         is_alpha = is_round & ~is_flat
+        is_muon = (straightness > 0.9) & is_flat
 
         # update histogram 1 with pixel energies
         self.bhist1.add((pixel_energies,))
 
         # update histogram 2 with cluster energies
         if n_clusters > 0:
-            self.bhist2.add((cluster_energies[~is_alpha], cluster_energies[is_alpha], single_energies))
+            self.bhist2.add((c_energies[~is_alpha], c_energies[is_alpha], s_energies))
 
         # update scatter
         #    protect because of large memory need of scatter plot
@@ -1070,13 +1077,13 @@ class mpixGraphs:
                 print("!!! anaviz: stop updating scatter plot due to large number of frames")
                 self.warning_issued = True
             return
-        xlin = cluster_energies[~is_alpha]
+        xlin = c_energies[~is_alpha]
         ylin = n_cpixels[~is_alpha]
-        xcir = cluster_energies[is_alpha]
+        xcir = c_energies[is_alpha]
         ycir = n_cpixels[is_alpha]
-        self.scpl.add([(xlin, ylin), (xcir, ycir), (n_singles, single_energies)])
+        self.scpl.add([(xlin, ylin), (xcir, ycir), (n_singles, s_energies)])
 
-    def __call__(self, frame2d, cluster_summary, dt_active, dt_alive):
+    def __call__(self, frame2d, c_summary, dt_active, dt_alive):
         """update cumulative pixel image and rate, analyze data
         and update histograms, scatter plot and status text
         """
@@ -1088,8 +1095,8 @@ class mpixGraphs:
         # and add actual data to cumulated values
         self.cimage += frame2d
         # accumulate information on cluster properties
-        if cluster_summary is not None:
-            n_clusters, n_cpixels, circularity, flatness, cluster_energies, single_energies = cluster_summary
+        if c_summary is not None:
+            n_clusters, n_cpixels, circularity, flatness, straightness, cluster_energies, single_energies = c_summary
             n_single = n_cpixels[n_clusters]
             E_single = cluster_energies[n_clusters]
             n_objects = n_clusters + n_single
@@ -1097,6 +1104,7 @@ class mpixGraphs:
             self.n_cpixels = np.concatenate((self.n_cpixels, n_cpixels[:n_clusters]))
             self.circularity = np.concatenate((self.circularity, circularity))
             self.flatness = np.concatenate((self.flatness, flatness))
+            self.straightness = np.concatenate((self.straightness, straightness))
             self.cluster_energies = np.concatenate((self.cluster_energies, cluster_energies[:n_clusters]))
             self.n_singles_per_frame = np.concatenate((self.n_singles_per_frame, [n_single]))
             self.single_energies = np.concatenate((self.single_energies, [E_single]))
@@ -1125,6 +1133,7 @@ class mpixGraphs:
                 self.n_cpixels,
                 self.circularity,
                 self.flatness,
+                self.straightness,
                 self.cluster_energies,
                 self.n_singles_per_frame,
                 self.single_energies,
@@ -1138,12 +1147,13 @@ class mpixGraphs:
             self.N_singles = self.n_singles_per_frame.sum()
             self.SingleEnergy = self.single_energies.sum()
 
-            # reset buffer index and cumulative variables
+            # reset buffer index and cumulative arrays
             self.i_buf = 0
             self.n_clusters = 0
             self.n_cpixels = np.array([])
             self.circularity = np.array([])
             self.flatness = np.array([])
+            self.straightness = np.array([])
             self.cluster_energies = np.array([])
             self.n_singles_per_frame = np.array([])
             self.single_energies = np.array([])
@@ -1151,7 +1161,7 @@ class mpixGraphs:
         # update, redraw and show all subplots in figure
         if dt_active - self.dt_last_plot > 0.08:  # limit number of graphics updates
             _ta = "" if dt_alive == 0.0 else f" acq. alive {dt_alive:.1f}s"
-            _taf = "   " if mpixControl.from_file else f"|{100. * dt_alive / dt_active:.0f}%   "
+            _taf = "   " if mpixControl.from_file else f"|{100.0 * dt_alive / dt_active:.0f}%   "
             status = (
                 f"#{self.i_frame}  {dt_active:.1f}s "
                 + _ta
