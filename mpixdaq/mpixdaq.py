@@ -1611,7 +1611,6 @@ class runDAQ:
                         if len(pixel_list) > 0:
                             frame[pixel_list[:, 0]] = pixel_list[:, 1]  # set pixel energies
                         frame2d = frame.reshape(self.npx, self.npx)
-                        print("got frame ", i_frame)
                     else:
                         # 2d-frames as input
                         frame2d = next(self.frame_iterator)
