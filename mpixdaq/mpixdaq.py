@@ -1720,8 +1720,8 @@ class runDAQ:
                     _ = self.daq.dataQ.get()
 
             # terminate control gui if still active
-            if mpixControl.gui_control and mpixControl.guiProc.is_alive():
-                mpixControl.guiProc.terminate()
+            if  mpixControl.gui_control and self.mpixControl.guiProc.is_alive():
+                self.mpixControl.guiProc.terminate()
 
             # wait for kbd control to exit
             if mpixControl.kbd_control:
