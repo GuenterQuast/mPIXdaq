@@ -1048,6 +1048,7 @@ class mpixGraphs:
         plt.ion()
         plt.show()
 
+        self.statistics = ""
         self.dt_last_plot = 0.0
         self.t_start = time.time()
 
@@ -1160,16 +1161,16 @@ class mpixGraphs:
 
         # update, redraw and show all subplots in figure
         if dt_active - self.dt_last_plot > 0.08:  # limit number of graphics updates
+            # daq alive
             _ta = "" if dt_alive == 0.0 else f" acq. alive {dt_alive:.1f}s"
+            # live fraction
             _taf = "   " if mpixControl.from_file else f"|{100.0 * dt_alive / dt_active:.0f}%   "
-            status = (
-                f"#{self.i_frame}  {dt_active:.1f}s "
-                + _ta
-                + _taf
-                + f"  clusters {self.N_clusters:.0f}|{self.ClusterEnergy:.0f}keV "
+            # object statistiscs
+            self.statistics = (
+                f"  clusters {self.N_clusters:.0f}|{self.ClusterEnergy:.0f}keV "
                 + f"  single {self.N_singles:.0f}|{self.SingleEnergy:.0f}keV"
-                + 10 * " "
             )
+            status = f"#{self.i_frame}  {dt_active:.1f}s " + _ta + _taf + self.statistics + 10 * " "
             self.img.set(data=self.cimage)
             self.im_text.set_text(status)
             self.fig.canvas.start_event_loop(0.001)  # better than plt.pause(), which would steal the focus
@@ -1649,11 +1650,11 @@ class runDAQ:
 
                 # print heart beat
                 self.dt_active = time.time() - self.t_start - self.dt_paused
-                stat = f"  #{i_frame}  {self.dt_active:.0f}s  {i_frame / self.dt_active:0.1f}fps     "
+                stat = f"#{i_frame}  {self.dt_active:.0f}s  {i_frame / self.dt_active:0.1f}fps "
                 if mpixControl.kbd_control:
                     print(stat, end="\r")
                 if mpixControl.gui_control:
-                    mpixControl.statQ.put(stat)
+                    mpixControl.statQ.put(stat + "  " + self.mpixvis.statistics)
             else:  # normal end of while
                 if not mpixControl.mplActive.is_set():
                     mpixControl.runActive.clear()
@@ -1720,7 +1721,7 @@ class runDAQ:
                     _ = self.daq.dataQ.get()
 
             # terminate control gui if still active
-            if  mpixControl.gui_control and self.mpixControl.guiProc.is_alive():
+            if mpixControl.gui_control and self.mpixControl.guiProc.is_alive():
                 self.mpixControl.guiProc.terminate()
 
             # wait for kbd control to exit
