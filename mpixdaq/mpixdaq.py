@@ -609,6 +609,10 @@ class frameAnalyzer:
     @staticmethod
     def write_csv(file, timestamp, clusters):
         """Write properites of all clusters in frame to csv file"""
+        if clusters is None:
+            print(f"{timestamp:.3f}", file=file)
+            return
+
         for _xym, _npix, _energy, _e_mx, _bbox, _var, _angle, _xyEm, _varE in clusters:
             if _npix == 0:
                 return
@@ -636,6 +640,12 @@ class frameAnalyzer:
             [[list of cluster propertes ], [list of [pixel index, energy] pairs belonging to cluster]
           written to output file
         """
+
+        if clusters is None:  # output empty frame
+            print(' - ' + f"[[{round(timestamp, 3)}], []]\n", file=file)
+            return
+
+        #  else write cluster summary and pixel list
         for _i, _l in enumerate(clustered_pixels):
             _xym, _npix, _energy, _e_mx, _bbox, _var, _angle, _xyEm, _varE = clusters[_i]
             if _npix == 0:
@@ -660,7 +670,6 @@ class frameAnalyzer:
                 round(float(_varE[0]), 3),
                 round(float(_varE[1]), 3),
             ]
-
             # concatenate cluster properties and list with [pixel, energy] values
             print(
                 ' - ' + yaml.dump([_c_props] + [np.column_stack((_l, frame[_l])).tolist()], default_flow_style=True),
@@ -1602,6 +1611,7 @@ class runDAQ:
                         if len(pixel_list) > 0:
                             frame[pixel_list[:, 0]] = pixel_list[:, 1]  # set pixel energies
                         frame2d = frame.reshape(self.npx, self.npx)
+                        print("got frame ", i_frame)
                     else:
                         # 2d-frames as input
                         frame2d = next(self.frame_iterator)
@@ -1636,11 +1646,10 @@ class runDAQ:
                 if do_processing or self.cluster_filename is not None:
                     clusters, clustered_pixels = self.frameAna(frame2d)
                     # store analysis results (if requested)
-                    if clusters is not None:
-                        if self.csvfile is not None:
-                            self.frameAna.write_csv(self.csvfile, timestamp, clusters)
-                        if self.clusterfile is not None:
-                            self.frameAna.write_clusters(self.clusterfile, timestamp, frame, clusters, clustered_pixels)
+                    if self.csvfile is not None:
+                        self.frameAna.write_csv(self.csvfile, timestamp, clusters)
+                    if self.clusterfile is not None:
+                        self.frameAna.write_clusters(self.clusterfile, timestamp, frame, clusters, clustered_pixels)
 
                 # animated visualization for prescaled fraction of events
                 if do_processing:
