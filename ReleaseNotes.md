@@ -28,4 +28,7 @@
   - supports shared memory (needs Python vers. > 3.7)
   - fixed single pixel statistics in graphical display
   - added data samples for analysis
+  - store time stamp for empty frames
+  - refinements to analysis notebook
+  
   

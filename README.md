@@ -26,7 +26,6 @@ author: Günter Quast, March 2026
 &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; 
 [![DOI](images/DOI-badge.png)](https://doi.org/10.5281/zenodo.19280859)
 
-
 The [miniPIX EDU](https://advacam.com/camera/minipix-edu) is a camera
 for radiation based on the [Timepix](https://home.cern/tags/timepix) 
 pixel read-out chip with 256x256 radiation-sensitive pixels of 55x55µm² 
@@ -99,6 +98,9 @@ The package may also be installed in your virtual python environment:
   - `python -m pip install -r requirements.txt`
   - `python -m pip install .`
 
+*Note* that the *pypixet* initialization is set up to write log-files
+and configuration data to the directory `/tmp/mPIX/` rsp. `C:\tmp\mPIX` on 
+MS Windows systems. Make sure they exist and that you have write access.
 
 Now everything is set up to enjoy your *miniPIX*. Just run the *Python* 
 program from any working directory by typing   
@@ -108,12 +110,8 @@ program from any working directory by typing
 If you plan to record data, note that the path to the output file
 is relative to the current working directory. 
 
-*Note* also that the *pypixet* initialization is set up to write log-files
-and configuration data to the directory `/tmp/mPIX/` rsp. `C:\tmp\mPIX` on 
-MS Windows systems. Make sure they exist.
-
 It is also worth mentioning that on some systems the current directory,
-".", needs to be contained in the `LD_LIBRARY_PATH` so that the Advacam 
+".", needs to be contained in the `LD_LIBRARY_PATH` so that the *Advacam* 
 *Python* interface *pypixet* finds all its *C* libraries and configuration 
 files. This is also done in the *Python* script ``run_mPIXdaq.py`` by 
 temporarily modifying the environment variable `LD_LIBRARY_PATH` if necessary
@@ -163,16 +161,16 @@ options:
 
 The default values are adjusted to situations with low rates, where
 frames from the *miniPIX* with an exposure time of `acq_time = 0.5` s
-are read. For the graphics display, `overlay = 10` recent frames are 
-overlaid, leading to a total integration time of 5 s. 
+are read. For the graphics display, `overlay = 4` recent frames are 
+overlaid, leading to a total integration time of 2 s. 
 These images represent a two-dimensional pixel map with a color code 
 indicating the energy measured in each pixel. 
 
-The miniPIX EDU version, in particular, may suffer from a large number of dead
-or noisy pixels, and therefore they should be masked by providing a file with 
-the pixel indices to be ignored. The default file name is *snxxxx_badpixels.txt*
-in the working directory, where xxxx is the serial number of the miniPIX device. 
-Alternatively a file name may be specified using the `-b` or `--badpixels` option. 
+The *miniPIX* *EDU* version, in particular, may suffer from a large number
+of dead or noisy pixels, and therefore they should be masked by providing a 
+file with the pixel indices to be ignored. The default file name is  *snxxxx_badpixels.txt* in the working directory, where xxxx is the serial 
+number of the miniPIX device. Alternatively a file name may be specified 
+using the `-b` or `--badpixels` option. 
 
 Collected frame data may be directly written to disk, if a filename is
 given using the `-f` or `--file` option. Two formats are foreseen at present,
@@ -197,10 +195,12 @@ are given in the *EducatorsGuide* that is part of this package.
 
 Properties of clusters, including a list of contributing pixels and
 their energy values,  are optionally written to a file in *yaml* format
-(file extension +.yml*) for later off-line analysis. A more compact version 
+(file extension *.yml*) for later off-line analysis. A more compact version 
 in *.csv* format, containing just the cluster properties, is also available.  
 A *Jupyter* notebook, *analyze_mPIXclusters.ipynb*, illustrates an example 
-analysis based on these file formats.
+analysis based on these file formats. Cluster data in *yml* format may
+also be used with the `-r` resp. `--readfile` option for play-back of 
+recorded data. 
 
 To test the software without access to a *miniPIX* device or without
 a radioactive source, a file with recorded data is provided. Use the
@@ -210,18 +210,18 @@ time and may take some time on slow computers.
 
 ### Parameter settings  for data acquisition
 The optimal choice of parameters, in particular the values of exposure time
-and number of overlaid frames for the graphical display depend very much on 
+and number of overlaid frames for the graphical display, depend very much on 
 the use case.
 
 In scenarios with low rates aiming at a demonstration of the capabilities
 of a modern particle detector like the *miniPIX* for outreach purposes, it
 is most useful to mimic the behavior of a cloud chamber, i.e. particle traces
-appear, remain visible for some time an then disappear again. This can
-be achieved by setting an acquisition time of 0.2 s and an overlay of 10 frames.
-Particles tracks then remain visible on screen for 2 s. The command to run in this 
-mode is:
+appear, remain visible for some time anf then disappear again. This can
+be achieved by setting an acquisition time of 0.2 s and an overlay of 
+10 frames. Particles tracks then remain visible on screen for 2 s. 
+The command to run in this mode is:
 
-   > `run_mPIXdaq -a 0.2 -o10`
+   > `run_mPIXdaq -a0.2 -o10`
 
 If the goal is to efficiently record particle tracks with low read-out dead-time,
 it is not necessary to optimize the visual impression, because the graphical 
@@ -230,14 +230,14 @@ processing overheads, the fraction of events being analyzed and displayed
 may be pre-scaled. In the example below, only every fourth frame is analyzed
 and displayed: 
 
-   > `run_mPIXdaq -a 0.2 -p4 -o1`
+   > `run_mPIXdaq -a0.2 -p4 -o1`
 
 In high-rate scenarios exceeding 100 particles/s the read-out efficiency
 for the miniPIX becomes a concern. The USB 2 transfer and initialization 
 overheads take about 25 ms per frame. In practice, this means that about 
 20 frames/s of 25 ms exposure time each can be transferred at a read-out 
 dead-time of 50%. The number of objects per frame should not exceed about 
-100 in oder to avoid overlaps between clusters. So, in practice, signatures
+100 in oder to avoid overlapping clusters. So, in practice, signatures
 of 2000 particles/s can be handled, which is clearly sufficient for most 
 laboratory experiments with rather weak radioactive sources that comply 
 with radiation protection regulations. 
@@ -247,7 +247,7 @@ is initialized to call a function for data retrieval whenever a new
 frame is ready to be transferred. To receive *acq_count* frames, only
 one initialization step is necessary. The exposure time of each frame 
 is given by the value of *acq_time*. To achieve maximum read-out speed 
-for such a high-rate scenarios, start data-acquisition with the command: 
+for such high-rate scenarios, start data-acquisition with the command: 
 
 > `run_mPIXdaq -a 0.025 -c50 -p10 -o1`
 
@@ -255,7 +255,7 @@ With these settings, only one tenth of the frames is analyzed and displayed;
 the recorded frame rate is 20 Hz, while the read-out dead-time indeed turns 
 out to be 50% (measured on a Raspberry Pi 5).
 
-If higher higher read-out rates up to the nominal 40 frames/sec are needed,
+If higher read-out rates up to the nominal 40 frames/sec are needed,
 data can be recorded using the *Pixet* (basic) program delivered by Advacam 
 together with the device. Select tracking mode, the required exposure-time
 per frame and the number of frames from the graphical interface, then press
@@ -277,10 +277,10 @@ device successively.
 
 The chosen readout mode is "ToT" ("time over threshold", *PX_TPXMODE_TOT*).
 This quantity shows good proportionality to the deposited energy at high 
-signal values, but exhibits a non-linear behavior for small signals near 
-the detection threshold  of the *miniPIX*. Calibration constants are stored 
-on the miniPIX device for each pixel, which are used to provide deposited 
-energies per pixel in units of keV. 
+signal values, but exhibits a non-linear behavior for very small signals 
+near the detection threshold  of the *miniPIX*. Calibration constants are 
+stored on the miniPIX device for each pixel, which are used to provide 
+deposited energies per pixel in units of keV. 
 
 The relevant libraries for device control are provided in directories
 `advacam_<arch>` for `x86_64` Linux, `arm32` and `arm64` and for 
@@ -288,24 +288,24 @@ Macintosh arm64 and MS Windows architectures. The contents of a
 typical directory is: 
 
 ```
-  __init__.py   # package initialization
-  pypixet.so    # the Pixet Python interface
-  minipix.so    # C library for pypixet
-  pxcore.so     # C library for pypixet
-  pixet.ini     # initialization file, in same directory as pypixet
-  factory/      # initialization constants 
+  __init__.py      # package initialization
+  pypixet.so       # the Pixet Python interface
+  minipix.so       # C library for pypixet
+  pxcore.so        # C library for pypixet
+  pixet.ini        # initialization file, in same directory as pypixet
+  pixetVersion.py  # version number of the pypixet library
+  factory/         # initialization constants 
 ```
 
 Note that the copyright of these libraries is held by Advacam. 
 The libraries may be downloaded from their web page, 
 [ADVACAM DWONLOADS](https://advacam.com/downloads/). 
-They are provided here as *Python* packages for some platforms
-for convenience. 
+They are provided here for convenience as *Python* packages.
 
 
 ## Data Analysis
 
-The analysis is intentionally very straight-forward and based on 
+The on-line analysis is intentionally very straight-forward and based on 
 standard libraries and functions. Clustering of pixels is performed by
 finding connected regions in the pixel image with *scipy.ndimage.label()*.
 The shape of the clusters is determined from the ratio of the smaller 
@@ -339,7 +339,7 @@ sufficiently fast computer including the Raspberry Pi 5.
 This is suitable for investigations of natural radiation as emitted by 
 minerals like Pitchblend (=Uraninit), Columbit, Thorianit and others. 
 Radon and its decay products from the air in basement rooms accumulated 
-on a paper towel with a vacuum cleaner on the surface of an electrostatically 
+on a paper towel with a vacuum cleaner or on the surface of an electrostatically 
 charged ballon also works fine.
 
 For applications at higher rates, the analysis may have to
@@ -384,25 +384,48 @@ input to *mPIXdaq* via the '-r' or '--readfile' options.
 cluster properties and the second one indices and energies of contributing
 pixels, i.e.  
   >   `list_of_clusterproperties[i] = yaml_dict["cluster_data"][i][0]` and   
-  >   `list_of_clusterpixels[i] = yaml_dict["cluster_data"][i][1]`,
+  >   `list_of_clusterpixels[i] = yaml_dict["cluster_data"][i][1]`
 
 A *Jupyter* notebook *analyze_mPIXclusters.ipynb* is distributed as part of the 
 package and illustrates how to read and interpret cluster data.
 
 The keys of the variables in *list_of_clusterproperties* are  
->['time', 'x_mean', 'y_mean', 'n_pix', 'energy',  'e_mx, 'var_mx', 'var_mn', 'angle', 'xE_mean', 'yE_mean', 'varE_mx', 'varE_mn']
+>['time', 'x_mean', 'y_mean', 'n_pix', 'energy',  'e_mx, 'x_mn', 'y_mn' 'w', 'h',  
+ 'var_mx', 'var_mn', 'angle', 'xE_mean', 'yE_mean', 'varE_mx', 'varE_mn']
+
+    time    : time since start of daq when frame was recorded
+    x_mean  : mean x-position of cluster (in pixel numbers)
+    y_mean  : mean y-position of cluster (in pixel numbers)
+    n_pix   : number of pixels in cluster
+    energy  : energy of cluster (= sum of pixel energies) in keV
+    e_mx    : maximum pixel energy
+    x_mn    : minimum x of bounding box containing the cluster
+    y_mn    : minimum y of bounding box
+    w       : width of bounding box
+    h       : height of bounding box
+    var_mx  : maximum variance of geometrical cluster shape (in pixels)
+    var_mn  : minimum variance of geometrical cluster shape (in pixels)
+    angle   : orientation of cluster (0 = along x-axis, pi/2 = along y-axis)
+    xE_mean : mean x of energy distribution  (in pixel numbers)
+    yE_mean : mean y of energy distribution  (in pixel numbers)
+    varE_mx : maximum variance of energy distribution  
+    varE_mn : minimum variance of energy distribution 
+
+Empty frames with no clusters or single pixels are represented by an entry
+containing only the time stamp. This is important for scenarios requiring
+a detailed analysis of particle rates. 
 
 It is also possible to store the cluster properties in simple *.csv* format by
 explicitly specifying the file extension:
   `run_mPIXdaq <options> -w <name>_clusters.csv`. 
 
-Histograms displayed in the on-line graphical display may be saved using
+**Histograms** displayed in the on-line graphical display may be saved using
 the control buttons in the *matplotlib* window. 
 
 
 ## Package Structure
 
-This package consists of several *Python* file with classes providing 
+This package consists of several *Python* files with classes providing 
 the base functionality. As mentioned above, it relies on
 [Advacam libraries](https://wiki.advacam.cz/wiki/Python_API)
 for setting-up and reading the sensor. 
