@@ -1,6 +1,6 @@
 ---
 title: Educators Guide for *mPIXdaq* 
-author: Günter Quast, March 2026
+author: Günter Quast, April 2026
 ...
 
 <head>
@@ -22,7 +22,7 @@ author: Günter Quast, March 2026
 ### &nbsp; &nbsp; Data acquisition, visualization and analysis for the Advacam *miniPIX* (EDU) silicon pixel detector    
 
 &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;
-&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; Vers. 1.0.1, March 2026
+&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; Vers. 1.1, April 2026
 &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; 
 [![DOI](images/DOI-badge.png)](https://doi.org/10.5281/zenodo.19280859)
 
@@ -151,7 +151,7 @@ open up:
 - direct observation of how radiation interacts with the silicon, 
 - discrimination of radiation types based on the pixel patterns, 
 - demonstration of Poisson statistics by counting objects in the recorded frames, 
-- dependence of the measured rates from the distance to the source,
+- dependence of the measured rates on the distance to the source,
 - energy measurements of α particles and of their energy loss in matter,
 - energy loss of β particles in matter,
 - studies of photon interactions in matter (dominated by the Compton process),
@@ -235,7 +235,7 @@ and of low-energy β signatures. As becomes clear from the image shown below,
 the rate of recorded objects is significantly reduced, and the typical 
 signatures from α particles are completely missing. 
 
-> ![Display of miniPIXdaq for Pitchblende with plastic absorber](
+> ![Display of miniPIXdaq for Pitchblende with thin plastic absorber](
   images/Pitchblende_noalpha.png)
 
 A **3 mm aluminum absorber** is sufficient to completely suppress all α and β 
@@ -251,7 +251,7 @@ This sequence of images nicely demonstrates many features of radioactivity:
 
 - there are three types of very distinct signatures of radioactivity from natural
   sources: very intensive circular patterns (α), long traces (β) and low energy 
-  deposits with only very few active pixels (γ),
+  deposits with only one or very few active pixels (γ),
 - α and β particles can easily be shielded,
 - γ rays are much more penetrating and more difficult to shield,
 - signatures from γ rays look very similar to those of low-energy electrons, 
@@ -293,7 +293,7 @@ or also with the *Pixet* (basic) program the vendor provides together with
 the *minPIX* detector. 
 *mPIXdaq*, however, provides a transparent algorithm for clustering 
 of pixels and for the characterization of cluster properties that rely 
-solely on basic methods that are mastered already by  undergraduate students. 
+solely on basic methods that are mastered already by undergraduate students. 
 The *miniPIX* data may also serve as a motivation for younger high-school 
 students to learn such techniques and gain experience in more complex 
 methods of digital data processing and analysis.
@@ -324,13 +324,20 @@ in each recorded frame using the *label()* method of the image-processing
 library *scipy.ndimage*. 
 
 The main features of each cluster are the mean position in pixel coordinates, 
-the number of pixels and the sum of all pixel energies. 
+the number of pixels,the sum of all pixel energies and the maximum energy 
+in a single pixel of the cluster. The postion and size of a cluster is
+approximated by the "bounding box", a rectangular area than contains all
+pixels of the cluster. A α particle activates most pixels in the box, i.e.
+the number of pixels is given by the product of the width, *w*, and height,
+*h*, of the bounding box. In contrast, β particles only activate pixels 
+along their trace, and the minimum number of active pixels corresponds to 
+the length of the diagonal of the box. 
 
-Further interesting features are the geometrical shape of the cluster area 
-and the shape of the energy distribution over the pixels.
+Further interesting cluster features are the geometrical shape of the cluster 
+area and the shape of the energy distribution over the pixels.
 To characterize the geometrical shape, the covariance matrix of the pixel 
-coordinates, ${\rm cov}(x_i, y_i)$ is used. Stored are the half-lengths of 
-the principal axes (or the semi-major and semi-minor axes) and the angular 
+coordinates, ${\rm cov}(x_i, y_i)$ is used. Stored are the half-lengths 
+of  the principal axes (or the semi-major and semi-minor axes) and the angular 
 orientation of the principal axis of the covariance ellipses of the clusters. 
 Almost identical values of the half-lengths classify a circular geometry, 
 while largely different values are characteristic of liner topologies. 
@@ -353,13 +360,14 @@ As a starting point for own analyses, the *mPIXdaq* package offers a
 *Jupyter Notebook*, *analyze_mPIXclusters.ipynb*, for use with a local or 
 remote *Jupyter* service. In standard *Python* environments, such a server
 can easily be set-up, as is documented on the project homepage 
-[_jupyter .org_](https://jupyter.org/).
+[_jupyter .org_](https://jupyter.org/).  
 The analysis example provided as part of the *mPIXdaq* package shows how to 
 read the output files and also provides a sample analysis. The code relies
 on the [_pandas_](https://pandas.pydata.org/) package which has become a 
 well-established standard in data science for the analysis of large datasets. 
 
-The following variables are derived for each pixel cluster during online-processing:
+The following cluster features are derived for each pixel cluster during
+online-processing:
 
 ['time', 'x_mean', 'y_mean', 'n_pix', 'energy', 'e_mx', 'x_mn', 'y_mn', 'w', 'h',  
  'var_mx', 'var_mx', 'var_mn', 'angle', 'xE_mean', 'yE_mean', 'varE_mx', 'varE_mn']
@@ -370,7 +378,7 @@ The following variables are derived for each pixel cluster during online-process
     n_pix   : number of pixels in cluster
     energy  : energy of cluster (= sum of pixel energies) in keV
     e_mx    : maximum pixel energy
-    x_mn    : minimum x of bounding box containing the cluster
+    x_mn    : minimum x of rectangular bounding box containing the cluster
     y_mn    : minimum y of bounding box
     w       : width of bounding box
     h       : height of bounding box
@@ -382,13 +390,13 @@ The following variables are derived for each pixel cluster during online-process
     varE_mx : maximum variance of energy distribution  
     varE_mn : minimum variance of energy distribution 
 
-This set of variables permits very detailed studies of the properties of 
-energy deposits in the *miniPIX* , providing deeper insights into the underlying
+This set of variables already permits very detailed studies of the properties of 
+energy deposits in the *miniPIX*, providing deeper insights into the underlying
 physics. An almost perfect separation of the different types of radiation 
 becomes possible and permits background-free selections of α and β traces, 
 counting their rates and determining energy spectra of α particles.
 
-As a further option, a file with cluster data stored in *.yaml* format 
+As a further option, a file with cluster data stored in *yaml* format 
 contains the positions and energies of all contributing pixels. More 
 sophisticated analysis strategies can thus be explored. As an example, 
 it is possible to identify β tracks that are stopped in the active 
@@ -413,10 +421,10 @@ package. The calculated energy loss of particles (or, resp. the deposited
 energy in the absorbing material) are important to relate the measured 
 signals to theoretical expectations.     
 The calculated energy deposits are based on modified versions of the Bethe-Bloch
-relation for the energy loss of charged particles in matter and represent
-reasonable approximations. The presently most authoritative information source 
-on energy losses of electrons, photons and Helium nuclei are the tabulated data
-by NIST (ESTAR, ASTAR and PStar), see [_NIST Standard Reference Database_](
+relation for the energy loss of charged particles in matter and represent reasonable
+approximations. The presently most authoritative information source on energy losses
+of electrons, photons and Helium nuclei (α particles) are the tabulated data by 
+NIST (ESTAR, ASTAR and PStar), see [_NIST Standard Reference Database_](
 https://www.nist.gov/pml/stopping-power-range-tables-electrons-protons-and-helium-ions).
 
  A selection of (proposed and to be tested) experiments with the *miniPIX* detector 
@@ -540,7 +548,7 @@ on top of the background from ambient radiation.
 
 Ambient radiation at a normal level of 0.1µSv/h leads to an interaction rate 
 of about 25 photon signals per minute in the active *miniPIX* volume of 0.059 cm³. 
-This represents a respectable detection efficiency outperforming small Geiger
+This represents a respectable detection efficiency outperforming a small Geiger
 counter by a factor of two to three, and shows that the *miniPIX* can also be 
 used for precision dosimetry. Still, this rate is low compared to typical 
 count rates of 180 per minute observed in a CsI(Tl) crystal of one cm³ volume
@@ -548,9 +556,10 @@ in a RadiaCode 102 device.
 
 An overlay of 300 *miniPIX* frames with an exposure time of 1s each is shown in 
 the figure below. This very feature-rich image shows clear signatures of photons. 
-The rate of single pixels is about 0.5Hz - other signatures with a small number of pixels also originate from γ interactions, which dominate the rate. 
-Other then the above-mentioned scintillation counters, clear signatures of
-α, β particles are also visible.  
+The rate of single pixels is about 0.5Hz - other signatures with a small number
+of pixels also originate from γ interactions, which dominate the rate. 
+Other then possible with the above-mentioned scintillation counters, clear
+signatures of α and β particles are also visible.  
 
 
 ![Ambient radiation ](images/ambientRadiation.png) 
@@ -560,12 +569,12 @@ from the Uranium and Thorium decay chains. Radon is produced from radioactive
 decays in the inner of the Earth and reaches the atmosphere through cracks in 
 the Earth's crust. Radon and its daughter-nuclei (Po, Tl, Bi, Pb) produce 
 α particles with typical energies around 5 - 7 MeV. As they rapidly loose 
-energy through collisions with air molecules the energies observed in the
+energy through interactions with air molecules the energies observed in the
 *miniPIX*observed are typically smaller. Seven clear α signatures are 
-identified in the overlay frame below covering 300s of data acquisition time.
+identified in the overlay frame.
 
 The long, straight track near the centre at the right-hand side of the image
-is a clear example of a muon from cosmic radiation traversing the detector
+is an example of a muon from cosmic radiation traversing the detector
 under a flat angle of about 10°. The sensor was oriented such that the *x*-axis
 pointed vertically. 
 Muons are heavy, and therefore they do not scatter much in the silicon, leading
@@ -580,7 +589,7 @@ will fire only 5 pixels, and a muon under 30° 10 pixels.
 Most muons arrive under 90° from the top, and if the sensor is properly 
 oriented, a noticeable fraction of the total muon flux is observable in 
 the *miniPIX*.  
-With a proper sequence of measurements with different detector orientations 
+With a sequence of measurements with different detector orientations 
 studies of both the rate and direction of muons become possible. This will, 
 however, require long measurement times because the expected rate of muons 
 at sea level, integrated over all angles of incidence, is only about 1/cm²/min. 
@@ -589,10 +598,10 @@ time of 1000s are shown below.
 
 > ![Two clear muon tracks ](images/muonTracks.png) 
 
-The example of a recording of ambient radiatoin also illustrate the usefulness 
+The example of a recording of ambient radiation also illustrate the usefulness 
 of the *miniPIX* as a **dosimeter** to monitor radioactive environments. 
 Different conditions outdoors, in a well-ventilated room or in the typically 
-badly ventilated basements of buildings interesting locations to study. 
+badly ventilated basements of buildings are interesting locations to study. 
 
 Another common source of environmental radioactivity stems from the noble gas 
 Radon and its decay products, which can easily be accumulated on a paper towel 
@@ -605,7 +614,7 @@ been exposed to the air flow of a vacuum cleaner for 10min is shown below.
 
 > ![Rate of Radon decay products. vs. Time ](images/Radon-decayRate.png) 
 
-Starting from a background rate of about 0.5HZ the rate of detected clusters
+Starting from a background rate of about 0.5 HZ the rate of detected clusters
 or single pixels jumps to over 10 HZ when the sensor is exposed to the towel, 
 and then drops exponentially with time. The short-lived nuclei produced from 
 Radon decays offer one of the rare cases to directly observe an  exponential 
@@ -618,16 +627,16 @@ decay products.
 
 Studies of the absorption of γ rays in different materials as a function of the
 depth of traversed material and the initial γ energy are also straight-forward
-with the *miniPIX* detector. With a set of gamma sources, like shielded Am-241,
+with the *miniPIX* detector. With a set of γ sources, like shielded Am-241,
 Cs-137, Na-22 or Co-60, a sufficiently large variation of initial 
 energies ranging from 60 to 1330 keV is available for such measurements. 
-Absorber plates made of lead with thickness in the range from 1 - 25 mm or 
+Absorber plates made of lead with thicknesses in the range from 1 - 25 mm or 
 aluminum blocks of 15 - 25 mm thickness are also useful assets for this experiment.
 
-γ rays only interact very rarely in matter, and typically only one interaction 
+γ rays only interact rarely in matter, and typically only one interaction 
 is seen in thin layers of absorber. As the radiation penetrates a depth $l$ of 
 material, the number of remaining photons $N(l)$ decreases by $dN$, while the 
-interaction probability is proportional $N(l)$. This leads to an exponential 
+interaction probability is proportional to $N(l)$. This leads to an exponential 
 dependence of the remaining number of photons,  
 $N(l) = N_0 \cdot \exp{(-\mu  l)}$.
 $\mu$ is the mass absorption (or attenuation) coefficient of the material, 
