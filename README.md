@@ -22,7 +22,7 @@ author: Günter Quast, March 2026
 ## mPIXdaq Data acquisition and analysis for *miniPIX (EDU)* pixel detector 
 
 &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;
-&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; Vers. 1.0.1, March 2026
+&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; Vers. 1.1, April 2026
 &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; 
 [![DOI](images/DOI-badge.png)](https://doi.org/10.5281/zenodo.19280859)
 
