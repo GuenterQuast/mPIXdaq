@@ -303,7 +303,7 @@ thus providing quantitative results on particle rates and energy spectra.
 An example of the energy spectra of linear and circular clusters and of 
 single pixels is shown below. 
 
-  >  ![Cluster Energies miniPIXdaq](images/Pitchblende_ClusterEnergies.png)
+  >  ![Energy spectra determined with miniPIXdaq](images/Pitchblende_ClusterEnergies.png)
 
 *mPIXdaq* allows highly selective recording of special cluster types, thus
 strongly discriminating the desired signatures against backgrounds. 
@@ -391,19 +391,18 @@ online-processing:
     varE_mn : minimum variance of energy distribution 
 
 This set of variables already permits very detailed studies of the properties of 
-energy deposits in the *miniPIX*, providing deeper insights into the underlying
-physics. An almost perfect separation of the different types of radiation 
-becomes possible and permits background-free selections of α and β traces, 
-counting their rates and determining energy spectra of α particles.
+energy deposits in the *miniPIX* detector. An almost perfect separation of the 
+different types of radiation becomes possible and permits background-free 
+selections of α and β traces, counting their rates and determining energy 
+spectra of α particles.
 
 As a further option, a file with cluster data stored in *yaml* format 
 contains the positions and energies of all contributing pixels. More 
 sophisticated analysis strategies can thus be explored. As an example, 
 it is possible to identify β tracks that are stopped in the active 
 volume of the detector by using the large enhancement of the deposited 
-energy when the electrons come to rest in the material. 
-Explicitly selecting such tracks opens up some limited possibilities 
-for β spectroscopy.
+energy when the electrons come to rest in the material. Explicitly selecting 
+such tracks opens up some limited possibilities for β spectroscopy.
 
 
 ## Advanced topics for university lab courses
@@ -558,25 +557,23 @@ An overlay of 300 *miniPIX* frames with an exposure time of 1s each is shown in
 the figure below. This very feature-rich image shows clear signatures of photons. 
 The rate of single pixels is about 0.5Hz - other signatures with a small number
 of pixels also originate from γ interactions, which dominate the rate. 
-Other then possible with the above-mentioned scintillation counters, clear
-signatures of α and β particles are also visible.  
-
+Other than possible with the above-mentioned scintillation counters, seven clear
+signatures of α particles and a large number of electron traces are also visible.  
 
 ![Ambient radiation ](images/ambientRadiation.png) 
 
-The α signatures stem from decays of the noble gas Radon (Rn-222 and Ra-224) 
+The α signatures stem from decays of the noble gas Radon (Rn-222 and Rn-224) 
 from the Uranium and Thorium decay chains. Radon is produced from radioactive 
 decays in the inner of the Earth and reaches the atmosphere through cracks in 
-the Earth's crust. Radon and its daughter-nuclei (Po, Tl, Bi, Pb) produce 
+the Earth's crust. Radon and its daughter-nuclei (Po, Bi, Pb) produce 
 α particles with typical energies around 5 - 7 MeV. As they rapidly loose 
 energy through interactions with air molecules the energies observed in the
-*miniPIX*observed are typically smaller. Seven clear α signatures are 
-identified in the overlay frame.
+*miniPIX*observed are typically smaller.
 
 The long, straight track near the centre at the right-hand side of the image
-is an example of a muon from cosmic radiation traversing the detector
-under a flat angle of about 10°. The sensor was oriented such that the *x*-axis
-pointed vertically. 
+is an example of a muon from cosmic radiation traversing the detector under 
+a flat angle of about 10°. The sensor was oriented such that the *x*-axis
+pointed vertically.  
 Muons are heavy, and therefore they do not scatter much in the silicon, leading
 to very straight tracks. In addition, they are high-energetic and minimum-ionizing, 
 and therefore their ionization loss along the track is constant. This is in
@@ -603,24 +600,32 @@ of the *miniPIX* as a **dosimeter** to monitor radioactive environments.
 Different conditions outdoors, in a well-ventilated room or in the typically 
 badly ventilated basements of buildings are interesting locations to study. 
 
-Another common source of environmental radioactivity stems from the noble gas 
-Radon and its decay products, which can easily be accumulated on a paper towel 
+Radon and its decay products can be easily accumulated on a paper towel 
 with a vacuum cleaner or on the surface of an electrostatically chared balloon. 
 An increase by a factor of ten compared to natural radiation levels for both 
-α, β particles and γ radiation is easily achievable. 
+α and β particles and for γ radiation is easily achievable. 
 
-An example of particle rates registered with a paper towel that had
-been exposed to the air flow of a vacuum cleaner for 10min is shown below.
+An example of particle rates as a function of time from a paper towel that had 
+been exposed to the air flow of a vacuum cleaner in the cellar of a building 
+for 10 min is shown below.
 
 > ![Rate of Radon decay products. vs. Time ](images/Radon-decayRate.png) 
 
-Starting from a background rate of about 0.5 HZ the rate of detected clusters
-or single pixels jumps to over 10 HZ when the sensor is exposed to the towel, 
-and then drops exponentially with time. The short-lived nuclei produced from 
-Radon decays offer one of the rare cases to directly observe an  exponential 
-decay. Note that this is not an exact exponential function because of the
-production of radioactive daughter nuclei which contribute to the recorded 
-decay products.  
+Starting from a background rate of about 0.3 HZ, the rate of detected clusters
+or single pixels jumps to over 10 HZ when the sensor is exposed to the towel and
+then drops exponentially with time.  
+
+At the end of the Radon decay chain, Pb-210  with a half-life time of 22 years 
+is produced, which, via a twofold β decay to Bi-210 and Po-210 with a subsequent 
+α decay, finally reaches the stable Pb-206 nucleus. Pb-210 constitutes a significant 
+source of natural environmental radiation and is enriched in areas with high Radon 
+levels, like poorly ventilated cellars of buildings. This long-lived component 
+is responsible for the flat part seen in the rate plot beyond 11000 s, which lies 
+about a factor of three above than the initial background level.  
+The short-lived nuclei produced from  Radon decays offer one of the rare cases 
+to directly observe an  exponential decay. Note that this is not an exact 
+exponential function because of the production of radioactive daughter nuclei 
+which contribute to the recorded decay products.  
 
 
 ### Absorption of γ rays in materials
@@ -642,7 +647,6 @@ $N(l) = N_0 \cdot \exp{(-\mu  l)}$.
 $\mu$ is the mass absorption (or attenuation) coefficient of the material, 
 which can be determined in a sequence of measurements with varying absorber 
 thickness and incident γ energy.  
-
 
 !!! show measurements !!!
 
