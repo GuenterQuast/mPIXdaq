@@ -1124,18 +1124,24 @@ class mpixGraphs:
             n_clusters = 0
 
         # update rate plot
-        if n_objects > self.rate_mx:
-            self.rate_mx = n_objects
-            self.axRate.set_xlim(-0.1, 1.05 * self.rate_mx)
         self.hrates[(self.i_frame - 1) % self.num_history_points] = np.float32(n_objects)
         k = self.i_frame % self.num_history_points
         self.line_rate.set_xdata(np.concatenate((self.hrates[k + 1 :], self.hrates[: k + 1])))
         # self.axRate.relim()
         # self.axRate.autoscale_view()
         _n = min(self.num_history_points, self.i_frame)
-        _av_rate = np.asarray(self.hrates)[:_n].mean()
+        _hrates = np.asarray(self.hrates)[:_n]
+        _av_rate = _hrates.mean()
+        _mx_rate = _hrates.max()
         self.line_avrate.set_xdata([_av_rate])
         self.rate_text.set_text(f"<> = {_av_rate:.1f}  ")
+        #  adjust axis
+        if _mx_rate > self.rate_mx:
+            self.rate_mx = _mx_rate
+            self.axRate.set_xlim(-0.1, 1.05 * self.rate_mx)
+        elif 2 * _mx_rate < self.rate_mx:
+            self.rate_mx = _mx_rate / 2
+            self.axRate.set_xlim(-0.1, self.rate_mx)
 
         if self.i_buf < self.n_overlay - 1:
             self.i_buf += 1
