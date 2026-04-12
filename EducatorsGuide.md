@@ -564,11 +564,12 @@ signatures of α particles and a large number of electron traces are also visibl
 
 The α signatures stem from decays of the noble gas Radon (Rn-222 and Rn-224) 
 from the Uranium and Thorium decay chains. Radon is produced from radioactive 
-decays in the inner of the Earth and reaches the atmosphere through cracks in 
-the Earth's crust. Radon and its daughter-nuclei (Po, Bi, Pb) produce 
-α particles with typical energies around 5 - 7 MeV. As they rapidly loose 
-energy through interactions with air molecules the energies observed in the
-*miniPIX*observed are typically smaller.
+decays of these elements in building materials and in the inner of the Earth.
+As a non-reactive noble gas, Radon is released from the material and accumulates
+in the air, in particularly in poorly ventilated rooms. 
+Radon and its daughter-nuclei (Po, Bi, Pb) produce α particles with typical 
+energies around 5 - 7 MeV. As they rapidly loose energy through interactions with
+air molecules the energies observed in the *miniPIX*observed are typically smaller.
 
 The long, straight track near the centre at the right-hand side of the image
 is an example of a muon from cosmic radiation traversing the detector under 
