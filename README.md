@@ -98,9 +98,11 @@ The package may also be installed in your virtual python environment:
   - `python -m pip install -r requirements.txt`
   - `python -m pip install .`
 
-*Note* that the *pypixet* initialization is set up to write log-files
-and configuration data to the directory `/tmp/mPIX/` rsp. `C:\tmp\mPIX` on 
-MS Windows systems. Make sure they exist and that you have write access.
+*Note* that the *pypixet* initialization is set up use the directory 
+`/tmp/mPIX/` resp. `C:\tmp\mPIX\` on MS Windows systems for log-files 
+and configuration. Make sure they exist and that you have write access.
+Put the hardware configuration xml-file that came with your device
+(`MiniPIX-xxx-yyyyy.xml`) in the `config/` subdirectory of that location. 
 
 Now everything is set up to enjoy your *miniPIX*. Just run the *Python* 
 program from any working directory by typing   
