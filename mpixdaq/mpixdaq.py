@@ -309,6 +309,7 @@ class miniPIXdaq:
         """get and store device parameters in dictionary"""
         self.deviceInfo = {}
 
+        self.deviceInfo["id"] = self.dev.deviceID()
         self.deviceInfo["frq"] = self.dev.timepixClock()
         self.deviceInfo["type"] = self.dev.sensorType(self.id)
         self.deviceInfo["pitch"] = self.dev.sensorPitch(self.id)
@@ -325,12 +326,10 @@ class miniPIXdaq:
 
     def print_device_info(self):
         print("miniPIX device info:")
-        print(f"   {self.deviceInfo['dn']}, Firmware: {self.deviceInfo['fw']}")
+        print(f"   {self.deviceInfo['dn']}, ID: {self.deviceInfo['id']}, Firmware: {self.deviceInfo['fw']}")
         print(
             f"   Temp: {self.deviceInfo['temp']:.1f}, Bias: {self.deviceInfo['bias']:.1f}, frequency: {self.deviceInfo['frq']:.2f} MHz"
-        )
-        print(
-            f"   sensor type: {self.deviceInfo['type']}"
+            + f"  sensor type: {self.deviceInfo['type']}"
             + f"  pitch: {self.deviceInfo['pitch']} µm"
             + f"  thickness: {self.deviceInfo['thickness']} µm"
             + f"  width {self.deviceInfo['width']}  height: {self.deviceInfo['height']}"
