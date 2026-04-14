@@ -149,7 +149,13 @@ class mpixControl:
             time.sleep(0.5)  # leave some time for main process to react
 
     @classmethod
-    def get_serial_number(cls):
+    def get_id(cls):
+        """get chip id of device"""
+        return cls.deviceInfo["id"]
+
+    @classmethod
+    def get_sn(cls):
+        "get serial number of divice"
         dn = cls.deviceInfo["dn"]
         return int(dn.split('sn:')[1]) if 'sn:' in dn else None
 
@@ -1299,7 +1305,8 @@ class runDAQ:
                 # set path to working directory (config and output)
                 os.chdir(self.wd_path)
                 # check for bad-pixels file
-                bpix_fn = f"sn{mpixControl.get_serial_number()}_badpixels.txt"
+                bpix_fn = f"{mpixControl.get_id()}_badpixels.txt"
+                #bpix_fn = f"sn{mpixControl.get_sn()}_badpixels.txt"
                 if mpixControl.badpixel_list is None and os.path.exists(bpix_fn):
                     mpixControl.badpixel_list = np.loadtxt(bpix_fn, dtype=np.int32).tolist()
                     print(f"*==* list of {len(mpixControl.badpixel_list)} bad pixels from file {bpix_fn}")
