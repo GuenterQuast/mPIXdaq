@@ -102,7 +102,10 @@ The package may also be installed in your virtual python environment:
 `/var/tmp/mPIX/` resp. `C:\tmp\mPIX\` on MS Windows systems for log-files 
 and configuration. Make sure this directory exist and that you have write 
 access. Put the hardware configuration *xml*-file that came with your device
-(`MiniPIX-xxx-yyyyy.xml`) in the `configs/` subdirectory of that location. 
+(`MiniPIX-xxx-Wyyyy.xml`) in the `configs/` subdirectory of that location. 
+You may also want to create a subdirectory `factory/` containing the
+hardware configuration files of all your devices.  
+
 
 Now everything is set up to enjoy your *miniPIX*. Just run the *Python* 
 program from any working directory by typing   
