@@ -273,7 +273,7 @@ class miniPIXdaq:
         # retrieve device parameters
         self.id = 0
         self.dev = devs[self.id]
-        print("*==* found device " + self.dev.parameters().get("DeviceName").getString())
+        print(f"*==* found device {self.dev.parameters().get("DeviceName").getString()} id: {self.dev.deviceID()}")
         self.get_device_info()
         mpixControl.deviceInfo = self.deviceInfo  # set mpixcontrol sensor info
         self.npx = self.deviceInfo["width"]
