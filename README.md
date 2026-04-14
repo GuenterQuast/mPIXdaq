@@ -173,9 +173,10 @@ indicating the energy measured in each pixel.
 
 The *miniPIX* *EDU* version, in particular, may suffer from a large number
 of dead or noisy pixels, and therefore they should be masked by providing a 
-file with the pixel indices to be ignored. The default file name is  *snxxxx_badpixels.txt* in the working directory, where xxxx is the serial 
-number of the miniPIX device. Alternatively a file name may be specified 
-using the `-b` or `--badpixels` option. 
+file with the pixel indices to be ignored. The default file name is 
+*Xnn-Wnnnn_badpixels.txt* in the working directory, where Xnn-Wnnnn is 
+unique chip-id the miniPIX sensor. Alternatively a file name may be 
+specified using the `-b` or `--badpixels` option. 
 
 Collected frame data may be directly written to disk, if a filename is
 given using the `-f` or `--file` option. Two formats are foreseen at present,
