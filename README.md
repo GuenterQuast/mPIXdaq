@@ -284,9 +284,8 @@ device successively.
 The chosen readout mode is "ToT" ("time over threshold", *PX_TPXMODE_TOT*).
 This quantity shows good proportionality to the deposited energy at high 
 signal values, but exhibits a non-linear behavior for very small signals 
-near the detection threshold  of the *miniPIX*. Calibration constants are 
-stored on the miniPIX device for each pixel, which are used to provide 
-deposited energies per pixel in units of keV. 
+near the detection threshold  of the *miniPIX*. There are individual calibration constants for each pixel, which are are provided for each device by the vendor
+and serve to provide the deposited energies per pixel in units of keV. 
 
 The relevant libraries for device control are provided in directories
 `advacam_<arch>` for `x86_64` Linux, `arm32` and `arm64` and for 
@@ -300,11 +299,17 @@ typical directory is:
   pxcore.so        # C library for pypixet
   pixet.ini        # initialization file, in same directory as pypixet
   pixetVersion.py  # version number of the pypixet library
-  factory/         # initialization constants 
 ```
+Note that the device-dependent *xml*-file for the hardware configuration must
+also be supplied. The *mPIX* package expects it to be found in the
+directory `\var\tmp\mPIX\factory` (or `C:\tmp\mPIX\factory` on windows systems).
+If more than one device is in use, the hardware configuration files for
+all devices may be stored in this directory and will be automatically detected.
+Without such an individual hardware configuration file the *miniPIX* will not
+function properly. 
 
-Note that the copyright of these libraries is held by Advacam. 
-The libraries may be downloaded from their web page, 
+The copyright of these libraries is held by Advacam. 
+The libraries may also be downloaded from their web page, 
 [ADVACAM DWONLOADS](https://advacam.com/downloads/). 
 They are provided here for convenience as *Python* packages.
 
