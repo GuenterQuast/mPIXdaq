@@ -448,7 +448,34 @@ is shown in red; it rises by almost a factor of four at the end of the α reach 
 particles become very slow. This behavior illustrates the Bragg peak of the deposited
 energy, which is relevant for radiation therapy. 
 
-!!! Overlay *miniPIX* measurements !!!
+Quantitative measurements to demonstrate the energy loss in air (or the "stopping
+power) can be made if a thin, preferably open and mono-energetic α-source, e.g. Am-251, 
+is available. 
+Measurements of the energies of α particles as a function of the distance from the 
+source in steps of 5mm are shown below. One channel in the spectrum corresponds to an 
+energy of 10 keV. The the highest  energy of 3.7 MeV was seen at a distance from 
+the source of about 1cm. The other spectra at lower energies were recorded at increasing 
+distances in 5mm intervals.
+
+![Spectra of α energies as a function of the penetration depth in air](
+  images/alpha-spectrum_vs_distance.png).
+
+The increased energy loss with lower energies is clearly visible. It 
+amounts to 92 keV/mm at an energy of 3.4 MeV and increases to 192 keV/mm
+at an energy of 1.5 MeV. The fitted peak positions as a function of the 
+distance of the *miniPIX* from the source are shown below. The vertical
+error bars indicate the standard deviation of the spectrum; the uncertainty
+on the mean is very small and not visible.
+
+![α energy as a function of the penetration depth in air](
+  images/alpha-energy_vs_distance.png).
+
+Note that the measured energies are lower than expected from the theoretical
+Bethe-Bloch relation, probably due to dead material in front of the 
+sensitive area of the *Timepix* sensor. If this was precisely known, a 
+correction could be applied, which, however, would need the theoretical
+energy loss as an input, contradicting the purpose of this experiment
+to demonstrate the energy dependence of the stopping power. 
 
 
 ### Measurement of the energy loss of β radiation.  
