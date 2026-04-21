@@ -449,9 +449,48 @@ particles become very slow. This behavior illustrates the Bragg peak of the depo
 energy, which is relevant for radiation therapy. 
 
 Quantitative measurements to demonstrate the energy loss in air (or the "stopping
-power) can be made if a thin, preferably open and mono-energetic α-source, e.g. Am-251, 
-is available. 
-Measurements of the energies of α particles as a function of the distance from the 
+power) can be made if a thin, preferably open and mono-energetic α-source, e.g. Am-241, 
+is available. α particles are selected using the cluster properties explained above
+by requiring a high value of the average energy deposit per pixel, a circular 
+cluster shape and a non-flat energy distribution.  
+Here is a code example, assuming the data is stored in a *pandas* data frame *df*:
+
+    # define useful quantities
+    # - mean energy per pixel
+    df['Epix_mean'] = df['energy'] / df['n_pix']
+    # - circularity of cluster shape as the ratio of the sizes in x and y
+    df['circularity'] = df['var_mn'] / np.maximum(df['var_mx'].to_numpy(), 0.001)
+    # - flatness of energy distribution 
+    df['flatness'] = df['varE_mx'] / np.maximum(df['var_mx'].to_numpy(), 0.001) 
+
+    # apply cuts on these quantities
+    dEdx_cut = 80
+    circularity_cut = 0.3
+    flatness_cut = 0.4
+    is_high_dEdx = df['Epix_mean'] > dEdx_cut
+    is_circular = df['circularity'] >= circularity_cut
+    is_flat = df['flatness'] > flatness_cut
+
+    # loose definition of alpha candidate by shape
+    shape_is_alpha = is_circular & ~is_flat
+    # a loose definition of an alpha
+    is_cand_alpha = shape_is_alpha | is_high_dEdx
+    # a tight definition of an alpha
+    is_alpha = shape_is_alpha & is_high_dEdx
+    
+To obtain reliable energy measurements, it is important to exclude clusters with
+pixel energies above 1200 keV, because the detector response becomes non-linear
+due to saturating pixel charges. In fact, the energy is largely overestimated in
+such cases. A cure is to discard events where α particles hit the centre of a pixel, 
+leading to the definition of a "clean alpha" with reliable energy determination:
+
+    is_clean_alpha = is_alpha & (df['e_mx'] < 1200.)
+
+or, if also low-energy α with one to three active pixels are to be included:
+
+    is_clean_alpha = is_cand_alpha & (df['e_mx'] < 1200.)
+
+Such measurements of the energies of α particles as a function of the distance from the 
 source in steps of 5mm are shown below. One channel in the spectrum corresponds to an 
 energy of 10 keV. The the highest  energy of 3.7 MeV was seen at a distance from 
 the source of about 1cm. The other spectra at lower energies were recorded at increasing 
@@ -460,22 +499,24 @@ distances in 5mm intervals.
 ![Spectra of α energies as a function of the penetration depth in air](
   images/alpha-spectrum_vs_distance.png).
 
-The increased energy loss with lower energies is clearly visible. It 
-amounts to 92 keV/mm at an energy of 3.4 MeV and increases to 192 keV/mm
-at an energy of 1.5 MeV. The fitted peak positions as a function of the 
-distance of the *miniPIX* from the source are shown below. The vertical
-error bars indicate the standard deviation of the spectrum; the uncertainty
-on the mean is very small and not visible.
+The distance between the peaks, i.e. the energy loss, rises at lower energies. 
+The energy loss amounts 92 keV/mm at an energy of 3.4 MeV and increases to 
+192 keV/mm at 1.5 MeV. 
+
+The fitted peak positions as a function of the distance of the *miniPIX* from 
+the Am-241 source are shown below. The vertical error bars indicate the standard 
+deviation of the spectrum; the uncertainty on the mean is very small and not visible.
 
 ![α energy as a function of the penetration depth in air](
   images/alpha-energy_vs_distance.png).
 
-Note that the measured energies are lower than expected from the theoretical
-Bethe-Bloch relation, probably due to dead material in front of the 
-sensitive area of the *Timepix* sensor. If this was precisely known, a 
-correction could be applied, which, however, would need the theoretical
-energy loss as an input, contradicting the purpose of this experiment
-to demonstrate the energy dependence of the stopping power. 
+The observed range of 2.7 cm for an energy of 3750 keV exceeds the one expected
+from the theoretical curves shown above. Such a range would correspond to a 
+theoretical energy of about 4200 KeV. This discrepancy is caused by the layer of 
+dead material in front of the sensitive area of the *Timepix* sensor. 
+A thickness of 3µm of Aluminium is sufficient to explain the difference. Note that 
+the presence of such an absorption layer also changes the slope of the E(d) curve, 
+because the amount of unmeasured energy loss increases at lower values of the α energy.  
 
 
 ### Measurement of the energy loss of β radiation.  
@@ -593,10 +634,10 @@ The α signatures stem from decays of the noble gas Radon (Rn-222 and Rn-224)
 from the Uranium and Thorium decay chains. Radon is produced from radioactive 
 decays of these elements in building materials and in the inner of the Earth.
 As a non-reactive noble gas, Radon is released from the material and accumulates
-in the air, in particularly in poorly ventilated rooms. 
+in the air, in particular in poorly ventilated rooms. 
 Radon and its daughter-nuclei (Po, Bi, Pb) produce α particles with typical 
 energies around 5 - 7 MeV. As they rapidly loose energy through interactions with
-air molecules the energies observed in the *miniPIX*observed are typically smaller.
+air molecules the energies observed in the *miniPIX* are typically smaller.
 
 The long, straight track near the centre at the right-hand side of the image
 is an example of a muon from cosmic radiation traversing the detector under 
