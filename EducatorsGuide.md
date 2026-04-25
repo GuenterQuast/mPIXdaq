@@ -29,9 +29,9 @@ author: Günter Quast, April 2026
 ---
 ---
 
-This document is meant to be a guide for educators who want to explore the possibilities
-of a modern radiation detection sensor and its implications on new ways to teach the 
-subject of radioactivity at secondary and high-school level. 
+This document is a guide for educators who want to explore the possibilities
+of a modern radiation detection sensor and its implications on new ways to teach 
+the subject of radioactivity at secondary and high-school level. 
 
 While installation, general purpose and use of the *mPIXdaq* software as well as the 
 options for data acquisition, data analysis and visualization are described in the 
@@ -48,7 +48,7 @@ of 55x55x300µm³ volume each.
 Segmented silicon detectors like the *miniPIX* were originally developed for tracking
 of charged particles in high-energy physics. They are now also widely used in diverse
 fields for particle detection, radiation dose measurements and imaging in material 
-sciences and medical applications.  
+sciences and in medical applications.  
 
 The affordable miniPIX (EDU) variant from 
 [_Advacam_](https://advacam.com/camera/minipix-edu/) 
@@ -59,66 +59,66 @@ https://cds.cern.ch/record/2730889/files/CERN-Brochure-2015-007-Eng.pdf).
 
 Thanks to the USB interface and the availability of a user program and drivers for
 various platforms, the detector is easy  to use and allows data visualization in real-time. 
-It is particularly useful to interactively investigate the properties and interactions 
-with matter of α, β and γ radiation and of muons from cosmic rays in educational contexts,
-opening new and very intuitive ways of teaching nuclear and particle physics.  
+It is particularly useful to interactively investigate the properties and
+interactions with matter of α, β and γ radiation and of muons from cosmic rays 
+in educational contexts, opening new and very intuitive ways of teaching nuclear 
+and particle physics. 
 The visual impression of recorded energy depositions in the pixel sensor resembles 
-images produced by cloud chambers, but the *miniPIX* is much easier to set-up and use
-and offers the additional advantage that quantitative, digital information with accurate 
-spatial resolution of the deposited energy is also available. Besides visual inspection, 
-recorded data sets can thus be analyzed in detail to quantitatively explore the properties 
-of radiation. 
+images produced by cloud chambers, however, the *miniPIX* is much easier to set-up
+and use and offers the additional advantage that quantitative, digital information
+with accurate  spatial resolution of the deposited energy is also available. 
+Besides visual inspection, recorded data sets can thus be analyzed in detail to
+quantitatively explore the properties of radiation. 
 
-The size of the sensitive volume of the pixel sensor is 14.1 x 14.1 x 0.3 mm³, segmented 
-into 256 x 256 square pixels covering an area of 55 µm² each.
-The chip is covered by a very thin aluminum foil of 0.5µm thickness, and, in addition, 
-there is a dead silicon layer thinner than 1µm in front of the sensitive volume.  
-Bump-bonded to the sensor is a readout chip connecting each element of the pixel matrix 
-to its own preamplifier, discriminator and digital counter integrated on the readout chip. 
+The *miniPIX* is a cutting-edge technological masterpiece combining 65536 
+individual, radiation-sensitive pixels, arranged in an array of shape 256x256. 
+The size of the sensitive volume of the pixel sensor is 14.1 x 14.1 x 0.3 mm³,
+segmented into 256 x 256 square pixels covering an area of 55 µm² each.
+The chip is covered by a very thin aluminum foil of 0.5µm thickness, and, in
+addition, there is a dead silicon layer thinner than 1µm in front of the sensitive
+volume. Bump-bonded to the sensor is a readout chip connecting each element of the
+pixel matrix to its own preamplifier, discriminator and digital counter integrated
+on the readout chip. 
 
-The deposited energy in each pixel is displayed as color-coded pixel in a two-dimensional 
-image. Such images of different types of radiation give a direct impression of the ways 
-how radiation interacts with matter: strongly localized energy deposits for α particles, 
-long, bent traces from β particles, and - typically small - energy deposits from γ rays,
-which also stem from electrons (i.e. β particles) produced via the Compton process or 
-the photo effect. At rather low rates, also muons from cosmic rays are observed, which
-are characterized by straight tracks with constant mean ionization along the trace.
+The deposited energy in each pixel is displayed as color-coded pixel in the form of 
+a two-dimensional image. Such images of different types of radiation give a direct
+impression of the ways how radiation interacts with matter: very localized energy
+deposits for α particles, long, bent traces from β particles, and - typically small - energy deposits from γ rays, which also stem from electrons (i.e. β particles)
+produced via the Compton process or the photo effect. At rather low rates, also 
+muons from cosmic rays are observed, which are characterized by straight tracks 
+with constant mean ionization along the trace.
 
-A schematic view of a charged-particle track in the sensitive detector material and the
-projection of the energy deposits on the pixel readout-plane is shown in the figure below.
+A schematic view of a charged-particle track in the sensitive detector material 
+and the projection of the energy deposits on the pixel readout-plane is shown in 
+the figure below.
 
-> ![3d-View of pixel cells and example of a particle track](images/pixels-with-track.png)
+> ![3d-View of pixel cells and example of a particle track](
+  images/pixels-with-track.png)
+
+The basic operating principle of the detector depends on the p-n junction of p- 
+and n-type silicon semiconductors and should be well-known to students. It is analogous to other typical sensors for visible or infrared light, i.e. photo-diodes,
+solar cells or pixels in digital cameras. Electron-hole pairs are produced by 
+charged particles traversing the charge-depleted zone of the p-n junction, and 
+their number and hence the collected charge is proportional to the energy 
+deposited by the traversing particle in the sensitive volume of the pixel.
 
 Compared to other detection techniques, which simply count the occurrences of 
 single particle interactions in a large volume, the *miniPIX* is special because 
-it integrates over all signals that occurred within a freely chosen exposure time
-and records all energy deposits with high spatial resolution. 
+it records with high spatial resolution all energy deposits that occurred within 
+a freely chosen exposure time. During exposure, all energy deposits in each pixel
+summed up by measuring the time the pixel signal exceeds a given threshold. If
+the total number of objects hitting the detector is sufficiently small, the total
+energy deposit in each pixel is associated to one particle only. 
 
-The basic operating principle of the detector depends on the p-n junction of p- and n-type
-silicon semiconductors and should be well-known to students. It is analogous to other 
-typical sensors for visible or infrared light, i.e. photo-diodes, solar cells or pixels 
-in digital cameras.
-
-The *miniPIX* is a cutting-edge technological masterpiece combining 65536 individual, 
-radiation-sensitive pixels, arranged in an array of shape 256x256. 
-Each pixel is connected to a pre-amplifier, a discriminator and counting logic. 
-During the freely selectable exposure time, signals from each pixel are integrated 
-and read out as a single frame, very much resembling an image produced by a 
-digital camera. In a digital photo-camera, the number of produced electron-hole pairs 
-is proportional to the intensity of the incoming light. Here, instead, the electron-hole 
-pairs are produced by charged particles, and their number and hence the collected charge
-is proportional to the energy deposited by the traversing particle in the sensitive 
-volume of the pixel.
 A schematic of the detector is shown below.
 
 > ![Schematic layout of the miniPIX detector](images/timepix2-sensor.png)
 
-The chip is operated in the so-called "frame mode", i.e. all pixels are read 
-out at the same time, providing one frame consisting of the deposited energies 
-per pixel collected during the acquisition time. 
+The chip is read out in the so-called "frame mode", i.e. all pixels are read 
+out at the same time, providing one frame with deposited energies per pixel.
 If operated in time-over-threshold ("*ToT*") mode, returned pixel readings represent 
 the time the signal is over a given threshold in counts of the chip clock running at 
-a frequency of appr. 10 MHz. 
+a frequency of approximately 10 MHz. 
 *ToT* is linearly related to the energy deposition for large deposits exceeding
  50 keV. The functional dependence on the deposited energy $E$, including threshold 
  effects, is approximated by the following function
@@ -126,21 +126,16 @@ a frequency of appr. 10 MHz.
    $ToT\,=\;a\,E +b - {c}/{(E-t)}$
 
 Typical values of the calibrations constants are $a$ = 1.6, $b$=23, $c$=23 and $t$=4.3. 
-Each pixel has its individual calibration stored on the chip, 
-which is optionally applied to obtain pixel readings in units of keV.
+Each pixel has its individual calibration stored in a calibration file that is
+proviced together with each device and loaded at initialization time. This calibration
+is applied to obtain pixel readings in units of keV.
 The calibration is reliable up to pixel energies of about one MeV; beyond this
 the response shows a strong nonlinearity, overshooting between about one and
 two MeV and saturating beyond two MeV.
 For details, see the articles by J. Jakubek, *Precise energy calibration 
-of pixel detector working in time-over-threshold mode*, NIM A 633 (2011), 5262-5265
+of pixel detector working in time-over-threshold mode*, NIM A 633 (2011), 5262-5265, 
 and M. Sommer et al., *High-energy per-pixel calibration of timepix pixel detector 
 with laboratory alpha source*, NIM A 1022 (2022) 165957.
-
-If particle rates are sufficiently low to avoid overlaps of signatures, all 
-particle interactions occurring during the exposure time of a frame are 
-individually distinguishable. The deposited energy in the pixels is encoded as a 
-color value, resulting in a very intuitive representation of the energy deposits 
-produced by particles in the sensitive volume. 
 
 Its high sensitivity and spatial mapping of energy deposits as well as the digitally
 recorded data make the *miniPIX* superior to other, classical detectors. While it 
@@ -180,19 +175,19 @@ chamber, Geiger counter, scintillation counter or mono-crystal silicon detectors
 As an example, the graphical display of a data collection run with *mPIXdaq* is 
 shown below with an overlay of 10 frames, each recorded with an exposure time of
 1 s. Clustering of connected pixels and classification of the patterns are performed 
-in real time during data acquisition and results are shown as histograms. The history 
-over the last 300 frames of the numbers of observed objects per frame is also displayed 
-and demonstrates the Poisson nature of the underlying processes of production and
-detection of radioactive particles.
+in real time during data acquisition and results are shown as animated histograms. 
+The history over the last 300 frames of the numbers of observed objects per frame 
+is also displayed and demonstrates the Poisson nature of the underlying processes 
+of production and detection of radioactive particles.
 More details on the real-time analysis method will be given below.
 
 ![Pixel map and histograms of a Columbit sample recorded with *mPIXdaq*](
   images/mPIXdaq_Columbit.png)
 
-Energy spectra of γ rays cannot be measured with the *miniPIX* owing to the small 
-overall sensor volume which is to small to contain all energy deposits.
-Therefore a gamma spectrometer with a scintillating crystal is recommended 
-for γ spectroscopy, e.g. one of the very cost-effective and sufficiently 
+Energy spectra of γ rays cannot be measured with the *miniPIX* owing to the 
+small overall sensor volume which is not large enough to contain all energy 
+deposits. Therefore a gamma spectrometer with a scintillating crystal is 
+recommended for γ spectroscopy, e.g. one of the very cost-effective and sufficiently 
 precise devices made by [RadiaCode](https://radiacode.com/).
 
 Examples of successfully conducted measurements in the student labs at the 
@@ -203,16 +198,15 @@ discussed below.
 ## Analysis of radiation from natural samples
 
 The high sensitivity, combined with the ability to clearly distinguish different
-types of radiation, offers a completely new approach to introduce and teach the
-topic of radioactivity. Radiation from low-activity, natural sources is sufficient
+types of radiation, offers to take a new approach to introducing the topic of radioactivity. Radiation from low-activity, natural sources is sufficient
 to identify typical signatures and relate them to the different properties 
-concerning their interaction with matter. 
+concerning their interaction and with matter. 
 
 Here, a small sample of natural Pitchblende (Uraninit, Uranium Dioxide) is chosen 
 as the entry point for studies of radioactive phenomena.
 A typical *miniPIX* frame image recorded with *mPIXdaq* is shown in the figure below.
-Pixel energies are encoded as colors on a logarithmic scale, as indicated by the legend
-on the right-hand side of the image. 
+Pixel energies are encoded as colors on a logarithmic scale, as indicated by the 
+legend on the right-hand side of the image. 
 
 > ![Display of *mPIXdaq* for Pitchblende](images/Pitchblende.png)
 
@@ -221,8 +215,8 @@ Three types of signatures are clearly distinguishable: circular "blobs" from
 only very few pixels from energy transfers of γ rays to electrons in the silicon. 
 
 Enlarged views of typical α, β and γ signatures show this clearly. Note that 
-the lengths of β traces depend on their energies and incident angles; usually, they
-are not fully contained within the sensitive volume of the *miniPIX* sensor. 
+the lengths of β traces depend on their energies and incident angles; usually, 
+they are not fully contained within the sensitive volume of the *miniPIX* sensor. 
 γ rays typically transfer only a fraction of their energy to electrons via the 
 Compton process and therefore lead to signatures with only one or very view active 
 sensor pixels. Note that lager energy transfers and the full transfer of the γ energy
@@ -272,8 +266,8 @@ pupils or students discover the properties of radiation by themselves.
 In such an approach, the historical context becomes less important, as 
 well as the sequence of developments of technological methods for radiation 
 detection. Utilizing modern detection techniques right at the beginning puts 
-emphasis on the phenomenon of radioactivity itself and its interaction with 
-materials.  
+emphasis on the phenomenon of radioactivity itself and on the interaction of
+radiation with materials.  
 Furthermore, the high sensitivity of the miniPIX detector and its ability to 
 clearly discriminate different types of radiation avoids the use of artificial, 
 high-activity radioactive sources to produce signals exceeding background counts.
@@ -293,20 +287,19 @@ or also with the *Pixet* (basic) program the vendor provides together with
 the *minPIX* detector. 
 *mPIXdaq*, however, provides a transparent algorithm for clustering 
 of pixels and for the characterization of cluster properties that rely 
-solely on basic methods that are mastered already by undergraduate students. 
+solely on methods that are mastered already by undergraduate students. 
+*mPIXdaq* allows highly selective recording of special cluster types, thus
+strongly discriminating the desired signatures against backgrounds. 
 The *miniPIX* data may also serve as a motivation for younger high-school 
-students to learn such techniques and gain experience in more complex 
-methods of digital data processing and analysis.
+students to learn complex methods of digital data processing and analysis.
 
 The algorithms are fast enough to be deployed on-line in low-rate scenarios,
 thus providing quantitative results on particle rates and energy spectra. 
 An example of the energy spectra of linear and circular clusters and of 
 single pixels is shown below. 
 
-  >  ![Energy spectra determined with miniPIXdaq](images/Pitchblende_ClusterEnergies.png)
-
-*mPIXdaq* allows highly selective recording of special cluster types, thus
-strongly discriminating the desired signatures against backgrounds. 
+  >  ![Energy spectra determined with miniPIXdaq](
+    images/Pitchblende_ClusterEnergies.png)
 
 
 ## Real-time analysis of recorded data  
@@ -366,8 +359,8 @@ read the output files and also provides a sample analysis. The code relies
 on the [_pandas_](https://pandas.pydata.org/) package which has become a 
 well-established standard in data science for the analysis of large datasets. 
 
-The following cluster features are derived for each pixel cluster during
-online-processing:
+The following cluster features are derived by *mPIXdaq* for each pixel cluster 
+during online-processing:
 
 ['time', 'x_mean', 'y_mean', 'n_pix', 'energy', 'e_mx', 'x_mn', 'y_mn', 'w', 'h',  
  'var_mx', 'var_mx', 'var_mn', 'angle', 'xE_mean', 'yE_mean', 'varE_mx', 'varE_mn']
@@ -426,8 +419,8 @@ of electrons, photons and Helium nuclei (α particles) are the tabulated data by
 NIST (ESTAR, ASTAR and PStar), see [_NIST Standard Reference Database_](
 https://www.nist.gov/pml/stopping-power-range-tables-electrons-protons-and-helium-ions).
 
- A selection of (proposed and to be tested) experiments with the *miniPIX* detector 
- and the *mPIXdaq* package is described in the sub-chapters below.
+ A selection of experiments with the *miniPIX* detector and the *mPIXdaq* package 
+ is described in the sub-chapters below.
 
 
 ### Penetration depth of α particles in air  
@@ -491,32 +484,42 @@ or, if also low-energy α with one to three active pixels are to be included:
     is_clean_alpha = is_cand_alpha & (df['e_mx'] < 1200.)
 
 Such measurements of the energies of α particles as a function of the distance from the 
-source in steps of 5mm are shown below. One channel in the spectrum corresponds to an 
-energy of 10 keV. The the highest  energy of 3.7 MeV was seen at a distance from 
-the source of about 1cm. The other spectra at lower energies were recorded at increasing 
-distances in 5mm intervals.
+source in steps of 5 mm are shown below. One channel in the spectrum corresponds to an 
+energy of 10 keV. At a distance of about 1.5 cm from the source, the highest energy of 3.7 MeV was seen. The other spectra at lower energies were recorded at increasing 
+distances in 5 mm steps.
 
 ![Spectra of α energies as a function of the penetration depth in air](
   images/alpha-spectrum_vs_distance.png).
 
 The distance between the peaks, i.e. the energy loss, rises at lower energies. 
-The energy loss amounts 92 keV/mm at an energy of 3.4 MeV and increases to 
-192 keV/mm at 1.5 MeV. 
-
-The fitted peak positions as a function of the distance of the *miniPIX* from 
-the Am-241 source are shown below. The vertical error bars indicate the standard 
-deviation of the spectrum; the uncertainty on the mean is very small and not visible.
-
-![α energy as a function of the penetration depth in air](
-  images/alpha-energy_vs_distance.png).
+The energy loss amounts about 90 keV/mm at an energy of 3.4 MeV and increases to 
+190 keV/mm at 1.5 MeV. 
 
 The observed range of 2.7 cm for an energy of 3750 keV exceeds the one expected
 from the theoretical curves shown above. Such a range would correspond to a 
-theoretical energy of about 4200 KeV. This discrepancy is caused by the layer of 
-dead material in front of the sensitive area of the *Timepix* sensor. 
-A thickness of 3µm of Aluminium is sufficient to explain the difference. Note that 
-the presence of such an absorption layer also changes the slope of the E(d) curve, 
-because the amount of unmeasured energy loss increases at lower values of the α energy.  
+theoretical energy of about 4200 KeV. This discrepancy may have several reasons:
+
+   - The cut on the maximum energy in a single pixel may bias the determined energy
+      towards lower values.
+   - The layer of dead material in front of the sensitive area of the *Timepix* 
+     sensor leads to a small energy correction; a thickness of 3µm of Aluminum
+     or insensitive Silicon would be sufficient to explain the difference. 
+   - The energy loss depends on the air density and hence on the temperature
+     and air pressure. A lower density of 5% (which is the size of typical
+     variations under different weather conditions) leads to a an increase of 
+     the α range by about 10 %.
+
+The mean energies obtained from the fitted peak positions as a function of the 
+distance of the *miniPIX* from the Am-241 source, together with theoretical
+expectations, are shown below. The vertical error bars indicate the standard 
+deviation of the spectrum; the uncertainty on the mean energy is very small 
+and not visible.
+
+![α energy as a function of the penetration depth in air](
+ images/energy_loss_of_alhpha_in_air.png)
+
+The agreement is not perfect, but acceptable. A careful calibration of the 
+*miniPIX* for high α energies is needed for precision studies. 
 
 
 ### Measurement of the energy loss of β radiation.  
@@ -529,7 +532,7 @@ not fully absorbed in the sensitive volume of the *miniPIX* and a measurement
 of their energy is only possible if the traces are fully contained, i.e. for
 energies below 200 keV.  
 
-The quantity of interest in such measurements ist the mass absorption 
+The quantity of interest in such measurements is the mass absorption 
 (or attenuation) coefficient, $\mu / \rho$ in units of cm²/g. It is 
 obtained from the dependence of the count rate on the traversed material 
 thickness. Typically, the absorber material consists of very thin aluminum 
@@ -546,7 +549,7 @@ as will be shown next.
 #### Absorption in Silicon  
 
 The energy loss of β radiation in Silicon can be directly studied with the 
-*miniPIX*, because the pixels act as detection and absorber material at the 
+*miniPIX*, because the pixels act as absorber and detection material at the 
 same time. The energies deposited in the pixels along a β track directly 
 show the energy loss (dE/dx) along the trace. Because the β energy decreases 
 while traversing the silicon by exactly the measured energy in the pixels, 
@@ -589,8 +592,6 @@ path length by up to a factor of $\sqrt{2}$. Furthermore, the energy of tracks
 passing at the pixel edges my be shared between adjacent pixels. Nonetheless, 
 despite these obstacles, it should be possible to obtain a meaningful distribution 
 of the energy loss per Silicon pixel as a function of the electron energy.
-
-!!! interesting to see an implementation of an algorithm !!!
 
 
 ### Interactions of γ rays with silicon 
@@ -690,11 +691,11 @@ is produced, which, via a twofold β decay to Bi-210 and Po-210 with a subsequen
 source of natural environmental radiation and is enriched in areas with high Radon 
 levels, like poorly ventilated cellars of buildings. This long-lived component 
 is responsible for the flat part seen in the rate plot beyond 11000 s, which lies 
-about a factor of three above than the initial background level.  
+about a factor of three above the initial background level.  
 The short-lived nuclei produced from  Radon decays offer one of the rare cases 
-to directly observe an  exponential decay. Note that this is not an exact 
-exponential function because of the production of radioactive daughter nuclei 
-which contribute to the recorded decay products.  
+to directly observe an exponential decay law. Note, however, that this is not 
+an exact exponential function because of the production of radioactive daughter
+nuclei which contribute to the recorded decay products.  
 
 
 ### Absorption of γ rays in materials
