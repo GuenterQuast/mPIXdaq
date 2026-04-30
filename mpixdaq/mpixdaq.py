@@ -936,10 +936,12 @@ class mpixGraphs:
         mpixControl.mplActive.set()
 
         # HW info
-        if not mpixControl.from_file:
+        if mpixControl.from_file:
+            _t = self.fig.text(0.015, 0.960, "source:\n " + mpixControl.filename, c='darkblue')
+        else:
             _t = self.fig.text(0.015, 0.960, mpixControl.get_id() + '\n', c='darkblue')
-            _t.set_bbox(dict(facecolor='linen', alpha=0.5, edgecolor='blue'))
-        self.temp_text = self.fig.text(0.035, 0.958, "", color="lightblue")
+            self.temp_text = self.fig.text(0.035, 0.958, "", color="lightblue")
+        _t.set_bbox(dict(facecolor='linen', alpha=0.5, edgecolor='blue'))
 
         # - 2d display for pixel map
         #  bad-pixel map for handling of bad pixels
@@ -1288,7 +1290,11 @@ class runDAQ:
         self.write_mode = "list"  # write pixel list, alternative "2d"
 
         # set global daq parameters
-        mpixControl.from_file = False if self.read_filename is None else True
+        if self.read_filename is None:
+            mpixControl.from_file = False
+        else:
+            mpixControl.from_file = True
+            mpixControl.filename = os.path.basename(self.read_filename)
         mpixControl.daqSettings['acq_time'] = self.acq_time
         mpixControl.daqSettings['acq_count'] = self.acq_count
         mpixControl.kbd_control = args.kbdControl  # switch keyboard control on/of
@@ -1309,8 +1315,10 @@ class runDAQ:
                 _a = input("  Problem with miniPIX device - read data from file ? (y/n) > ")
                 if _a in {'y', 'Y', 'j', 'J'}:
                     path = os.path.dirname(os.path.realpath(__file__)) + '/'
-                    self.read_filename = path + "data/BlackForestStone.yml.gz"
+                    _fn = "BlackForestStone.yml.gz"
+                    self.read_filename = path + "data/" + _fn
                     mpixControl.from_file = True
+                    mpixControl.filename = _fn
                 else:
                     exit("Exiting")
             else:  # library and device are ok
