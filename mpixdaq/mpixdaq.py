@@ -125,13 +125,14 @@ class mpixControl:
 
     from_file = False  # set to True if data from  file
 
-    cmdQ = Queue()
-    statQ = Queue()
+    # set up Queues
+    cmdQ = Queue()  # form commands
+    statQ = Queue()  # for statistics
+    tempQ = Queue()  # sensor temperature
 
     # set default device information (assuming a miniPIX EDU is connected)
     #          overwritten when connecting a device or by deviceInfo block from input file
     deviceInfo = {"dn": "eduMiniPIX (?)", "pitch": 55.0, "width": 256, "height": 256}
-    deviceTemperature = np.nan
 
     daqSettings = {"acq_time": 0.5, "acq_count": 10}
 
@@ -391,8 +392,6 @@ class miniPIXdaq:
         return pointer to data in buffer via Queue
         """
 
-        # track device Temperature
-        mpixControl.deviceTemperatue = self.dev.parameters().get("Temperatue").getDouble()
         # register call-back function
         #      version-dependent code needed due to Advacam breaking the interface
         if pixetVersion in ("1.8.3", "1.8.4"):
@@ -401,6 +400,8 @@ class miniPIXdaq:
             clbArgs = (self.clb_acq_done,)
         self.dev.registerEvent(self.pixet.PX_EVENT_ACQ_FINISHED, *clbArgs)
         while not mpixControl.endEvent.is_set():  # keep running while active
+            if mpixControl.tempQ.empty():
+                mpixControl.tempQ.put(self.dev.parameters().get("Temperature").getDouble())
             if mpixControl.mpixActive.is_set():  # read ac_count individual frames in one burst
                 rc_clb = self.dev.doSimpleAcquisition(self.ac_count, self.ac_time, self.pixet.PX_FTYPE_NONE, "")
                 if rc_clb != 0:
@@ -1200,8 +1201,8 @@ class mpixGraphs:
             status = f"#{self.i_frame}  {dt_active:.1f}s " + _ta + _taf + self.statistics + 10 * " "
             self.img.set(data=self.cimage)
             self.im_text.set_text(status)
-            if mpixControl.deviceTemperature is not np.nan:
-                self.temp_text.set_text(f"{mpixControl.deviceTemperature} °C")
+            if not mpixControl.tempQ.empty():
+                self.temp_text.set_text(f"{mpixControl.tempQ.get():.1f} °C")
             self.fig.canvas.start_event_loop(0.001)  # better than plt.pause(), which would steal the focus
             # the following code for re-drawing does not work with TkAgg
             # self.fig.canvas.update()
