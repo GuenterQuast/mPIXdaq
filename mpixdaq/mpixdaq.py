@@ -132,7 +132,7 @@ class mpixControl:
 
     # set default device information (assuming a miniPIX EDU is connected)
     #          overwritten when connecting a device or by deviceInfo block from input file
-    deviceInfo = {"dn": "eduMiniPIX (?)", "pitch": 55.0, "width": 256, "height": 256}
+    deviceInfo = {"dn": "eduMiniPIX (?)", "id": None, "pitch": 55.0, "width": 256, "height": 256}
 
     daqSettings = {"acq_time": 0.5, "acq_count": 10}
 
@@ -157,7 +157,7 @@ class mpixControl:
 
     @classmethod
     def get_sn(cls):
-        "get serial number of divice"
+        "get serial number of device"
         dn = cls.deviceInfo["dn"]
         return int(dn.split('sn:')[1]) if 'sn:' in dn else None
 
@@ -935,6 +935,12 @@ class mpixGraphs:
         self.fig.canvas.mpl_connect('close_event', self.on_mpl_close)
         mpixControl.mplActive.set()
 
+        # HW info
+        if not mpixControl.from_file:
+            _t = self.fig.text(0.015, 0.960, mpixControl.get_id() + '\n', c='darkblue')
+            _t.set_bbox(dict(facecolor='linen', alpha=0.5, edgecolor='blue'))
+        self.temp_text = self.fig.text(0.035, 0.958, "", color="lightblue")
+
         # - 2d display for pixel map
         #  bad-pixel map for handling of bad pixels
         if mpixControl.badpixel_list is None:
@@ -972,7 +978,6 @@ class mpixGraphs:
             txt_overlay = txt_overlay + f", prescaling factor {self.prescale}"
         self.axim.text(0.01, -0.06, txt_overlay, transform=self.axim.transAxes, color="turquoise")
         self.im_text = self.axim.text(0.02, -0.085, "#", transform=self.axim.transAxes, color="bisque", alpha=0.75)
-        self.temp_text = self.axim.text(1.025, 0.01, "", transform=self.axim.transAxes, color="linen", alpha=0.75)
         #  show detector geometry
         col_geom = "gray"
         _rect = mpl.patches.Rectangle((0, 0), self.npx, self.npx, linewidth=1, edgecolor=col_geom, facecolor='none')
