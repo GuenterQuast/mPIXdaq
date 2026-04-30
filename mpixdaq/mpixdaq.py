@@ -131,6 +131,7 @@ class mpixControl:
     # set default device information (assuming a miniPIX EDU is connected)
     #          overwritten when connecting a device or by deviceInfo block from input file
     deviceInfo = {"dn": "eduMiniPIX (?)", "pitch": 55.0, "width": 256, "height": 256}
+    deviceTemperature = np.nan
 
     daqSettings = {"acq_time": 0.5, "acq_count": 10}
 
@@ -390,6 +391,8 @@ class miniPIXdaq:
         return pointer to data in buffer via Queue
         """
 
+        # track device Temperature
+        mpixControl.deviceTemperatue = self.dev.parameters().get("Temperatue").getDouble()
         # register call-back function
         #      version-dependent code needed due to Advacam breaking the interface
         if pixetVersion in ("1.8.3", "1.8.4"):
@@ -968,6 +971,7 @@ class mpixGraphs:
             txt_overlay = txt_overlay + f", prescaling factor {self.prescale}"
         self.axim.text(0.01, -0.06, txt_overlay, transform=self.axim.transAxes, color="turquoise")
         self.im_text = self.axim.text(0.02, -0.085, "#", transform=self.axim.transAxes, color="bisque", alpha=0.75)
+        self.temp_text = self.axim.text(1.025, 0.01, "", transform=self.axim.transAxes, color="linen", alpha=0.75)
         #  show detector geometry
         col_geom = "gray"
         _rect = mpl.patches.Rectangle((0, 0), self.npx, self.npx, linewidth=1, edgecolor=col_geom, facecolor='none')
@@ -1196,6 +1200,8 @@ class mpixGraphs:
             status = f"#{self.i_frame}  {dt_active:.1f}s " + _ta + _taf + self.statistics + 10 * " "
             self.img.set(data=self.cimage)
             self.im_text.set_text(status)
+            if mpixControl.deviceTemperature is not np.nan:
+                self.temp_text.set_text(f"{mpixControl.deviceTemperature} °C")
             self.fig.canvas.start_event_loop(0.001)  # better than plt.pause(), which would steal the focus
             # the following code for re-drawing does not work with TkAgg
             # self.fig.canvas.update()
@@ -1306,7 +1312,7 @@ class runDAQ:
                 os.chdir(self.wd_path)
                 # check for bad-pixels file
                 bpix_fn = f"{mpixControl.get_id()}_badpixels.txt"
-                #bpix_fn = f"sn{mpixControl.get_sn()}_badpixels.txt"
+                # bpix_fn = f"sn{mpixControl.get_sn()}_badpixels.txt"
                 if mpixControl.badpixel_list is None and os.path.exists(bpix_fn):
                     mpixControl.badpixel_list = np.loadtxt(bpix_fn, dtype=np.int32).tolist()
                     print(f"*==* list of {len(mpixControl.badpixel_list)} bad pixels from file {bpix_fn}")
