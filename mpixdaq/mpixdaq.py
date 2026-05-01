@@ -937,11 +937,11 @@ class mpixGraphs:
 
         # HW info
         if mpixControl.from_file:
-            _t = self.fig.text(0.015, 0.960, "source:\n " + mpixControl.filename, c='darkblue')
+            _t = self.fig.text(0.005, 0.960, "from file\n  " + mpixControl.filename, c='darkblue')
         else:
-            _t = self.fig.text(0.015, 0.960, mpixControl.get_id() + '\n', c='darkblue')
-            self.temp_text = self.fig.text(0.035, 0.958, "", color="lightblue")
-        _t.set_bbox(dict(facecolor='linen', alpha=0.5, edgecolor='blue'))
+            _t = self.fig.text(0.005, 0.960, mpixControl.get_id() + '\n', c='darkblue')
+            self.temp_text = self.fig.text(0.025, 0.958, "", color="lightblue")
+        _t.set_bbox(dict(facecolor='linen', alpha=0.3, edgecolor='blue'))
 
         # - 2d display for pixel map
         #  bad-pixel map for handling of bad pixels

@@ -28,19 +28,19 @@ author: Günter Quast, March 2026
 
 The [miniPIX EDU](https://advacam.com/camera/minipix-edu) is a camera
 for radiation based on the [Timepix](https://home.cern/tags/timepix) 
-pixel read-out chip with 256x256 radiation-sensitive pixels of 55x55µm² 
-area and 300µm depth each. The chip is covered by a very thin foil to 
-permit α and β radiation to reach  the pixels. The device is enclosed 
-in an aluminum housing with a USB 2.0 interface. The sensor chip
-is covered with a thin foil and is very fragile; this area should be 
-protected with a cover if not measuring α radiation. 
+chip with 256x256 radiation-sensitive pixels of 55x55µm² area and 300µm 
+depth each. The chip is covered by a very thin foil to permit α and β 
+radiation to reach  the pixels. The device is enclosed in an aluminum 
+housing with a USB 2.0 interface. The sensor chip is covered with a 
+thin foil and is very fragile; this area should be  protected with a 
+cover if not measuring α radiation. 
 
 The device provides two-dimensional images of particle traces in 
 the sensitive detector material. The high spatial resolution compared 
 to the typical range of particles in silicon is useful to distinguish 
 the different types of radiation and to measure their deposited energies. 
 α-particles are completely absorbed and deposit all of their energy in 
-the sensitive area, allowing usage of the device as an energy spectrometer.  
+the sensitive area, allowing usage of the device as an α spectrometer.  
 
 The vendor provides a ready-to-use program for different computer
 platforms as well as a software-development kit for own applications. 
@@ -48,9 +48,9 @@ platforms as well as a software-development kit for own applications.
 The code provided here serves for acquisition and real-time visualization
 of data provided by a *miniPIX* or *miniPIX* *EDU* device in frame mode,
 i.e. read-out of successive single frames consisting of a full set of 
-256x256 pixel energies accumulated over a given, fixed exposure time.
+256x256 pixel energies accumulated over a configurable exposure time.
 Collected frames are displayed as images with a logarithmic color scale 
-representing the deposited energy in each pixel. Real-time clustering of 
+representing the deposited energies in each pixel. Real-time clustering of
 pixels and fast analysis of the cluster properties by means of standard 
 open-source tools for data analysis are also performed. Raw data and
 analysis results can be exported to files. A sample analysis based on
@@ -70,12 +70,12 @@ Windows 64bit with *Python3.12.x and on *Raspberry Pi* for the
 64-bit versions of *OS12* and *OS13*. Other Linux distributions 
 should not pose any unsurmountable problems.  
 
-On MS Windows, the libraries provided by the vendor support *Python* 
-vers. 3.12, which is easiest to set up with the *miniconda* framework. 
+On MS Windows, the libraries provided by the vendor only supports 
+*Python* vers. 3.12, which is easiest to set up with the *miniconda* 
+framework. 
 
 The code also supports devices other than the miniPIX EDU if the 
-configuration files are available and copied to the *factory/*
-directory in the *pypixet* *Python* interface. 
+vendor-provided calibration file is available.
 
 To get started, follow the steps below: 
 
@@ -83,8 +83,8 @@ To get started, follow the steps below:
     ``git clone https://github.com/GuenterQuast/mPIXdaq`` or  
     ``git clone https://gitlab.kit.edu/Guenter.Quast/mPIXdaq``
 
-   This repository includes the *Python* code and a minimalistic set
-   of libraries provided by Advacam.
+   This repository includes the *Python* code and a minimal set of 
+   libraries provided by Advacam.
 
  - Next, `cd` to the `mPIXdaq` directory you just downloaded.
 
@@ -106,7 +106,6 @@ access. Put the hardware configuration *xml*-file that came with your device
 You may also want to create a subdirectory `factory/` containing the
 hardware configuration files of all your devices.  
 
-
 Now everything is set up to enjoy your *miniPIX*. Just run the *Python* 
 program from any working directory by typing   
 
@@ -117,10 +116,10 @@ is relative to the current working directory.
 
 It is also worth mentioning that on some systems the current directory,
 ".", needs to be contained in the `LD_LIBRARY_PATH` so that the *Advacam* 
-*Python* interface *pypixet* finds all its *C* libraries and configuration 
-files. This is also done in the *Python* script ``run_mPIXdaq.py`` by 
-temporarily modifying the environment variable `LD_LIBRARY_PATH` if necessary
-and then restarting to execute the *Python* code in the new environment.  
+*Python* interface *pypixet* finds all its *C* libraries. This is also 
+done in the *Python* script ``run_mPIXdaq.py`` by temporarily modifying 
+the environment variable `LD_LIBRARY_PATH` if necessary and then restarting 
+to execute the *Python* code in the new environment.  
  
 
 ## Running the example script
@@ -168,14 +167,12 @@ The default values are adjusted to situations with low rates, where
 frames from the *miniPIX* with an exposure time of `acq_time = 0.5` s
 are read. For the graphics display, `overlay = 4` recent frames are 
 overlaid, leading to a total integration time of 2 s. 
-These images represent a two-dimensional pixel map with a color code 
-indicating the energy measured in each pixel. 
 
 The *miniPIX* *EDU* version, in particular, may suffer from a large number
 of dead or noisy pixels, and therefore they should be masked by providing a 
-file with the pixel indices to be ignored. The default file name is 
+file with indices of pixels to be ignored. The default file name is 
 *Xnn-Wnnnn_badpixels.txt* in the working directory, where Xnn-Wnnnn is 
-unique chip-id the miniPIX sensor. Alternatively a file name may be 
+unique chip-id of the miniPIX sensor. Alternatively a file name may be 
 specified using the `-b` or `--badpixels` option. 
 
 Collected frame data may be directly written to disk, if a filename is
@@ -194,10 +191,11 @@ format can be used as an input to this software package.
 
 Data analysis consists of clustering of pixels in each frame and
 determination of cluster parameters, like the number of pixels, energy
-of clusters, and the shapes of the cluster areas and of the energy 
-distribution over the pixels in the clusters. Details about the parameters,
-used, "circularity" and "flatness", and the algorithms to determine them 
-are given in the *EducatorsGuide* that is part of this package. 
+of clusters, a rectangular bounding boxes of each cluster and the shapes 
+of the cluster areas and of the energy distribution over the pixels in 
+the clusters. A detailed description of the stored cluster features and of 
+the algorithms to determine them are given in the *EducatorsGuide* that 
+is part of this package. 
 
 Properties of clusters, including a list of contributing pixels and
 their energy values,  are optionally written to a file in *yaml* format
@@ -250,8 +248,8 @@ with radiation protection regulations.
 
 Read-out of the miniPIX is fastest in callback mode, when the driver 
 is initialized to call a function for data retrieval whenever a new 
-frame is ready to be transferred. To receive *acq_count* frames, only
-one initialization step is necessary. The exposure time of each frame 
+frame is ready to be transferred. Thus only one initialization step is 
+necessary to receive *acq_count* frames. The exposure time of each frame 
 is given by the value of *acq_time*. To achieve maximum read-out speed 
 for such high-rate scenarios, start data-acquisition with the command: 
 
@@ -262,7 +260,7 @@ the recorded frame rate is 20 Hz, while the read-out dead-time indeed turns
 out to be 50% (measured on a Raspberry Pi 5).
 
 If higher read-out rates up to the nominal 40 frames/sec are needed,
-data can be recorded using the *Pixet* (basic) program delivered by Advacam 
+data can be recorded using the *Pixet* (basic) program delivered by *Advacam* 
 together with the device. Select tracking mode, the required exposure-time
 per frame and the number of frames from the graphical interface, then press
 the record button, and after completion save the acquired frames using 
@@ -277,15 +275,19 @@ the *--badpixel* option.
 ## Implementation Details
 
 The default data acquisition is based on the function *doSimpleAcquisition()* 
-from  the *Advacam* *Python* API in callback mode, i.e. *acq_counts* frames 
+from  the *Advacam* *Python* API in callback mode, where *acq_counts* frames 
 with an adjustable accumulation time *acq_time* are read from the miniPIX 
 device successively.  
 
 The chosen readout mode is "ToT" ("time over threshold", *PX_TPXMODE_TOT*).
 This quantity shows good proportionality to the deposited energy at high 
 signal values, but exhibits a non-linear behavior for very small signals 
-near the detection threshold  of the *miniPIX*. There are individual calibration constants for each pixel, which are are provided for each device by the vendor
-and serve to provide the deposited energies per pixel in units of keV. 
+near the detection threshold  of the *miniPIX*. There are individual 
+calibration constants for each pixel, which are are provided for each 
+device by the vendor and serve to provide the deposited energies per 
+pixel in units of keV. At very high pixel energies exceeding 1500 keV/pixel 
+the energy scale is no longer linear, and in particular measurements of the 
+energies of α-particles become imprecise.  
 
 The relevant libraries for device control are provided in directories
 `advacam_<arch>` for `x86_64` Linux, `arm32` and `arm64` and for 
@@ -305,13 +307,14 @@ also be supplied. The *mPIX* package expects it to be found in the
 directory `\var\tmp\mPIX\factory` (or `C:\tmp\mPIX\factory` on windows systems).
 If more than one device is in use, the hardware configuration files for
 all devices may be stored in this directory and will be automatically detected.
-Without such an individual hardware configuration file the *miniPIX* will not
-function properly. 
+Note that without such an individual hardware configuration file the *miniPIX* 
+will not function properly. 
 
-The copyright of these libraries is held by Advacam. 
-The libraries may also be downloaded from their web page, 
-[ADVACAM DWONLOADS](https://advacam.com/downloads/). 
-They are provided here for convenience as *Python* packages.
+**Copyright notice**:   
+The copyright of these libraries is held by *Advacam*. 
+They may also be downloaded from their web page, 
+[ADVACAM DWONLOADS](https://advacam.com/downloads/), and 
+are provided here for convenience as *Python* packages.
 
 
 ## Data Analysis
@@ -331,10 +334,10 @@ at the center for α particles but is rather flat otherwise.
 The figure below shows the graphical display with a pixel image and 
 the typical distributions of the pixel and cluster energies and the 
 number of pixels per cluster. The source used was a weakly radioactive
-stone from the Black Forest containing a small amount of Uranium and 
-its decay products. The pixel map shown in the figure was sampled over 
-a time of five seconds. The histogram in the lower-right corner 
-demonstrates that the cluster types of different kinds of radiation
+stone (approx 10 Bq/cm²) from the Black Forest containing a small amount 
+of Uranium and its decay products. The pixel map shown in the figure was 
+sampled over a time of five seconds. The histogram in the lower-right 
+corner demonstrates that the cluster types of different kinds of radiation
 are well separated: α rays in the green band with relatively low numbers 
 of pixels per cluster, electrons (β) as long tracks with large numbers
 of pixels per cluster and rather low energies. Single pixels not 
@@ -349,13 +352,13 @@ so that analysis results can be displayed in real-time on a
 sufficiently fast computer including the Raspberry Pi 5.
 This is suitable for investigations of natural radiation as emitted by 
 minerals like Pitchblend (=Uraninit), Columbit, Thorianit and others. 
-Radon and its decay products from the air in basement rooms accumulated 
-on a paper towel with a vacuum cleaner or on the surface of an electrostatically 
-charged ballon also works fine.
+The detection of Radon and its decay products from the air in basement 
+rooms accumulated on a paper towel with a vacuum cleaner or on the 
+surface of an electrostatically charged ballon also works fine.
 
 For applications at higher rates, the analysis may have to
 be done off-line by reading data from recorded files. The option
-*--prescale* can be used to limit frame and cluster analysis
+*-p* or *--prescale* can be used to limit frame and cluster analysis
 to a subset of the recorded frames while still allowing to record 
 all data to file with sufficiently low dead time.
 
@@ -397,8 +400,8 @@ pixels, i.e.
   >   `list_of_clusterproperties[i] = yaml_dict["cluster_data"][i][0]` and   
   >   `list_of_clusterpixels[i] = yaml_dict["cluster_data"][i][1]`
 
-A *Jupyter* notebook *analyze_mPIXclusters.ipynb* is distributed as part of the 
-package and illustrates how to read and interpret cluster data.
+A *Jupyter* notebook, *analyze_mPIXclusters.ipynb*, is distributed as part 
+of the package and illustrates how to read and interpret cluster data.
 
 The keys of the variables in *list_of_clusterproperties* are  
 >['time', 'x_mean', 'y_mean', 'n_pix', 'energy',  'e_mx, 'x_mn', 'y_mn' 'w', 'h',  
@@ -437,9 +440,9 @@ the control buttons in the *matplotlib* window.
 ## Package Structure
 
 This package consists of several *Python* files with classes providing 
-the base functionality. As mentioned above, it relies on
+the base functionality. As mentioned above, it relies on some 
 [Advacam libraries](https://wiki.advacam.cz/wiki/Python_API)
-for setting-up and reading the sensor. 
+for setting-up and reading-out the sensor. 
 Other dependencies are well-known libraries from the *Python*
 eco-system for data analysis:  
 
@@ -461,17 +464,17 @@ The components, classes and scripts of the package are
     - `mpixGraphs` 
     - `runDAQ`
 
-- `mplhelpers`  graphical interface for mpixdaq control with  matplotlib
+- `mplhelpers`  graphical interface for *mPIXdaq* control with  matplotlib
 
       - class `bhist` for animated bar-graph histograms
       - class `scatterplot` for animated scatter-plots
       - class `controlGUI` for mouse-based control of the data-acquisition process
 
-- `m̀pixhelers` for decoding supported file formats and plotting of cluster data
+- `mpixhelers` for decoding supported file formats and plotting of cluster data
     - class `fileDecoders`
     - function `plot_cluster(pxlist, num=0)`
 
-- `physics_tools` for calculations of radiation properties  
+- `physics_tools` for calculations of the (mean) energy deposits 
 
 - package script `run_mPIXdaq.py`
 
@@ -496,7 +499,7 @@ class miniPIXdaq:
     in an infinite loop, storing data from the device in a ring buffer.
     The current buffer index is sent to the calling process via a Queue
     (dataQ, an instance of threading.Queue()). The loop ends when the flag
-    endEvent (an instance of threading.Event() in class mpixControl) is set.
+    *endEvent* (an instance of threading.Event() in class mpixControl) is set.
 
     DAQ parameters from class mpixControl:
 
@@ -647,7 +650,7 @@ class controlGUI:
     """
 ```
 
-A package script `run_mPIXdaq` is provided as an example to tie everything 
+The package script `run_mPIXdaq` is provided as an example to tie everything 
 together into a running program. Because the ADVACAM *Python* interface 
 (`pypixet.so`) expects C-libraries and configuration files in the very same 
 directory as the Python interface *pypixet.so* itself, some tricky manipulation
@@ -661,37 +664,48 @@ libraries are loaded and the *miniPIX* is correctly initialized.
 #  run mpixdaq example with data acquisition, on-line analysis and visualization
 #  of pixel frames and histogramming
 
-import os, platform, sys
+import os
+import platform
+import sys
+import multiprocessing
 
 # on some Linux systems, pypixet requires '.' in LD_LIBRARY_PATH to find C-libraries
 #  - add current directory to LD-LIBRARY_PATH
 #  - and restart python script for changes to take effect
 
-path_modified = False
-if 'LD_LIBRARY_PATH' not in os.environ and platform.system() != 'Windows':
-    os.environ['LD_LIBRARY_PATH'] = '.'
-    path_modified = True
-    print(" ! temporarily added '.' to LD_LIBRARY_PATH !")
+modified_path = False
+if platform.system() != 'Windows':
+    _ldp = os.environ.get("LD_LIBRARY_PATH")
+    if _ldp:
+        if ':.' not in _ldp and _ldp != '.':
+            os.environ["LD_LIBRARY_PATH"] = _ldp + ':.'
+            modified_path = True
+    else:
+        os.environ['LD_LIBRARY_PATH'] = '.'
+        modified_path = True
+
     # restart script in modified environment
-    try:
-        os.execv(sys.argv[0], sys.argv)
-    except Exception as e:
-        sys.exit('!!! run_mPIXdaq: Failed to Execute under modified environment: ' + str(e))
+    if modified_path:
+        print(" ! temporarily added '.' to LD_LIBRARY_PATH !")
+        try:
+            os.execv(sys.argv[0], sys.argv)
+        except Exception as e:
+            sys.exit('!!! run_mPIXdaq: Failed to Execute under modified environment: ' + str(e))
 
 # get current working directory (before importing minipix libraries)
 wd = os.getcwd()
-
-if os.name == 'nt':
-    # special hack for windows python 3.7: load pypixet and DLLs
-    import mpixdaq.advacam_win64.pypixet as pypixet
-
 from mpixdaq import mpixdaq  # this may change the working directory, depending on system
 
-# start daq in working directory
-rD = mpixdaq.runDAQ(wd)
-rD()
+# finally, start daq in working directory
+if __name__ == '__main__':  # -------------------
+    if sys.platform.startswith("win"):
+        # On Windows calling this function is necessary.
+        multiprocessing.freeze_support()
 
+    rD = mpixdaq.runDAQ(wd)
+    rD()
 ```
+
 It is also possible to start the script as a *Python* module:
 
 ```
@@ -699,7 +713,6 @@ python -m mpixdaq
 ```
 
 #### physics_tool.py  
-
 contains some code to calulate the energy loss of raidation in matter,
 based on the Bethe-Bloch formula with corrections for the light electron.
 Methods to prduce graphical output are also included.
@@ -742,24 +755,20 @@ dEdx(T, material, projectile):
     """
 ```
 
-
 ```
 calc_pixel_energies(E0, px_size=0.0055):
     """calculate pixel energies for an electron track with energy E0 in silicon
 ```
-
 
 ```
 calc_E_vs_depth(E0, dx, material, projectile):
     """calculate particle energies after penetrating depth x of material
 ```
 
-
 ```
 plot_dEdx_electron(material, nbins=100, bw=0.05, axis=None):
     """plot dE/dx * rho for electrons as a function of energy
 ```
-
 
 ```
 plot_beta_pixel_energies(E0=1.0, px_size=0.0055, axis=None):
@@ -773,7 +782,6 @@ plot_beta_pixel_energies(E0=1.0, px_size=0.0055, axis=None):
   
 ```
 
-
 ```
 plot_dEdx_alpha(material, nbins=200, bw=0.025, axis=None):
     """dE/dx for alpha  particles in material vs. energy
@@ -784,7 +792,6 @@ plot_dEdx_alpha(material, nbins=200, bw=0.025, axis=None):
 
     returns: matplotlib figure
     """
-
 ```
 
 
