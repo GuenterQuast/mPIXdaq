@@ -937,10 +937,10 @@ class mpixGraphs:
 
         # HW info
         if mpixControl.from_file:
-            _t = self.fig.text(0.005, 0.960, "from file\n  " + mpixControl.filename, c='darkblue')
+            _t = self.fig.text(0.0055, 0.960, "from file\n  " + mpixControl.filename, c='darkblue')
         else:
-            _t = self.fig.text(0.005, 0.960, mpixControl.get_id() + '\n', c='darkblue')
-            self.temp_text = self.fig.text(0.025, 0.958, "", color="lightblue")
+            _t = self.fig.text(0.0055, 0.960, "chip-id " + mpixControl.get_id() + '\n', c='darkblue')
+            self.stat_text = self.fig.text(0.010, 0.958, "", color="lightblue")
         _t.set_bbox(dict(facecolor='linen', alpha=0.3, edgecolor='blue'))
 
         # - 2d display for pixel map
@@ -1077,6 +1077,8 @@ class mpixGraphs:
 
         self.statistics = ""
         self.dt_last_plot = 0.0
+        self.i_frame0 = 0
+        self.dt_active0 = 0.0
         self.t_start = time.time()
 
     def upd_histograms(self, pixel_energies, c_summary):
@@ -1111,7 +1113,7 @@ class mpixGraphs:
         ycir = n_cpixels[is_alpha]
         self.scpl.add([(xlin, ylin), (xcir, ycir), (n_singles, s_energies)])
 
-    def __call__(self, frame2d, c_summary, dt_active, dt_alive):
+    def __call__(self, frame2d, i_frame, c_summary, dt_active, dt_alive):
         """update cumulative pixel image and rate, analyze data
         and update histograms, scatter plot and status text
         """
@@ -1208,8 +1210,13 @@ class mpixGraphs:
             status = f"#{self.i_frame}  {dt_active:.1f}s " + _ta + _taf + self.statistics + 10 * " "
             self.img.set(data=self.cimage)
             self.im_text.set_text(status)
-            if not mpixControl.tempQ.empty():
-                self.temp_text.set_text(f"{mpixControl.tempQ.get():.1f} °C")
+            if not mpixControl.tempQ.empty():  #  show frame rate and temperature
+                di = i_frame - self.i_frame0
+                dt = dt_active - self.dt_active0
+                fps = di / dt
+                self.i_frame0 = i_frame
+                self.dt_active0 = dt_active
+                self.stat_text.set_text(f"{fps:.1f} fps    {mpixControl.tempQ.get():.1f} °C")
             self.fig.canvas.start_event_loop(0.001)  # better than plt.pause(), which would steal the focus
             # the following code for re-drawing does not work with TkAgg
             # self.fig.canvas.update()
@@ -1587,6 +1594,7 @@ class runDAQ:
         self.t_pause = 0.0
         frame = np.zeros((self.npx * self.npx), dtype=np.int32)
         frame2d = np.zeros((self.npx, self.npx), dtype=np.int32)
+        self.fps = 0.0
         i_frame = 0
 
         # start daq as a Thread ...
@@ -1688,12 +1696,13 @@ class runDAQ:
                 # animated visualization for prescaled fraction of events
                 if do_processing:
                     cluster_summary = frameAnalyzer.get_cluster_summary(clusters)
-                    self.mpixvis(frame2d, cluster_summary, self.dt_active, self.dt_alive)
+                    self.mpixvis(frame2d, i_frame, cluster_summary, self.dt_active, self.dt_alive)
                 # -- endif  analysis and visualization
 
                 # print heart beat
                 self.dt_active = time.time() - self.t_start - self.dt_paused
-                stat = f"#{i_frame}  {self.dt_active:.0f}s  {i_frame / self.dt_active:0.1f}fps "
+                self.fps = i_frame / self.dt_active
+                stat = f"#{i_frame}  {self.dt_active:.0f}s  {self.fps:0.1f}fps "
                 if mpixControl.kbd_control:
                     print(stat, end="\r")
                 if mpixControl.gui_control:
