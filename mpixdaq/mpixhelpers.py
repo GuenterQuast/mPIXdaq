@@ -165,16 +165,15 @@ class fileDecoders:
                 frame = []
         file.close()
 
-
-def plot_cluster(pxlist, num=0):
-    """Plot energy map of pixel cluster
-
+def pxl2map(pxlist):
+    """Create pixel energy map from pixel list 
+    
     Args:
       - pxlist: list of pixels [ ..., [px_idx, px_energy], ...]
       - num: int, for numbering figures
 
     Returns:
-      - matplotlib figure
+      - numpy array
     """
 
     # get coordinates of pixels from pixel indices
@@ -192,19 +191,34 @@ def plot_cluster(pxlist, num=0):
     ny = max(xy_l[:, 1]) + 1
 
     # plot pixel map
-    _cimage = np.zeros((ny, nx))
+    _cmap = np.zeros((ny, nx))
     for _i, _xy in enumerate(xy_l):
-        _cimage[_xy[1], _xy[0]] = E_l[_i]
-    # print(_cimage)
+        _cmap[_xy[1], _xy[0]] = E_l[_i]
+    return _cmap
+
+
+def plot_cluster(pxlist, num=0):
+    """Create pixel energy map from pixel list and (optionally) plot it
+
+    Args:
+      - pxlist: list of pixels [ ..., [px_idx, px_energy], ...]
+      - num: int, for numbering figures
+
+    Returns:
+      - matplotlib figure
+    """
+
+    # convert pixel list to ndarray
+    _cmap = pxl2map(pxlist)
+    ny, nx = np.shape(_cmap)
 
     _fig, _axim = plt.subplots(1, 1, num=f"pxl_image{num}", figsize=(2.0 + nx * 1.0, 0.5 + ny * 1.0))
     _axim.set_xlabel("# x  ", loc="right")
     _axim.set_ylabel("# y  ", loc="top")
     vmin, vmax = 0.5, 500
-    _img = _axim.imshow(_cimage, origin="lower", cmap='hot', norm=LogNorm(vmin=vmin, vmax=vmax), extent=[0, nx, 0, ny])
+    _img = _axim.imshow(_cmap, origin="lower", cmap='hot', norm=LogNorm(vmin=vmin, vmax=vmax), extent=[0, nx, 0, ny])
     _cbar = _fig.colorbar(_img, pad=0.05)
     _img.set_clim(vmin=vmin, vmax=vmax)
-
     return _fig
 
 
