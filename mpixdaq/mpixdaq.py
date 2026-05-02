@@ -904,7 +904,7 @@ class mpixGraphs:
         # - data structure to store miniPIX frames and analysis results per frame
         self.framebuf = np.zeros((self.n_overlay, self.npx, self.npx), dtype=np.float32)
         self.i_buf = 0
-        self.i_frame = 0
+        self.frame_count = 0
         # cumulative image
         self.cimage = np.zeros((self.npx, self.npx), dtype=np.float32)
         # frame summary statistics
@@ -1077,8 +1077,8 @@ class mpixGraphs:
 
         self.statistics = ""
         self.dt_last_plot = 0.0
-        self.i_frame0 = 0
-        self.dt_active0 = 0.0
+        self.i_frame_l = 0
+        self.dt_active_l = 0.0
         self.t_start = time.time()
 
     def upd_histograms(self, pixel_energies, c_summary):
@@ -1102,7 +1102,7 @@ class mpixGraphs:
 
         # update scatter
         #    protect because of large memory need of scatter plot
-        if self.i_frame > self.max_n_frames_for_scatter_plot:
+        if self.frame_count > self.max_n_frames_for_scatter_plot:
             if not self.warning_issued:
                 print("!!! anaviz: stop updating scatter plot due to large number of frames")
                 self.warning_issued = True
@@ -1117,7 +1117,7 @@ class mpixGraphs:
         """update cumulative pixel image and rate, analyze data
         and update histograms, scatter plot and status text
         """
-        self.i_frame += 1
+        self.frame_count += 1
         # subtract oldest frame ...
         self.cimage -= self.framebuf[self.i_buf]
         # ... and store new one in ring-buffer
@@ -1143,12 +1143,12 @@ class mpixGraphs:
             n_clusters = 0
 
         # update rate plot
-        self.hrates[(self.i_frame - 1) % self.num_history_points] = np.float32(n_objects)
-        k = self.i_frame % self.num_history_points
+        self.hrates[(self.frame_count - 1) % self.num_history_points] = np.float32(n_objects)
+        k = self.frame_count % self.num_history_points
         self.line_rate.set_xdata(np.concatenate((self.hrates[k + 1 :], self.hrates[: k + 1])))
         # self.axRate.relim()
         # self.axRate.autoscale_view()
-        _n = min(self.num_history_points, self.i_frame)
+        _n = min(self.num_history_points, self.frame_count)
         _hrates = np.asarray(self.hrates)[:_n]
         _av_rate = _hrates.mean()
         _mx_rate = _hrates.max()
@@ -1207,15 +1207,15 @@ class mpixGraphs:
                 f"  clusters {self.N_clusters:.0f}|{self.ClusterEnergy:.0f}keV "
                 + f"  single {self.N_singles:.0f}|{self.SingleEnergy:.0f}keV"
             )
-            status = f"#{self.i_frame}  {dt_active:.1f}s " + _ta + _taf + self.statistics + 10 * " "
+            status = f"#{i_frame}  {dt_active:.1f}s " + _ta + _taf + self.statistics + 10 * " "
             self.img.set(data=self.cimage)
             self.im_text.set_text(status)
             if not mpixControl.tempQ.empty():  #  show frame rate and temperature
-                di = i_frame - self.i_frame0
-                dt = dt_active - self.dt_active0
+                di = i_frame - self.i_frame_l
+                dt = dt_active - self.dt_active_l
                 fps = di / dt
-                self.i_frame0 = i_frame
-                self.dt_active0 = dt_active
+                self.i_frame_l = i_frame
+                self.dt_active_ = dt_active
                 self.stat_text.set_text(f"{fps:.1f} fps    {mpixControl.tempQ.get():.1f} °C")
             self.fig.canvas.start_event_loop(0.001)  # better than plt.pause(), which would steal the focus
             # the following code for re-drawing does not work with TkAgg
