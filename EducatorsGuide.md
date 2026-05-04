@@ -603,7 +603,7 @@ The mean deposited energies per pixel for long β tracks traversing the pixel pl
 under an angle not larger than 22.5° from the x- or y-directions are shown 
 in the graph below. The pixel where the track ends is labeled as 1.
 
- > ![Energy deposit per pixel for electron track 800µm before stopping point](
+ > ![Measured mean energy deposit per pixel before stopping point](
   images/electron-edep.png) 
 
 The measured mean energies correspond well to the theoretical expectation
