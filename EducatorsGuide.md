@@ -581,17 +581,42 @@ deposit per pixel shows the expected increase.
 In a more comprehensive analysis, the electron energy in a given pixel is obtained
 by adding up all energy losses starting from the stopping-point. If many such
 tracks are sampled, it becomes possible to determine the energy loss per pixel
-as a function of the electron energy. 
+as a function of the electron energy. As can be seen from the electron track 
+above, the energy deposit per pixel is not constant, but shows large, non-Gaussian
+fluctuations, which are approximately described by a Landau distribution exhibiting 
+a long tail towards large energy deposits due to rare, but intense interactions.
+It is also important to note that the path of a track in a pixel is not 
+precisely known, because it may cross the sensitive area at an unknown elevation 
+angle w.r.t the pixel plane. Furthermore, traces traversing the pixels not in the
+x- or y-directions have a longer path length by up to a factor of $\sqrt{2}$, and
+the energy of tracks passing at the pixel edges my be shared between adjacent 
+pixels. With appropriate selection of tracks, these problems can be mitigated.
+Long tracks have a small inclination angle with the pixel plane, and neighboring 
+pixels can be summed up by projection them on the x or y axes for tracks 
+oriented along the x- or y-direction, respectively.
 
-!!! to be done: Overlay measurements with *miniPIX* !!!
+Data were recorded with a Strontium-90 source by reading 10000 frames with 
+an exposure time of 50 ms, resulting in a large data set of 350000 clusters 
+in total. From these, 680 tracks were selected that satisfy the strict selection criteria described above. The stopping point of the tracks are identified 
+by requiring an energy  deposit larger than 70 keV in the last two pixels.
+The mean deposited energies per pixel for long β tracks traversing the pixel plane 
+under an angle not larger than 22.5° from the x- or y-directions are shown 
+in the graph below. The pixel where the track ends is labeled as 1.
 
-Note that the path of a track in a pixel is not known, because it may cross the
-sensitive area at an unknown elevation angle w.r.t the pixel plane. Also,  
-traces traversing the pixels not in the x- or y-directions have a longer
-path length by up to a factor of $\sqrt{2}$. Furthermore, the energy of tracks 
-passing at the pixel edges my be shared between adjacent pixels. Nonetheless, 
-despite these obstacles, it should be possible to obtain a meaningful distribution 
-of the energy loss per Silicon pixel as a function of the electron energy.
+ > ![Energy deposit per pixel for electron track 800µm before stopping point](
+  images/electron-edep.png) 
+
+The measured mean energies correspond well to the theoretical expectation
+discussed earlier. The energy deposits becomes smaller with increasing distance 
+to the stopping point, i.e. with rising track energy. The value in pixel 15 
+is 21.8 keV, which also corresponds well to the theoretical expectation.
+
+The full energy distributions are shown for some pixels. They agree well
+with the Landau distributions fitted to the histograms, shown as dashed lines.
+
+ > ![Energy deposit per pixel for electron track 800µm before stopping point](
+  images/electron-edep-Landau.png) 
+
 
 
 ### Interactions of γ rays with silicon 
@@ -606,10 +631,6 @@ electrons at the end of their reach.
 
 The energy spectrum ist typically very steeply falling, and any modelling strongly
 depends on the properties of ambient radiation under the given environmental conditions.
-With a high-rate γ source, special features may become visible in the energy spectrum
-on top of the background from ambient radiation.
-
-!!! should try 50keV gammas from Am-241 !!!
 
 
 ### Ambient radiation 
@@ -717,16 +738,3 @@ $N(l) = N_0 \cdot \exp{(-\mu  l)}$.
 $\mu$ is the mass absorption (or attenuation) coefficient of the material, 
 which can be determined in a sequence of measurements with varying absorber 
 thickness and incident γ energy.  
-
-!!! show measurements !!!
-
-
-
-### Collection of further ideas
-
-- change **β incidence angle** to demonstrate the effect of the track length
-  in the sensitive volume on the deposited energy. 
-
-- detailed investigation of traces produced by photons, Compton spectrum?
-
-- ???
