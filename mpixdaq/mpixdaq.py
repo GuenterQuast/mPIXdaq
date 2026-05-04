@@ -1215,7 +1215,7 @@ class mpixGraphs:
                 dt = dt_active - self.dt_active_l
                 fps = di / dt
                 self.i_frame_l = i_frame
-                self.dt_active_ = dt_active
+                self.dt_active_l = dt_active
                 self.stat_text.set_text(f"{fps:.1f} fps    {mpixControl.tempQ.get():.1f} °C")
             self.fig.canvas.start_event_loop(0.001)  # better than plt.pause(), which would steal the focus
             # the following code for re-drawing does not work with TkAgg
