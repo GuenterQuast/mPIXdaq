@@ -1,0 +1,9 @@
+# requirements for jupyter notebooks
+
+# run with: pyhton -m pip install -r requirements.txt
+
+jupyterlab
+matplotlib
+numpy
+scipy
+pandas
