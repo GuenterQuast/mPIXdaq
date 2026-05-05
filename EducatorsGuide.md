@@ -597,13 +597,14 @@ oriented along the x- or y-direction, respectively.
 
 Data were recorded with a Strontium-90 source by reading 10000 frames with 
 an exposure time of 50 ms, resulting in a large data set of 350000 clusters 
-in total. From these, 680 tracks were selected that satisfy the strict selection criteria described above. The stopping point of the tracks are identified 
+in total. From these, 680 tracks were selected that satisfy the strict selection
+ criteria described above. The stopping point of the tracks are identified 
 by requiring an energy  deposit larger than 70 keV in the last two pixels.
 The mean deposited energies per pixel for long β tracks traversing the pixel plane 
 under an angle not larger than 22.5° from the x- or y-directions are shown 
 in the graph below. The pixel where the track ends is labeled as 1.
 
- > ![Measured mean energy deposit per pixel before stopping point](
+ > ![Measured mean energy deposit per pixel for electron tracks before stopping point](
   images/electron-edep.png) 
 
 The measured mean energies correspond well to the theoretical expectation
@@ -614,7 +615,7 @@ is 21.8 keV, which also corresponds well to the theoretical expectation.
 The full energy distributions are shown for some pixels. They agree well
 with the Landau distributions fitted to the histograms, shown as dashed lines.
 
- > ![Energy deposit per pixel for electron track 800µm before stopping point](
+ > ![Energy deposit per pixel for electrons](
   images/electron-edep-Landau.png) 
 
 
