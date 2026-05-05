@@ -633,6 +633,16 @@ electrons at the end of their reach.
 The energy spectrum ist typically very steeply falling, and any modelling strongly
 depends on the properties of ambient radiation under the given environmental conditions.
 
+A clean source of photons of 59.5 keV is obtained by shielding the α particles 
+of an Am-241 source. The energy spectrum of clusters with less than 5 pixels
+is shown in histogram below. The photo-peak at 59.5 keV is clearly visible, along
+with entries at lower-energy. The maximum energy of electrons produced by
+Compton scattering of the incident photons 19 keV is also clearly visible, 
+along with other low-energy entries stemming from X-rays produced in the source
+or in the sensor material.  
+
+> ![from shielded Americium](images/Egamma_from_shielded_Am.png)
+
 
 ### Ambient radiation 
 
@@ -723,7 +733,7 @@ nuclei which contribute to the recorded decay products.
 ### Absorption of γ rays in materials
 
 Studies of the absorption of γ rays in different materials as a function of the
-depth of traversed material and the initial γ energy are also straight-forward
+depth of traversed material and the initial γ energy are straight-forward
 with the *miniPIX* detector. With a set of γ sources, like shielded Am-241,
 Cs-137, Na-22 or Co-60, a sufficiently large variation of initial 
 energies ranging from 60 to 1330 keV is available for such measurements. 
