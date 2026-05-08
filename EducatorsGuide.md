@@ -732,20 +732,46 @@ nuclei which contribute to the recorded decay products.
 
 ### Absorption of γ rays in materials
 
-Studies of the absorption of γ rays in different materials as a function of the
-depth of traversed material and the initial γ energy are straight-forward
+Studies of the absorption of γ rays in different materials as a function of 
+the depth of traversed material and the initial γ energy are straight-forward
 with the *miniPIX* detector. With a set of γ sources, like shielded Am-241,
 Cs-137, Na-22 or Co-60, a sufficiently large variation of initial 
 energies ranging from 60 to 1330 keV is available for such measurements. 
-Absorber plates made of lead with thicknesses in the range from 1 - 25 mm or 
-aluminum blocks of 15 - 25 mm thickness are also useful assets for this experiment.
+Absorber plates made of lead with thicknesses in the range from 1 - 25 mm 
+or aluminum blocks of 15 - 25 mm thickness are also useful assets for such
+experiments.
 
+The result of a sequence of measurements using a Cs-137 source with lead 
+absorber plates is shown in the figure below. Contrary to what was seen for 
+α spectra, the shape of the γ spectra remains almost unchanged when the 
+thickness of the absorption layer changes. The rate however, decreases 
+strongly with increasing absorber thickness. 
+
+>  ![Cs-137 γ spectra for different thickness of Pb absorber plates](images/Cs137-gamma_spectra.png) 
+
+This behavior indicates a qualitative difference between α and γ radiation. 
 γ rays only interact rarely in matter, and typically only one interaction 
-is seen in thin layers of absorber. As the radiation penetrates a depth $l$ of 
-material, the number of remaining photons $N(l)$ decreases by $dN$, while the 
-interaction probability is proportional to $N(l)$. This leads to an exponential 
-dependence of the remaining number of photons,  
-$N(l) = N_0 \cdot \exp{(-\mu  l)}$.
+is seen in thin layers of absorber. The interacting γ transfers its energy to
+an electron, which then gets absorbed in the material. As a consequence,
+the γ is removed from the incident beam. As the radiation penetrates a depth 
+$l$ of material, the number of remaining photons $N(l)$ decreases by $dN$, 
+while the interaction rate is proportional to $N(l)$. This leads to an 
+expected exponential dependence of the remaining number of photons, 
+$N(l) = N_0 \cdot \exp{(- l/ \mu)}$.
 $\mu$ is the mass absorption (or attenuation) coefficient of the material, 
 which can be determined in a sequence of measurements with varying absorber 
-thickness and incident γ energy.  
+thickness and incident γ energy. This exponential behavior is confirmed 
+in the plot below, which shows the measured γ rate as a function of the 
+penetrated absorber thickness.
+
+> ![Cs-137 γ rates vs. thickness of Pb absorber plates](
+  images/gamma_absorption_Pb.png) 
+
+The measurement at zero absorber thickness is clearly not described by the 
+fitted exponential function because this measurement also contains β tracks
+emitted by the Cs-137 source. Their clear separation from the electrons 
+induced by γ radiation is not possible using the signatures in the *miniPIX*,
+and therefore a first layer of absorber material is needed to get rid of the 
+β component. The measurements with at least one absorber plate beautifully 
+confirm the expected exponential relationship between the γ rate and the 
+absorber thickness.
