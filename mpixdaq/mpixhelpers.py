@@ -165,9 +165,10 @@ class fileDecoders:
                 frame = []
         file.close()
 
+
 def pxl2map(pxlist):
-    """Create pixel energy map from pixel list 
-    
+    """Create pixel energy map from pixel list
+
     Args:
       - pxlist: list of pixels [ ..., [px_idx, px_energy], ...]
       - num: int, for numbering figures

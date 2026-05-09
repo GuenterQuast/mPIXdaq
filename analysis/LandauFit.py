@@ -1,19 +1,21 @@
-"""Fit a Landau-pdf to histogram data
-"""
+"""Fit a Landau-pdf to histogram data"""
+
 from PhyPraKit import histstat, hFit
 from scipy.stats import landau
 
+
 # define landau function
-def nLandau(x, N=100, loc=20., scale=5.):
+def nLandau(x, N=100, loc=20.0, scale=5.0):
     """pdf of landau distribution with normalization"""
-    return  N * landau.pdf(x, loc, scale)
+    return N * landau.pdf(x, loc, scale)
+
 
 def fit_Landau(bc, be, mean, sigma, pr=True):
-    """ fit a Landau distribution to histogram data
+    """fit a Landau distribution to histogram data
 
-    Args:  
+    Args:
         bc: bin contents
-    """    
+    """
 
     rdict = hFit(
         nLandau,
@@ -21,7 +23,7 @@ def fit_Landau(bc, be, mean, sigma, pr=True):
         be,  # bin entries and bin edges
         p0=[bc.sum(), mean, sigma],  # initial for parameter values
         #  constraints=['name', val ,err ],   # constraints within errors
-        #limits=("N", 0.0, None),  # limits
+        # limits=("N", 0.0, None),  # limits
         use_GaussApprox=False,  # Gaussian approximation
         fit_density=False,  # fit density
         plot=False,  # plot data and model
@@ -31,7 +33,7 @@ def fit_Landau(bc, be, mean, sigma, pr=True):
         axis_labels=["x", "entries / keV"],
         data_legend="electron",
         model_legend="landau",
-        )
+    )
     pvals, perrs, cor, gof, pnams = rdict.values()
     if pr:
         # Print results to illustrate how to use output
@@ -42,4 +44,4 @@ def fit_Landau(bc, be, mean, sigma, pr=True):
         print(" neg. parameter errors: ", perrs[:, 0])
         print(" pos. parameter errors: ", perrs[:, 1])
         print(" correlations : \n", cor)
-    return(pvals, perrs, gof, pnams)
+    return (pvals, perrs, gof, pnams)

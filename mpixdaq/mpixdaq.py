@@ -124,6 +124,8 @@ class mpixControl:
     mplActive = Event()  # set while interactive plotting is active
 
     from_file = False  # set to True if data from  file
+    clusters_to_file = False  # True if frames written to file
+    frames_to_file = False  # True if cluster written to file
 
     # set up Queues
     cmdQ = Queue()  # form commands
@@ -935,13 +937,19 @@ class mpixGraphs:
         self.fig.canvas.mpl_connect('close_event', self.on_mpl_close)
         mpixControl.mplActive.set()
 
-        # HW info
+        # Print header
+        # - HW info
         if mpixControl.from_file:
-            _t = self.fig.text(0.0055, 0.960, "from file\n  " + mpixControl.filename, c='darkblue')
+            _t = self.fig.text(0.0055, 0.960, "from file\n  " + mpixControl.from_filename, c='darkblue')
         else:
             _t = self.fig.text(0.0055, 0.960, "chip-id " + mpixControl.get_id() + '\n', c='darkblue')
             self.stat_text = self.fig.text(0.010, 0.958, "", color="lightblue")
         _t.set_bbox(dict(facecolor='linen', alpha=0.3, edgecolor='blue'))
+        # - info on file I/O
+        if mpixControl.frames_to_file:
+            _t = self.fig.text(0.0055, 0.925, "writing frames: " + mpixControl.frame_filename, c='turquoise')
+        if mpixControl.clusters_to_file:
+            _t = self.fig.text(0.0055, 0.925, "writing clusters: " + mpixControl.cluster_filename, c='turquoise')
 
         # - 2d display for pixel map
         #  bad-pixel map for handling of bad pixels
@@ -1301,7 +1309,17 @@ class runDAQ:
             mpixControl.from_file = False
         else:
             mpixControl.from_file = True
-            mpixControl.filename = os.path.basename(self.read_filename)
+            mpixControl.from_filename = os.path.basename(self.read_filename)
+        if self.out_filename is None:
+            mpixControl.frames_to_file = False
+        else:
+            mpixControl.frames_to_file = True
+            mpixControl.frame_filename = os.path.basename(self.out_filename)
+        if self.cluster_filename is None:
+            mpixControl.clusters_to_file = False
+        else:
+            mpixControl.clusters_to_file = True
+            mpixControl.cluster_filename = os.path.basename(self.cluster_filename)
         mpixControl.daqSettings['acq_time'] = self.acq_time
         mpixControl.daqSettings['acq_count'] = self.acq_count
         mpixControl.kbd_control = args.kbdControl  # switch keyboard control on/of
@@ -1325,7 +1343,7 @@ class runDAQ:
                     _fn = "BlackForestStone.yml.gz"
                     self.read_filename = path + "data/" + _fn
                     mpixControl.from_file = True
-                    mpixControl.filename = _fn
+                    mpixControl.from_filename = _fn
                 else:
                     exit("Exiting")
             else:  # library and device are ok
@@ -1397,6 +1415,7 @@ class runDAQ:
                     )
                 # tag for data blocks
                 print("frame_data:", file=self.out_file_yml)
+            mpixControl.frame_filename = self.out_filename
             if self.verbosity > 0:
                 print("*==* writing raw frames to file " + self.out_filename)
 
@@ -1437,6 +1456,7 @@ class runDAQ:
                 frameAnalyzer.write_csvheader(self.csvfile)
             else:
                 print("!!! unkown file format to store cluster data", _suffix)
+            mpixControl.cluster_filename = fn
             if fn is not None and self.verbosity > 0:
                 print("*==* writing clusters to file " + fn)
 

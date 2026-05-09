@@ -60,9 +60,7 @@ class peakFitter:
         # constants for fit range
         self.fit_range_factor = fit_range_factor  # fit range = fit_range_factor * fwhm
         self.min_channel = min_channel  # threshold for min. valid channel number
-        self.smoothing_window = (
-            smoothing_window  # window for smoothing with sliding average
-        )
+        self.smoothing_window = smoothing_window  # window for smoothing with sliding average
 
         # some options:
         self.plot = True
@@ -175,9 +173,7 @@ class peakFitter:
         if self.plot:
             fig = plt.figure("Spectrum", figsize=(12, 10))
             fig.suptitle("Spectrum ")
-            fig.subplots_adjust(
-                left=0.12, bottom=0.1, right=0.95, top=0.95, wspace=None, hspace=0.1
-            )
+            fig.subplots_adjust(left=0.12, bottom=0.1, right=0.95, top=0.95, wspace=None, hspace=0.1)
             ax0 = fig.add_subplot(211)
             ax1 = fig.add_subplot(212)
             ax0.set_ylabel("Entries per Channel")
@@ -288,9 +284,7 @@ class peakFitter:
                 mx = self.gauss_plus_bkg(mu, *_pvals)
                 h = _pvals[0] / np.sqrt(2 * np.pi) / sig
                 ax1.vlines(mu, mx - h, mx, linewidth=3, color="goldenrod")
-                ax1.vlines(
-                    mu, 0, mx - h, linewidth=1, linestyle="dashed", color="goldenrod"
-                )
+                ax1.vlines(mu, 0, mx - h, linewidth=1, linestyle="dashed", color="goldenrod")
                 ax1.hlines(
                     mx - h / 2,
                     mu - fwhm / 2,
@@ -298,9 +292,7 @@ class peakFitter:
                     linewidth=2,
                     color="goldenrod",
                 )
-                ax1.hlines(
-                    mx - h, mu - fwhm / 4, mu + fwhm / 4, linewidth=3, color="goldenrod"
-                )
+                ax1.hlines(mx - h, mu - fwhm / 4, mu + fwhm / 4, linewidth=3, color="goldenrod")
                 ax1.legend(loc="best")
             plt.show()
 

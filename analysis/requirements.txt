@@ -7,3 +7,5 @@ matplotlib
 numpy
 scipy
 pandas
+PhyPraKit
+
