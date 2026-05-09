@@ -757,12 +757,13 @@ the γ is removed from the incident beam. As the radiation penetrates a depth
 $l$ of material, the number of remaining photons $N(l)$ decreases by $dN$, 
 while the interaction rate is proportional to $N(l)$. This leads to an 
 expected exponential dependence of the remaining number of photons, 
-$N(l) = N_0 \cdot \exp{(- l/ \mu)}$.
+$N(l) = N_0 \cdot \exp{(- \mu \, l)}$.
 $\mu$ is the mass absorption (or attenuation) coefficient of the material, 
 which can be determined in a sequence of measurements with varying absorber 
-thickness and incident γ energy. This exponential behavior is confirmed 
-in the plot below, which shows the measured γ rate as a function of the 
-penetrated absorber thickness.
+thickness and incident γ energy. Often, the absorption length, $x_a = 1/\mu$
+is used instead of the attenuation coefficient. 
+This exponential behavior is confirmed in the plot below, which shows the
+measured γ rate as a function of the penetrated absorber thickness.
 
 > ![Cs-137 γ rates vs. thickness of Pb absorber plates](
   images/gamma_absorption_Pb.png) 
@@ -772,6 +773,5 @@ fitted exponential function because this measurement also contains β tracks
 emitted by the Cs-137 source. Their clear separation from the electrons 
 induced by γ radiation is not possible using the signatures in the *miniPIX*,
 and therefore a first layer of absorber material is needed to get rid of the 
-β component. The measurements with at least one absorber plate beautifully 
-confirm the expected exponential relationship between the γ rate and the 
-absorber thickness.
+β component. The measurements with at least one absorber plate confirm the
+expected exponential relationship between the γ rate and the absorber thickness.
