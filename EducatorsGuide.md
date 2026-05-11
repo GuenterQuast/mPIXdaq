@@ -83,7 +83,8 @@ on the readout chip.
 The deposited energy in each pixel is displayed as color-coded pixel in the form of 
 a two-dimensional image. Such images of different types of radiation give a direct
 impression of the ways how radiation interacts with matter: very localized energy
-deposits for α particles, long, bent traces from β particles, and - typically small - energy deposits from γ rays, which also stem from electrons (i.e. β particles)
+deposits for α particles, long, bent traces from β particles, and - typically 
+small - energy deposits from γ rays, which also stem from electrons (i.e. β particles)
 produced via the Compton process or the photo effect. At rather low rates, also 
 muons from cosmic rays are observed, which are characterized by straight tracks 
 with constant mean ionization along the trace.
@@ -96,7 +97,8 @@ the figure below.
   images/pixels-with-track.png)
 
 The basic operating principle of the detector depends on the p-n junction of p- 
-and n-type silicon semiconductors and should be well-known to students. It is analogous to other typical sensors for visible or infrared light, i.e. photo-diodes,
+and n-type silicon semiconductors and should be well-known to students. It is 
+analogous to other typical sensors for visible or infrared light, i.e. photo-diodes,
 solar cells or pixels in digital cameras. Electron-hole pairs are produced by 
 charged particles traversing the charge-depleted zone of the p-n junction, and 
 their number and hence the collected charge is proportional to the energy 
@@ -198,7 +200,8 @@ discussed below.
 ## Analysis of radiation from natural samples
 
 The high sensitivity, combined with the ability to clearly distinguish different
-types of radiation, offers to take a new approach to introducing the topic of radioactivity. Radiation from low-activity, natural sources is sufficient
+types of radiation, offers to take a new approach to introducing the topic of 
+radioactivity. Radiation from low-activity, natural sources is sufficient
 to identify typical signatures and relate them to the different properties 
 concerning their interaction and with matter. 
 
@@ -485,7 +488,8 @@ or, if also low-energy α with one to three active pixels are to be included:
 
 Such measurements of the energies of α particles as a function of the distance from the 
 source in steps of 5 mm are shown below. One channel in the spectrum corresponds to an 
-energy of 10 keV. At a distance of about 1.5 cm from the source, the highest energy of 3.7 MeV was seen. The other spectra at lower energies were recorded at increasing 
+energy of 10 keV. At a distance of about 1.5 cm from the source, the highest energy 
+of 3.7 MeV was seen. The other spectra at lower energies were recorded at increasing 
 distances in 5 mm steps.
 
 ![Spectra of α energies as a function of the penetration depth in air](
@@ -747,7 +751,8 @@ absorber plates is shown in the figure below. Contrary to what was seen for
 thickness of the absorption layer changes. The rate however, decreases 
 strongly with increasing absorber thickness. 
 
->  ![Cs-137 γ spectra for different thickness of Pb absorber plates](images/Cs137-gamma_spectra.png) 
+>  ![Cs-137 γ spectra for different thickness of Fe absorber plates](
+  images/Cs137-gamma_spectra.png) 
 
 This behavior indicates a qualitative difference between α and γ radiation. 
 γ rays only interact rarely in matter, and typically only one interaction 
@@ -765,13 +770,29 @@ is used instead of the attenuation coefficient.
 This exponential behavior is confirmed in the plot below, which shows the
 measured γ rate as a function of the penetrated absorber thickness.
 
-> ![Cs-137 γ rates vs. thickness of Pb absorber plates](
+> ![Cs-137 γ rates vs. thickness of Fe absorber plates](
   images/gamma_absorption_Pb.png) 
 
-The measurement at zero absorber thickness is clearly not described by the 
-fitted exponential function because this measurement also contains β tracks
-emitted by the Cs-137 source. Their clear separation from the electrons 
-induced by γ radiation is not possible using the signatures in the *miniPIX*,
-and therefore a first layer of absorber material is needed to get rid of the 
-β component. The measurements with at least one absorber plate confirm the
-expected exponential relationship between the γ rate and the absorber thickness.
+Note that the first absorber plate was made of lead and served to
+suppress any α and β radiation emitted by the radioactive source. 
+The measurements with at least one absorber plate behind the fist one
+beautifully confirm the expected exponential relationship between the
+γ rate and the absorber thickness.
+
+
+#### Variation of this experiment to classify materials
+
+Once the special behavior of γ ray absorption is established experimentally,
+a variation of the experiment demonstrates how to identify materials
+by their typical attenuation coefficient.   
+A material sample is placed between a  γ-source with an Aluminium absorber 
+(to get rid of α and β radiation) and a miniPIX detector. The rates $I$ and
+$I_0$ observed with and without the probe fo thickness $d$ directly yield 
+the (linear) attenuation coefficient of the probe:
+
+$\mu = ln(\frac{I_0}{I}) / d $. 
+
+If also the density of the probe is known, the mass absorption 
+coefficient, $\mu_m = \mu / \rho$ (in units of cm² / g) can be
+compared to tabulated values to determine the material of the probe.
+
