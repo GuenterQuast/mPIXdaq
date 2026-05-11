@@ -771,16 +771,16 @@ This exponential behavior is confirmed in the plot below, which shows the
 measured γ rate as a function of the penetrated absorber thickness.
 
 > ![Cs-137 γ rates vs. thickness of Fe absorber plates](
-  images/gamma_absorption_Pb.png) 
+  images/gamma_absorption_Fe.png) 
 
-Note that the first absorber plate was made of lead and served to
-suppress any α and β radiation emitted by the radioactive source. 
-The measurements with at least one absorber plate behind the fist one
+Note that there was an absorber plate made of lead suppressing any 
+α and β particles emitted from the radioactive source. 
+The measurements with at least one absorber plate behind the shield
 beautifully confirm the expected exponential relationship between the
 γ rate and the absorber thickness.
 
 
-#### Variation of this experiment to classify materials
+#### Variation of the γ-absorption experiment to classify materials
 
 Once the special behavior of γ ray absorption is established experimentally,
 a variation of the experiment demonstrates how to identify materials
