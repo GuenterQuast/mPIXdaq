@@ -790,7 +790,7 @@ A material sample is placed between a  γ-source with an Aluminium absorber
 $I_0$ observed with and without the probe fo thickness $d$ directly yield 
 the (linear) attenuation coefficient of the probe:
 
-$\mu = ln(\frac{I_0}{I}) / d $. 
+$\mu = ln(\frac{I_0}{I}) / d$. 
 
 If also the density of the probe is known, the mass absorption 
 coefficient, $\mu_m = \mu / \rho$ (in units of cm² / g) can be
