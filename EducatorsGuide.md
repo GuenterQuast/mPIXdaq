@@ -773,11 +773,10 @@ measured γ rate as a function of the penetrated absorber thickness.
 > ![Cs-137 γ rates vs. thickness of Fe absorber plates](
   images/gamma_absorption_Fe.png) 
 
-Note that there was an absorber plate made of lead suppressing any 
-α and β particles emitted from the radioactive source. 
-The measurements with at least one absorber plate behind the shield
-beautifully confirm the expected exponential relationship between the
-γ rate and the absorber thickness.
+Note that there was an absorber plate suppressing any α and β particles 
+emitted from the radioactive source. The measurements with additional 
+absorber plates behind the shield confirm the expected exponential 
+relationship between the γ rate and the absorber thickness.
 
 
 #### Variation of the γ-absorption experiment to classify materials
@@ -796,3 +795,8 @@ If also the density of the probe is known, the mass absorption
 coefficient, $\mu_m = \mu / \rho$ (in units of cm² / g) can be
 compared to tabulated values to determine the material of the probe.
 
+Note that the attenuation coefficients determined with the simple set-up
+proposed here are smaller than the tabulated ones, because Compton-scatted
+photons are also registered, while - according to a strict definition - they
+should be excluded. This can be achieved by using collimation tubes 
+allowing only direct paths of γ-radiation from the source to the *miniPIX*. 
