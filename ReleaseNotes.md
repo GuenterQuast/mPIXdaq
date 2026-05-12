@@ -30,5 +30,5 @@
   - added data samples for analysis
   - store time stamp for empty frames
   - refinements to analysis notebook
-  
-  
+  - added adanced experiments to EducatorsGuide
+
