@@ -486,8 +486,14 @@ or, if also low-energy α with one to three active pixels are to be included:
 
     is_clean_alpha = is_cand_alpha & (df['e_mx'] < 1200.)
 
-Such measurements of the energies of α particles as a function of the distance from the 
-source in steps of 5 mm are shown below. One channel in the spectrum corresponds to an 
+An example of such a measurement with a thin, open Am-241 source and the 
+*miniPIX* placed at a distance of about 1 cm away from the source is shown
+below. The energy resolution (full width half maximum) is about 5%. 
+
+![Spectrum of α energies](images/Am241_alpha_3cm.png).
+
+A series of such measurements as a function of the distance from the source in steps 
+of 5 mm is shown below. One channel in the spectrum corresponds to an 
 energy of 10 keV. At a distance of about 1.5 cm from the source, the highest energy 
 of 3.7 MeV was seen. The other spectra at lower energies were recorded at increasing 
 distances in 5 mm steps.
@@ -495,9 +501,9 @@ distances in 5 mm steps.
 ![Spectra of α energies as a function of the penetration depth in air](
   images/alpha-spectrum_vs_distance.png).
 
-The distance between the peaks, i.e. the energy loss, rises at lower energies. 
-The energy loss amounts about 90 keV/mm at an energy of 3.4 MeV and increases to 
-190 keV/mm at 1.5 MeV. 
+The distance between the peaks, i.e. the energy loss, rises at lower energies, as
+expected.  The energy loss amounts about 90 keV/mm at an energy of 3.4 MeV and 
+increases to 190 keV/mm at 1.5 MeV. 
 
 The observed range of 2.7 cm for an energy of 3750 keV exceeds the one expected
 from the theoretical curves shown above. Such a range would correspond to a 
@@ -522,8 +528,8 @@ and not visible.
 ![α energy as a function of the penetration depth in air](
  images/energy_loss_of_alhpha_in_air.png)
 
-The agreement is not perfect, but acceptable. A careful calibration of the 
-*miniPIX* for high α energies is needed for precision studies. 
+The observed agreement is not perfect, but acceptable. A careful calibration 
+of the *miniPIX* for high α energies is needed for precision studies. 
 
 
 ### Measurement of the energy loss of β radiation.  

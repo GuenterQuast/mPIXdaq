@@ -1,7 +1,7 @@
 ---
 title: Recording, analysis and visualization of data 
        from Advacam miniPIX (EDU) silicon pixel detector  
-author: Günter Quast, March 2026
+author: Günter Quast, Aug. 2025, last updated Mai 2026
 ...
 
 <head>
@@ -22,7 +22,7 @@ author: Günter Quast, March 2026
 ## mPIXdaq Data acquisition and analysis for *miniPIX (EDU)* pixel detector 
 
 &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;
-&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; Vers. 1.1, April 2026
+&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; Vers. 1.1, May 2026
 &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; 
 [![DOI](images/DOI-badge.png)](https://doi.org/10.5281/zenodo.19280859)
 
@@ -202,15 +202,15 @@ their energy values,  are optionally written to a file in *yaml* format
 (file extension *.yml*) for later off-line analysis. A more compact version 
 in *.csv* format, containing just the cluster properties, is also available.  
 A *Jupyter* notebook, *analyze_mPIXclusters.ipynb*, illustrates an example 
-analysis based on these file formats. Cluster data in *yml* format may
-also be used with the `-r` resp. `--readfile` option for play-back of 
-recorded data. 
+analysis based on these file formats. 
 
 To test the software without access to a *miniPIX* device or without
 a radioactive source, a file with recorded data is provided. Use the
 option `--readfile data/BlackForestStone.yml.gz` to start a demonstration.
 Note that the analysis of the recorded pixel frames is done in real
-time and may take some time on slow computers.
+time and may take some time on slow computers. Cluster data in *yml* 
+format may also be used with the `-r` resp. `--readfile` option for 
+play-back of recorded data with *mPIXdaq*.
 
 ### Parameter settings  for data acquisition
 The optimal choice of parameters, in particular the values of exposure time
@@ -400,9 +400,6 @@ pixels, i.e.
   >   `list_of_clusterproperties[i] = yaml_dict["cluster_data"][i][0]` and   
   >   `list_of_clusterpixels[i] = yaml_dict["cluster_data"][i][1]`
 
-A *Jupyter* notebook, *analyze_mPIXclusters.ipynb*, is distributed as part 
-of the package and illustrates how to read and interpret cluster data.
-
 The keys of the variables in *list_of_clusterproperties* are  
 >['time', 'x_mean', 'y_mean', 'n_pix', 'energy',  'e_mx, 'x_mn', 'y_mn' 'w', 'h',  
  'var_mx', 'var_mn', 'angle', 'xE_mean', 'yE_mean', 'varE_mx', 'varE_mn']
@@ -435,6 +432,11 @@ explicitly specifying the file extension:
 
 **Histograms** displayed in the on-line graphical display may be saved using
 the control buttons in the *matplotlib* window. 
+
+A **_Jupyter_ notebook**, *analyze_mPIXclusters.ipynb*, is distributed as part 
+of the package and illustrates how to read and interpret cluster data. This
+notebook and some *Python* code for are collected in the subdirectory 'analysis/'
+of the *mPIXdaq* package. 
 
 
 ## Package Structure
@@ -480,6 +482,10 @@ The components, classes and scripts of the package are
 
 - script `calculate_dEdx` for calculating and plotting the energy loss in matter
 
+- `analysis/` with a *Jupyter* notebook to analyze cluster data
+    - `analyze_mPIXclusters.ipynb`
+    - `LandauFit.py` for fitting a Landau distribution 
+    - `peakFitter.py` to search for and fit a Gaussion to peaks in spectra
 
 Details on the classes and their interfaces are given below.
 
