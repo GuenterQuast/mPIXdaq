@@ -482,12 +482,27 @@ The components, classes and scripts of the package are
 
 - script `calculate_dEdx` for calculating and plotting the energy loss in matter
 
-- `analysis/` with a *Jupyter* notebook to analyze cluster data
+- subdirectory `analysis/` with a *Jupyter* notebook to analyze cluster data
     - `analyze_mPIXclusters.ipynb`
     - `LandauFit.py` for fitting a Landau distribution 
     - `peakFitter.py` to search for and fit a Gaussion to peaks in spectra
 
+- subdirectory `data/` contains some small data sets as examples for the *Jupyter* notebook
+
+    - BlackForestStone.yml.gz *# data recorded with a low-activity stone 
+               (Uranium ore) from the Black Forest*
+    - BlackForestStone.csv.gz *# cluster properties  of stone from Black Forest*
+    - BlackForestStone_clusters.yml.gz *# cluster properties and pixel data of stone
+               from  Black Forest*
+    - gammaRadiation_clusters.yml.gz *# cluster and pixel data from  Black Forest stone
+               shielded with 3mm Aluminium*
+    - ambientRadiation_clusters.yml.gz  *# cluster and pixel data from long run with
+               ambient radiation*  
+    - Radon_clusters.yml.gz *# cluster and pixel data from Radon decay products* 
+
+
 Details on the classes and their interfaces are given below.
+
 
 #### mpixdaq.py
 
