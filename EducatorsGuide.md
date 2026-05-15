@@ -806,3 +806,36 @@ proposed here are smaller than the tabulated ones, because Compton-scatted
 photons are also registered, while - according to a strict definition - they
 should be excluded. This can be achieved by using collimation tubes 
 allowing only direct paths of γ-radiation from the source to the *miniPIX*. 
+
+##  *Jupyter* notebook 
+
+The *mPIXdaq* package contains a *Jupyter* notebook and some python modules 
+in the subdirectory `analysis/` which illustrates many of the analysis steps
+described above. Small data samples in the subdirectory `data/` serve as
+examples to try out and further develop analysis code.
+
+-  **_Jupyter_ notebook** to analyze cluster data in subdirectory `analysis/`:
+
+    - `analyze_mPIXclusters.ipynb`
+    - `LandauFit.py` for fitting a Landau distribution 
+    - `peakFitter.py` to search for and fit a Gaussian to peaks in spectra
+
+
+- **data sets** as examples for the *Jupyter* notebook analysis in subdirectory `data`:
+
+    - BlackForestStone.yml.gz *# data recorded with a low-activity stone 
+               (Uranium ore) from the Black Forest*
+    - BlackForestStone.csv.gz *# cluster properties  of stone from Black Forest*
+    - BlackForestStone_clusters.yml.gz *# cluster properties and pixel data of stone
+               from  Black Forest*
+    - gammaRadiation_clusters.yml.gz *# cluster and pixel data from  Black Forest stone
+               shielded with 3mm Aluminium*
+    - ambientRadiation_clusters.yml.gz  *# cluster and pixel data from long run with
+               ambient radiation*  
+    - Radon_clusters.yml.gz *# cluster and pixel data from Radon decay products* 
+
+The *Jupyter* notebook contains extensive documentation should be self-sufficient
+for students to understand the analysis methods and algorithms and to adapt them
+for their own, dedicated studies. After installation of the *Jupyter* environment,
+the notebook is started fom the command line via 
+`jupyter-lab analyze_mPIXclusters.ipynb` .

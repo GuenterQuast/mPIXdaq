@@ -435,7 +435,7 @@ the control buttons in the *matplotlib* window.
 
 A **_Jupyter_ notebook**, *analyze_mPIXclusters.ipynb*, is distributed as part 
 of the package and illustrates how to read and interpret cluster data. This
-notebook and some *Python* code for are collected in the subdirectory 'analysis/'
+notebook and some *Python* code are collected in the subdirectory 'analysis/'
 of the *mPIXdaq* package. 
 
 
@@ -485,7 +485,7 @@ The components, classes and scripts of the package are
 - subdirectory `analysis/` with a *Jupyter* notebook to analyze cluster data
     - `analyze_mPIXclusters.ipynb`
     - `LandauFit.py` for fitting a Landau distribution 
-    - `peakFitter.py` to search for and fit a Gaussion to peaks in spectra
+    - `peakFitter.py` to search for and fit a Gaussian to peaks in spectra
 
 - subdirectory `data/` contains some small data sets as examples for the *Jupyter* notebook
 
