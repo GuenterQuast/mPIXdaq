@@ -337,7 +337,7 @@ of  the principal axes (or the semi-major and semi-minor axes) and the angular
 orientation of the principal axis of the covariance ellipses of the clusters. 
 Almost identical values of the half-lengths classify a circular geometry, 
 while largely different values are characteristic of liner topologies. 
-The ratio of the two half-length it therefore used as a measure of  
+The ratio of the two half-length it therefore used as a measure of
 the "circularity" of the cluster, which already provides a good separation 
 of α and β particles.
 
@@ -651,7 +651,7 @@ Compton scattering of the incident photons 19 keV is also clearly visible,
 along with other low-energy entries stemming from X-rays produced in the source
 or in the sensor material.  
 
-> ![from shielded Americium](images/Egamma_from_shielded_Am.png)
+> ![γ spectrum from shielded Americium](images/Egamma_from_shielded_Am.png)
 
 
 ### Ambient radiation 
@@ -774,7 +774,7 @@ which can be determined in a sequence of measurements with varying absorber
 thickness and incident γ energy. Often, the absorption length, $x_a = 1/\mu$
 is used instead of the attenuation coefficient. 
 This exponential behavior is confirmed in the plot below, which shows the
-measured γ rate as a function of the penetrated absorber thickness.
+measured γ rate as a function of the penetrated thickness of iron absorbers.
 
 > ![Cs-137 γ rates vs. thickness of Fe absorber plates](
   images/gamma_absorption_Fe.png) 
@@ -785,21 +785,21 @@ absorber plates behind the shield confirm the expected exponential
 relationship between the γ rate and the absorber thickness.
 
 
-#### Variation of the γ-absorption experiment to classify materials
+#### γ-absorption to classify materials
 
 Once the special behavior of γ ray absorption is established experimentally,
 a variation of the experiment demonstrates how to identify materials
 by their typical attenuation coefficient.   
-A material sample is placed between a  γ-source with an Aluminium absorber 
-(to get rid of α and β radiation) and a miniPIX detector. The rates $I$ and
-$I_0$ observed with and without the probe fo thickness $d$ directly yield 
-the (linear) attenuation coefficient of the probe:
+A material sample of thickness $d$ is placed between a γ-source with an 
+Aluminium absorber (to get rid of α and β radiation) and a miniPIX detector. 
+The rates $I$ and $I_0$ observed with and without the sample directly 
+yield the (linear) attenuation coefficient of the material:
 
 $\mu = ln(\frac{I_0}{I}) / d$. 
 
 If also the density of the probe is known, the mass absorption 
 coefficient, $\mu_m = \mu / \rho$ (in units of cm² / g) can be
-compared to tabulated values to determine the material of the probe.
+compared to tabulated values to determine the material type.
 
 Note that the attenuation coefficients determined with the simple set-up
 proposed here are smaller than the tabulated ones, because Compton-scatted
@@ -807,9 +807,10 @@ photons are also registered, while - according to a strict definition - they
 should be excluded. This can be achieved by using collimation tubes 
 allowing only direct paths of γ-radiation from the source to the *miniPIX*. 
 
-##  *Jupyter* notebook 
 
-The *mPIXdaq* package contains a *Jupyter* notebook and some python modules 
+## Sample analysis in *Jupyter* notebook 
+
+The *mPIXdaq* package contains a *Jupyter* notebook and some *Python* modules 
 in the subdirectory `analysis/` which illustrates many of the analysis steps
 described above. Small data samples in the subdirectory `data/` serve as
 examples to try out and further develop analysis code.
@@ -820,22 +821,29 @@ examples to try out and further develop analysis code.
     - `LandauFit.py` for fitting a Landau distribution 
     - `peakFitter.py` to search for and fit a Gaussian to peaks in spectra
 
+- **Data sets** as examples for the *Jupyter* notebook analysis in subdirectory `data/`:
 
-- **data sets** as examples for the *Jupyter* notebook analysis in subdirectory `data`:
-
-    - BlackForestStone.yml.gz *# data recorded with a low-activity stone 
-               (Uranium ore) from the Black Forest*
-    - BlackForestStone.csv.gz *# cluster properties  of stone from Black Forest*
-    - BlackForestStone_clusters.yml.gz *# cluster properties and pixel data of stone
-               from  Black Forest*
-    - gammaRadiation_clusters.yml.gz *# cluster and pixel data from  Black Forest stone
-               shielded with 3mm Aluminium*
-    - ambientRadiation_clusters.yml.gz  *# cluster and pixel data from long run with
-               ambient radiation*  
+    - BlackForestStone.yml.gz *# data recorded with a low-activity stone (Uranium ore) from the Black Forest*
+    - BlackForestStone.csv.gz *# properties of clusters from the Black-Forest stone*
+    - BlackForestStone_clusters.yml.gz *# cluster properties and pixel data from Black-Forest stone*
+    - gammaRadiation_clusters.yml.gz *# Black-Forest stone shielded with 3mm Aluminium*
+    - ambientRadiation_clusters.yml.gz *# long run with ambient radiation*
     - Radon_clusters.yml.gz *# cluster and pixel data from Radon decay products* 
 
-The *Jupyter* notebook contains extensive documentation should be self-sufficient
-for students to understand the analysis methods and algorithms and to adapt them
-for their own, dedicated studies. After installation of the *Jupyter* environment,
-the notebook is started fom the command line via 
-`jupyter-lab analyze_mPIXclusters.ipynb` .
+The *Jupyter* notebook contains extensive documentation and should be self-sufficient
+to understand the analysis methods and algorithms and to adapt them for own studies. 
+After installation of the *Jupyter* environment, the notebook is started fom the 
+command line via `> jupyter-lab analyze_mPIXclusters.ipynb` . 
+
+The notebook covers the following topics:  
+
+1. Data import to *pandas* data frame
+2. Overview of features and data quality checks
+3. Classification of clusters
+4. Study of α particles
+5. Study of β radiation
+6. Study of γ interactions
+7. Identification of tracks from cosmic muons
+8. Rates and energies of α, β, γ radiation
+9. Access to and detailed analysis of pixel data
+10. Landau distribution of pixel energies along β tracks
