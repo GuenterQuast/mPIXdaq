@@ -1,6 +1,6 @@
 # Release Notes for mPIXdaq
 
-## [1.0.0] - 2025-01-06
+## [1.0.0] - 2026-01-06
 
 ## initial production release
 
@@ -22,13 +22,16 @@
   - some additions (dE/dx studies) in Jupyter notebook
   - added module mpixhelpers and moved fileDecoders, bhist and scatterplot
  
-## 1.1.0
+## towards [1.1.0]  1.1.0rc0 and 1.1.0rc1
 
   - based on API 1.8.5 (released 2026/03/09)
-  - supports shared memory (needs Python vers. > 3.7)
+  - supports shared memory (needs Python vers. >= 3.8)
   - fixed single pixel statistics in graphical display
   - added data samples for analysis
   - store time stamp for empty frames
+  - added status field to graphics display 
   - refinements to analysis notebook
-  - added adanced experiments to EducatorsGuide
+  - added section on adanced experiments to EducatorsGuide
 
+## [1.1.0] - 2026-05-17
+  release for Advacam SDK v1.8.5 and Python 3.12 for Windows
