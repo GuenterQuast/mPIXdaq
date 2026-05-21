@@ -35,3 +35,6 @@
 
 ## [1.1.0] - 2026-05-17
   release for Advacam SDK v1.8.5 and Python 3.12 for Windows
+
+## towards [1.1.1]
+  - fixed widht and height of bounding box

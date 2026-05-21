@@ -562,8 +562,8 @@ class frameAnalyzer:
             # bounding box of cluster
             x_mn = _x.min()
             y_mn = _y.min()
-            w = _x.max() - x_mn
-            h = _y.max() - y_mn
+            w = _x.max() - x_mn + 1
+            h = _y.max() - y_mn + 1
             #  - mean values of x and y and covariance matrix of pixel area
             x_mean = _x.mean(dtype=np.float32)
             y_mean = _y.mean(dtype=np.float32)
