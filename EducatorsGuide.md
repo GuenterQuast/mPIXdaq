@@ -29,7 +29,7 @@ author: Günter Quast, April 2026
 ---
 ---
 
-This document is a guide for educators who want to explore the possibilities
+This document is a guide for educators who want to explore the possibilitieslt3
 of a modern radiation detection sensor and its implications on new ways to teach 
 the subject of radioactivity at secondary and high-school level. 
 
@@ -486,50 +486,43 @@ or, if also low-energy α with one to three active pixels are to be included:
 
     is_clean_alpha = is_cand_alpha & (df['e_mx'] < 1200.)
 
-An example of such a measurement with a thin, open Am-241 source and the 
-*miniPIX* placed at a distance of about 1 cm away from the source is shown
-below. The energy resolution (full width half maximum) is about 5%. 
+An example of such measurements with a thin, open Am-241 source and the 
+*miniPIX* placed at varying distances away from from the source is shown
+below. The energy resolution (full width half maximum) is of the order 
+of 5%. 
 
-![Spectrum of α energies](images/Am241_alpha_3cm.png).
+![Spectra of α energies](images/Am241-spectra.png).
 
-A series of such measurements as a function of the distance from the source in steps 
-of 5 mm is shown below. One channel in the spectrum corresponds to an 
-energy of 10 keV. At a distance of about 1.5 cm from the source, the highest energy 
-of 3.7 MeV was seen. The other spectra at lower energies were recorded at increasing 
-distances in 5 mm steps.
-
-![Spectra of α energies as a function of the penetration depth in air](
-  images/alpha-spectrum_vs_distance.png).
-
-The distance between the peaks, i.e. the energy loss, rises at lower energies, as
-expected.  The energy loss amounts about 90 keV/mm at an energy of 3.4 MeV and 
-increases to 190 keV/mm at 1.5 MeV. 
-
-The observed range of 2.7 cm for an energy of 3750 keV exceeds the one expected
-from the theoretical curves shown above. Such a range would correspond to a 
-theoretical energy of about 4200 KeV. This discrepancy may have several reasons:
-
-   - The cut on the maximum energy in a single pixel may bias the determined energy
-      towards lower values.
-   - The layer of dead material in front of the sensitive area of the *Timepix* 
-     sensor leads to a small energy correction; a thickness of 3µm of Aluminum
-     or insensitive Silicon would be sufficient to explain the difference. 
-   - The energy loss depends on the air density and hence on the temperature
-     and air pressure. A lower density of 5% (which is the size of typical
-     variations under different weather conditions) leads to a an increase of 
-     the α range by about 10 %.
+The distance between the peaks, i.e. the energy loss in air, rises at lower 
+energies, as expected. The energy loss amounts about 100 keV/mm at an energy 
+of 3 MeV and increases to about 200 keV/mm at 1 MeV. 
 
 The mean energies obtained from the fitted peak positions as a function of the 
 distance of the *miniPIX* from the Am-241 source, together with theoretical
-expectations, are shown below. The vertical error bars indicate the standard 
-deviation of the spectrum; the uncertainty on the mean energy is very small 
-and not visible.
+expectations from the Bethe-Bloch formula, are shown below. The vertical error 
+bars indicate the standard deviation of the spectra; the uncertainty on the 
+mean energy is very small and not visible.
 
 ![α energy as a function of the penetration depth in air](
- images/energy_loss_of_alhpha_in_air.png)
+ images/energy_loss_of_alpha_in_air.png)
 
-The observed agreement is not perfect, but acceptable. A careful calibration 
-of the *miniPIX* for high α energies is needed for precision studies. 
+The observed range of 4.1 cm for α particles from Am-241 with an energy 
+of 5.5 MeV corresponds well to the prediction. There are, however,
+deviations from the expectation at smaller distances, which are most likely 
+caused by the known non-linear behavior of the *miniPIX* at high α energies: 
+
+   - The cut on the maximum energy in a single pixel biases the determined energy
+      towards lower values.
+   - The layer of dead material in front of the sensitive area of the *Timepix* 
+     chip leads to a small energy-dependent correction on the order of 
+     100-200 keV, corresponding to the energy loss in 1 mm of air.  
+   - The energy loss depends on the air density and hence on temperature and air
+     pressure. The dashed and dashed-dotted curves show this effect for variations 
+     of the air density of ±5%, the size of typical variations under different 
+     weather conditions.
+
+A careful calibration of the *miniPIX* for high α energies is needed if more 
+precise studies at high α energies > 2 MeV are desired. 
 
 
 ### Measurement of the energy loss of β radiation.  
