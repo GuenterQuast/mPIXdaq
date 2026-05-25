@@ -220,6 +220,9 @@ def plot_cluster(pxlist, num=0):
     _img = _axim.imshow(_cmap, origin="lower", cmap='hot', norm=LogNorm(vmin=vmin, vmax=vmax), extent=[0, nx, 0, ny])
     _cbar = _fig.colorbar(_img, pad=0.05)
     _img.set_clim(vmin=vmin, vmax=vmax)
+    # force integer tick marks
+    _axim.set_xticks(range(0, nx + 1))
+    _axim.set_yticks(range(0, ny + 1))
     return _fig
 
 
