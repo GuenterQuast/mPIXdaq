@@ -452,7 +452,7 @@ class frameAnalyzer:
         # - structure for connecting pixels in scipy.ndimage.label
         self.label_structure = [[1, 1, 1], [1, 1, 1], [1, 1, 1]]
         #  - maximum number of clusters per frame
-        self.max_n_clusters = 250
+        self.max_n_clusters = 900
         self.warning_issued = False
 
         # initialize
@@ -833,7 +833,7 @@ class frameAnalyzer:
         self.cluster_pxl_lst = self.find_connected(f)
         n_objects = len(self.cluster_pxl_lst)
         if n_objects == 0:
-            return None
+            return None , None
 
         self.n_clusters = n_objects - 1
         self.n_single = len(self.cluster_pxl_lst[-1])
