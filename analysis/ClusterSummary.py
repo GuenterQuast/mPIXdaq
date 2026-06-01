@@ -1,0 +1,192 @@
+#!/usr/bin/env python
+#
+# read cluster data written with mPIXdaq
+
+
+# necessary imports
+import numpy as np
+import matplotlib.pyplot as plt
+from matplotlib.colors import LogNorm
+from scipy.stats import sigmaclip
+import pandas as pd
+import yaml
+import gzip
+import sys
+
+plt.style.use("default")
+plt.style.use('ggplot')
+
+
+class clusterReader:
+    def __init__(self, fn):
+        self.filename = fn
+        self.read_data(fn)
+        self.set_selection_masks()
+        self.print_statistics()
+
+    def read_data(self, fn):
+        """load yaml from file and fill pandas data frame"""
+        # function to read data from filename fn
+        if '.csv' in fn:  # from csv file
+            self.df = pd.read_csv(fn)
+            self.meta_data = None
+        elif '.yml' in fn:  # or from file in yaml format
+            f = gzip.open(fn, 'rb') if fn.split('.')[-1] == 'gz' else open(fn, 'r')
+            self.input_dict = yaml.load(f, Loader=yaml.CLoader)
+            self.keys = self.input_dict['keys']
+            self.meta_data = self.input_dict["meta_data"]
+            #  get cluster data: 1st is list of cluster properties, 2nd is list of [pixel index, energy] pairs
+            cluster_data = self.input_dict['cluster_data']
+            cluster_properties = [cluster_data[i][0] for i in range(len(cluster_data))]
+            pixel_lists = [cluster_data[i][1] for i in range(len(cluster_data))]
+            self.df = pd.DataFrame(data=cluster_properties, columns=self.keys)
+            self.df['pixels'] = pixel_lists
+        else:
+            print("!!! unknown file format")
+            self.df = None
+
+        # *==* determine number of frames in data set
+        self.n_frames = len(set(self.df['time']))  # use time stamps to count number of frames
+        if self.meta_data is not None:
+            self.acq_time = self.meta_data['acq_time']  # exposure time per frame
+            self.T_alive = self.n_frames * self.acq_time
+        else:
+            self.T_alive = self.df['time'].to_numpy()[-1]
+
+        # *==* remove empty records (i.e. frames without any cluster)
+        is_not_nan = self.df['x_mean'].notna()
+        n_empty = (~is_not_nan).sum()
+        if n_empty > 0:
+            print(f"removing empty records: {n_empty} removed")
+            self.df = self.df[is_not_nan]
+
+        # *==* determine total number of clusters in data set
+        self.n_clusters = len(self.df)
+        # *==* add some (useful) derived features to quantify cluster properties
+        #  - mean pixel energy
+        self.df['Epix_mean'] = self.df['energy'] / self.df['n_pix']
+        #  - circularity defined as the ratio of the smaller and the larger eigenvalue
+        #    of the covariance matrix of the pixels in a cluster
+        self.df['circularity'] = self.df['var_mn'] / np.maximum(self.df['var_mx'].to_numpy(), 0.001)
+        #  - flatness (of energy distribution) as the ratio of maximum variances
+        #    of pixel and energy distributions in clusters
+        self.df['flatness'] = self.df['varE_mx'] / np.maximum(self.df['var_mx'].to_numpy(), 0.001)
+
+        # *==* meta data
+        print("\n*==* Contents of file", fn)
+        s_time = f"{self.meta_data['time']}  "
+        s_frames = f"{self.input_dict['eor_data']['Nframes']} frames of {self.meta_data['acq_time']}s exposure time"
+        s_device = f"{self.input_dict['deviceInfo']['dn']}"
+        print("  Data written on " + s_time + "with device  " + s_device)
+        print("  " + s_frames)
+        print(f"  {self.n_clusters} clusters -> rate = {self.n_clusters / self.T_alive:.3g} Hz")
+        print("  cluster features:\n  ", self.keys)
+        print()
+
+    def set_selection_masks(self):
+        # *==* collect parameters for selection cuts here ...
+        small_cut = 2  # small clusters
+        circularity_cut = 0.4  #  round topology
+        flatness_cut = 0.4  # flat energy distribution
+        dEdx_cut = 100  #  cut on high energy loss per pixel
+        long_cut = 12  # long track
+
+        # ... and set boolean masks
+        is_small_cluster = self.df['n_pix'] <= small_cut  #
+        is_high_dEdx = self.df['Epix_mean'] > dEdx_cut  # high energy loss per pixel
+        is_circular = self.df['circularity'] >= circularity_cut  # circular shape
+        is_flat = self.df['flatness'] > flatness_cut  # flat energy distribution
+
+        # *==* definition of ɑ candidates
+        self.shape_is_alpha = is_circular & ~is_flat
+        # a loose definition of an ɑ as the logical 'or' of criterea
+        self.is_cand_alpha = self.shape_is_alpha | is_high_dEdx
+        # a tight definition of an ɑ as the logical 'and' of criterea
+        self.is_alpha = self.shape_is_alpha & is_high_dEdx
+        # avoid non-linearity of response if max. pixel energy is too high
+        emx_cut = 1200  # emx_cut = 2500
+        is_saturating = self.df['e_mx'] > emx_cut
+        self.is_clean_alpha = self.is_alpha & ~is_saturating
+
+        # *==* definition of β candidates (long non-alpha tracks)
+        self.shape_is_beta = ~self.shape_is_alpha & (self.df['n_pix'] >= 5)
+        self.is_beta = self.shape_is_beta & ~is_high_dEdx  # and wit low energy deposits
+
+        # *==* define γ candidates (low-multiplicity clusters with small dEdx)
+        self.is_gamma = (self.df['n_pix'] < 5) & ~is_high_dEdx
+
+    def print_statistics(self):
+        # *==* collect statistics
+        _key = 'energy'
+        # number of events per class (number of True values in masks)
+        N_alpha = self.is_clean_alpha.sum()
+        N_beta = self.is_beta.sum()
+        N_gamma = self.is_gamma.sum()
+
+        # create 2.5 sigma truncated sample (to avoid outliers)
+        c_alpha, _low, _high = sigmaclip(self.df[self.is_clean_alpha][_key], 2.5, 2.5)
+        c_beta, _low, _high = sigmaclip(self.df[self.is_beta][_key], 2.5, 2.5)
+        c_gamma, _low, _high = sigmaclip(self.df[self.is_gamma][_key], 2.5, 2.5)
+
+        # print in tabular form
+        print("\n*==* ɑ, β, γ Statistics:")
+        print("                    " + f"\t {'ɑ ':>10s} \t {'β ':>10s} \t {'γ ':>10s}")
+        print("  events            " + f"\t {int(N_alpha):10d} \t {int(N_beta):10d} \t {int(N_gamma):10d}")
+        _tl = self.T_alive
+        print("  rate (Hz)         " + f"\t {N_alpha / _tl:10.3g} \t {N_beta / _tl:10.3g} \t {N_gamma / _tl:10.3g}")
+        print("  mean energy (kev) " + f"\t {c_alpha.mean():10.3g} \t {c_beta.mean():10.3g} \t {c_gamma.mean():10.3g}")
+        print("  sigma energy (kev) " + f"\t {c_alpha.std():10.3g} \t {c_beta.std():10.3g} \t {c_gamma.std():10.3g}")
+        print()
+
+        self.c_alpha = c_alpha
+        self.c_beta = c_beta
+        self.c_gamma = c_gamma
+        self.N_alpha = N_alpha
+        self.N_beta = N_beta
+        self.N_gamma = N_gamma
+
+    def plot(self):
+        _key = 'energy'
+
+        def stacked_hists(_key, _bins):
+            """helper to produce stacked histograms for alpha, beta and gamma candidates"""
+            _vals = (self.df[self.is_clean_alpha][_key], self.df[self.is_beta][_key], self.df[self.is_gamma][_key])
+            _labels = ('ɑ', 'β', 'γ')
+            _colors = ('r', 'b', 'y')
+            return plt.hist(_vals, label=_labels, bins=_bins, color=_colors, alpha=0.75, rwidth=0.75, stacked=True)
+
+        # *==* histogram energy distributions
+        # mx = max(df[is_clean_alpha][_key])
+        mx = 4500
+        f = 10 ** int(np.log10(mx / 5))
+        _bins = np.linspace(0, mx, int(mx / f) + 1)
+        _rc_hist = stacked_hists(_key, _bins)
+        plt.xlabel("Cluster energy (keV)")
+        plt.ylabel(f"Counts / {f} keV")
+        _tl = self.T_alive
+
+        rate_txt = f"ɑ: {self.N_alpha / _tl:.2g} Hz, β: {self.N_beta / _tl:.2g} Hz, γ: {self.N_gamma / _tl:.2g} Hz"
+        plt.text(0.25, 0.75, "rates " + rate_txt, transform=plt.gca().transAxes)
+        energy_txt = (
+            f"ɑ: {self.c_alpha.mean():.3g} keV, β: {self.c_beta.mean():.3g} keV, γ: {self.c_gamma.mean():.3g} keV"
+        )
+        plt.text(0.25, 0.70, "energies " + energy_txt, transform=plt.gca().transAxes)
+        plt.title("Energy")
+        plt.yscale('log')
+        plt.legend()
+        return plt.gcf()
+
+
+if __name__ == "__main__":  # ------------------------------------------------------------------------
+    # ->>  set input file
+    if len(sys.argv) > 1:
+        fname = sys.argv[1]
+        print("*==*" + sys.argv[0] + " executing - reading data from file ", fname)
+    else:
+        print("!!! no input file name given !!!")
+        sys.exit(1)
+
+    print(" .... importing yaml, be patient ...")
+    reader = clusterReader(fname)
+    fig = reader.plot()
+    plt.show()
