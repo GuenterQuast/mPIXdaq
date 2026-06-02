@@ -104,8 +104,12 @@ class clusterReader:
         # a tight definition of an ɑ as the logical 'and' of criterea
         self.is_alpha = self.shape_is_alpha & is_high_dEdx
         # avoid non-linearity of response if max. pixel energy is too high
-        emx_cut = 1200  # emx_cut = 2500
-        is_saturating = self.df['e_mx'] > emx_cut
+        if 'e_mx' in self.df.keys():
+            emx_cut = 1200  # emx_cut = 2500
+            is_saturating = self.df['e_mx'] > emx_cut
+        else:
+            Epixmean_cut = 210
+            is_saturating = self.df['Epix_mean'] > Epixmean_cut
         self.is_clean_alpha = self.is_alpha & ~is_saturating
 
         # *==* definition of β candidates (long non-alpha tracks)
