@@ -84,53 +84,67 @@ class clusterReader:
         print()
 
     def set_selection_masks(self):
-        # *==* collect parameters for selection cuts here ...
-        small_cut = 2  # small clusters
+        """classification of cluster types"""
+
+        # *==* selection cuts ...
+        small_cut = 4  # small clusters
         circularity_cut = 0.4  #  round topology
         flatness_cut = 0.4  # flat energy distribution
-        dEdx_cut = 100  #  cut on high energy loss per pixel
+        dEdx_cut = 120  #  cut on high energy loss per pixel
+        emx_cut = 400  # cut on maximum pixel energy
         long_cut = 12  # long track
-
         # ... and set boolean masks
-        is_small_cluster = self.df['n_pix'] <= small_cut  #
-        is_high_dEdx = self.df['Epix_mean'] > dEdx_cut  # high energy loss per pixel
+        is_small = self.df['n_pix'] <= small_cut  #
         is_circular = self.df['circularity'] >= circularity_cut  # circular shape
         is_flat = self.df['flatness'] > flatness_cut  # flat energy distribution
+        if 'e_mx' in self.df.keys():
+            is_high_dEdx = self.df['e_mx'] > emx_cut  # high energy loss per pixel
+        else:
+            is_high_dEdx = self.df['Epix_mean'] > dEdx_cut  # high energy loss per pixel
 
         # *==* definition of ɑ candidates
-        self.shape_is_alpha = is_circular & ~is_flat
-        # a loose definition of an ɑ as the logical 'or' of criterea
-        self.is_cand_alpha = self.shape_is_alpha | is_high_dEdx
+        # alphas have
+        #   - a round cluster shape with
+        #   - a peaking energy distribution and
+        #   - a large value of the maximum pixel energy
+        shape_is_alpha = is_circular & ~is_flat
+        # a loose definition of an ɑ based only on dEdx
+        is_cand_alpha = is_high_dEdx
         # a tight definition of an ɑ as the logical 'and' of criterea
-        self.is_alpha = self.shape_is_alpha & is_high_dEdx
+        is_alpha = shape_is_alpha & is_high_dEdx
         # avoid non-linearity of response if max. pixel energy is too high
         if 'e_mx' in self.df.keys():
-            emx_cut = 1200  # emx_cut = 2500
-            is_saturating = self.df['e_mx'] > emx_cut
+            is_saturating = self.df['e_mx'] > 1200
         else:
-            Epixmean_cut = 210
-            is_saturating = self.df['Epix_mean'] > Epixmean_cut
-        self.is_clean_alpha = self.is_alpha & ~is_saturating
+            is_saturating = self.df['Epix_mean'] > 210
+        is_clean_alpha = is_alpha & ~is_saturating
 
         # *==* definition of β candidates (long non-alpha tracks)
-        self.shape_is_beta = ~self.shape_is_alpha & (self.df['n_pix'] >= 5)
-        self.is_beta = self.shape_is_beta & ~is_high_dEdx  # and wit low energy deposits
+        shape_is_beta = ~shape_is_alpha & ~is_small
+        is_beta = shape_is_beta & ~is_high_dEdx  # and wit low energy deposits
 
         # *==* define γ candidates (low-multiplicity clusters with small dEdx)
-        self.is_gamma = (self.df['n_pix'] < 5) & ~is_high_dEdx
+        is_gamma = is_small & ~is_high_dEdx
+
+        # export selection
+        self.sel_alpha = is_cand_alpha
+        # self.sel_alpha = is_alpha
+        # self.sel_alpha = is_clean_alpha  # well-measured alpha
+        self.sel_beta = is_beta
+        self.sel_gamma = is_gamma
 
     def print_statistics(self):
         # *==* collect statistics
         _key = 'energy'
         # number of events per class (number of True values in masks)
-        N_alpha = self.is_clean_alpha.sum()
-        N_beta = self.is_beta.sum()
-        N_gamma = self.is_gamma.sum()
+        N_alpha = self.sel_alpha.sum()
+        N_beta = self.sel_beta.sum()
+        N_gamma = self.sel_gamma.sum()
 
         # create 2.5 sigma truncated sample (to avoid outliers)
-        c_alpha, _low, _high = sigmaclip(self.df[self.is_clean_alpha][_key], 2.5, 2.5)
-        c_beta, _low, _high = sigmaclip(self.df[self.is_beta][_key], 2.5, 2.5)
-        c_gamma, _low, _high = sigmaclip(self.df[self.is_gamma][_key], 2.5, 2.5)
+        c_alpha, _low, _high = sigmaclip(self.df[self.sel_alpha][_key], 2.5, 2.5)
+        c_beta, _low, _high = sigmaclip(self.df[self.sel_beta][_key], 2.5, 2.5)
+        c_gamma, _low, _high = sigmaclip(self.df[self.sel_gamma][_key], 2.5, 2.5)
 
         # print in tabular form
         print("\n*==* ɑ, β, γ Statistics:")
@@ -154,7 +168,7 @@ class clusterReader:
 
         def stacked_hists(_key, _bins):
             """helper to produce stacked histograms for alpha, beta and gamma candidates"""
-            _vals = (self.df[self.is_clean_alpha][_key], self.df[self.is_beta][_key], self.df[self.is_gamma][_key])
+            _vals = (self.df[self.sel_alpha][_key], self.df[self.sel_beta][_key], self.df[self.sel_gamma][_key])
             _labels = ('ɑ', 'β', 'γ')
             _colors = ('r', 'b', 'y')
             return plt.hist(_vals, label=_labels, bins=_bins, color=_colors, alpha=0.75, rwidth=0.75, stacked=True)
