@@ -92,7 +92,6 @@ class clusterReader:
         flatness_cut = 0.4  # flat energy distribution
         dEdx_cut = 120  #  cut on high energy loss per pixel
         emx_cut = 400  # cut on maximum pixel energy
-        long_cut = 12  # long track
         # ... and set boolean masks
         is_small = self.df['n_pix'] <= small_cut  #
         is_circular = self.df['circularity'] >= circularity_cut  # circular shape
@@ -152,8 +151,8 @@ class clusterReader:
         print("  events            " + f"\t {int(N_alpha):10d} \t {int(N_beta):10d} \t {int(N_gamma):10d}")
         _tl = self.T_alive
         print("  rate (Hz)         " + f"\t {N_alpha / _tl:10.3g} \t {N_beta / _tl:10.3g} \t {N_gamma / _tl:10.3g}")
-        print("  mean energy (kev) " + f"\t {c_alpha.mean():10.3g} \t {c_beta.mean():10.3g} \t {c_gamma.mean():10.3g}")
-        print("  sigma energy (kev) " + f"\t {c_alpha.std():10.3g} \t {c_beta.std():10.3g} \t {c_gamma.std():10.3g}")
+        print("  mean energy (keV) " + f"\t {c_alpha.mean():10.3g} \t {c_beta.mean():10.3g} \t {c_gamma.mean():10.3g}")
+        print("  sigma energy (keV) " + f"\t {c_alpha.std():10.3g} \t {c_beta.std():10.3g} \t {c_gamma.std():10.3g}")
         print()
 
         self.c_alpha = c_alpha
