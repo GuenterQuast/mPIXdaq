@@ -283,7 +283,7 @@ class miniPIXdaq:
         # retrieve device parameters
         self.id = 0
         self.dev = devs[self.id]
-        print(f"*==* found device {self.dev.parameters().get("DeviceName").getString()} id: {self.dev.deviceID()}")
+        print(f"*==* found device {self.dev.parameters().get('DeviceName').getString()} id: {self.dev.deviceID()}")
         self.get_device_info()
         mpixControl.deviceInfo = self.deviceInfo  # set mpixcontrol sensor info
         self.npx = self.deviceInfo["width"]
@@ -833,7 +833,7 @@ class frameAnalyzer:
         self.cluster_pxl_lst = self.find_connected(f)
         n_objects = len(self.cluster_pxl_lst)
         if n_objects == 0:
-            return None , None
+            return None, None
 
         self.n_clusters = n_objects - 1
         self.n_single = len(self.cluster_pxl_lst[-1])
