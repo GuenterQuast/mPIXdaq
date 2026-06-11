@@ -484,6 +484,7 @@ The components, classes and scripts of the package are
 
 - subdirectory `analysis/` with a *Jupyter* notebook to analyze cluster data
     - `analyze_mPIXclusters.ipynb`
+    - `ClusterSummary.py` for reading cluster data and providing a summary
     - `LandauFit.py` for fitting a Landau distribution 
     - `peakFitter.py` to search for and fit a Gaussian to peaks in spectra
 

@@ -1,9 +1,9 @@
 #!/usr/bin/env python
-#
-# read cluster data written with mPIXdaq
+"""Read cluster data written with mPIXdaq and provide a summary of
+data datking and statistics
+"""
 
-
-# necessary imports
+import argparse
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.colors import LogNorm
@@ -13,23 +13,44 @@ import yaml
 import gzip
 import sys
 
-plt.style.use("default")
-plt.style.use('ggplot')
-
 
 class clusterReader:
-    def __init__(self, fn):
-        self.filename = fn
-        self.read_data(fn)
-        self.set_selection_masks()
-        self.print_statistics()
+    """Class implementing data input, classification of clusters and plotting"""
+
+    def __init__(self):
+        """read command line arguments"""
+        self.parse_args()
+
+    def parse_args(self):
+        # - parse command line arguments
+        parser = argparse.ArgumentParser(description="read cluster data and show summary")
+        parser.add_argument("filename")
+        parser.add_argument('-v', '--verbosity', type=int, default=1, help='verbosity level (1)')
+        parser.add_argument(
+            '--circularity_cut', type=float, default=0.5, help='cut on circularity for alpha detection (0.5)'
+        )
+        parser.add_argument('--small_cut', type=float, default=4, help='max. number of pixels for small cluster (4)')
+        parser.add_argument('--flatness_cut', type=float, default=0.4, help='cut on flatness for alpha detection (0.6)')
+        parser.add_argument('--emean_cut', type=float, default=200, help='cut on mean pixel energy (keV)')
+        parser.add_argument('--emx_cut', type=float, default=400, help='cut on maximum pixel energy (keV)')
+
+        args = parser.parse_args()
+        self.filename = args.filename
+
+        # *==* selection cuts ...
+        self.small_cut = args.small_cut  # small clusters
+        self.circularity_cut = args.circularity_cut  #  round topology
+        self.flatness_cut = args.flatness_cut  # flat energy distribution
+        self.emean_cut = args.emean_cut  #  cut on high energy loss per pixel
+        self.emx_cut = args.emx_cut  # cut on maximum pixel energy
 
     def read_data(self, fn):
         """load yaml from file and fill pandas data frame"""
-        # function to read data from filename fn
+
         if '.csv' in fn:  # from csv file
             self.df = pd.read_csv(fn)
             self.meta_data = None
+            self.input_dict = None
         elif '.yml' in fn:  # or from file in yaml format
             f = gzip.open(fn, 'rb') if fn.split('.')[-1] == 'gz' else open(fn, 'r')
             self.input_dict = yaml.load(f, Loader=yaml.CLoader)
@@ -74,32 +95,29 @@ class clusterReader:
 
         # *==* meta data
         print("\n*==* Contents of file", fn)
-        s_time = f"{self.meta_data['time']}  "
-        s_frames = f"{self.input_dict['eor_data']['Nframes']} frames of {self.meta_data['acq_time']}s exposure time"
-        s_device = f"{self.input_dict['deviceInfo']['dn']}"
-        print("  Data written on " + s_time + "with device  " + s_device)
-        print("  " + s_frames)
-        print(f"  {self.n_clusters} clusters -> rate = {self.n_clusters / self.T_alive:.3g} Hz")
-        print("  cluster features:\n  ", self.keys)
-        print()
+        if self.meta_data is not None:
+            s_time = f"{self.meta_data['time']}  "
+            s_frames = f"{self.input_dict['eor_data']['Nframes']} frames of {self.meta_data['acq_time']}s exposure time"
+            s_device = f"{self.input_dict['deviceInfo']['dn']}"
+            print("  Data written on " + s_time + "with device  " + s_device)
+            print("  " + s_frames)
+            print(f"  {self.n_clusters} clusters -> rate = {self.n_clusters / self.T_alive:.3g} Hz")
+            print("  cluster features:\n  ", self.keys)
+            print()
+        else:
+            print("   no meta-data available")
 
     def set_selection_masks(self):
         """classification of cluster types"""
 
-        # *==* selection cuts ...
-        small_cut = 4  # small clusters
-        circularity_cut = 0.4  #  round topology
-        flatness_cut = 0.4  # flat energy distribution
-        dEdx_cut = 120  #  cut on high energy loss per pixel
-        emx_cut = 400  # cut on maximum pixel energy
-        # ... and set boolean masks
-        is_small = self.df['n_pix'] <= small_cut  #
-        is_circular = self.df['circularity'] >= circularity_cut  # circular shape
-        is_flat = self.df['flatness'] > flatness_cut  # flat energy distribution
+        # *==* set boolean masks for selection
+        is_small = self.df['n_pix'] <= self.small_cut  #
+        is_circular = self.df['circularity'] >= self.circularity_cut  # circular shape
+        is_flat = self.df['flatness'] > self.flatness_cut  # flat energy distribution
         if 'e_mx' in self.df.keys():
-            is_high_dEdx = self.df['e_mx'] > emx_cut  # high energy loss per pixel
+            is_high_dEdx = self.df['e_mx'] > self.emx_cut  # high energy loss per pixel
         else:
-            is_high_dEdx = self.df['Epix_mean'] > dEdx_cut  # high energy loss per pixel
+            is_high_dEdx = self.df['Epix_mean'] > self.emean_cut  # high energy loss per pixel
 
         # *==* definition of ɑ candidates
         # alphas have
@@ -126,13 +144,24 @@ class clusterReader:
         is_gamma = is_small & ~is_high_dEdx
 
         # export selection
-        self.sel_alpha = is_cand_alpha
-        # self.sel_alpha = is_alpha
+        # self.sel_alpha = is_cand_alpha
+        self.sel_alpha = is_alpha
         # self.sel_alpha = is_clean_alpha  # well-measured alpha
         self.sel_beta = is_beta
         self.sel_gamma = is_gamma
 
-    def print_statistics(self):
+    def __call__(self):
+        """read read data, initialize selection cuts"""
+        # read data
+        self.read_data(self.filename)
+        # set selection criterea
+        self.set_selection_masks()
+        # collect and print
+        self.get_statistics()
+
+    def get_statistics(self):
+        """Print results"""
+
         # *==* collect statistics
         _key = 'energy'
         # number of events per class (number of True values in masks)
@@ -163,6 +192,7 @@ class clusterReader:
         self.N_gamma = N_gamma
 
     def plot(self):
+        """Graphical output"""
         _key = 'energy'
 
         def stacked_hists(_key, _bins):
@@ -196,14 +226,13 @@ class clusterReader:
 
 if __name__ == "__main__":  # ------------------------------------------------------------------------
     # ->>  set input file
-    if len(sys.argv) > 1:
-        fname = sys.argv[1]
-        print("*==*" + sys.argv[0] + " executing - reading data from file ", fname)
-    else:
+    if len(sys.argv) <= 1:
         print("!!! no input file name given !!!")
         sys.exit(1)
 
     print(" .... importing yaml, be patient ...")
-    reader = clusterReader(fname)
+    reader = clusterReader()
+    reader()
     fig = reader.plot()
+
     plt.show()
