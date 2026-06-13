@@ -17,9 +17,14 @@ import sys
 class clusterReader:
     """Class implementing data input, classification of clusters and plotting"""
 
-    def __init__(self):
-        """read command line arguments"""
-        self.parse_args()
+    def __init__(self, small_cut=4, circularity_cut=0.5, flatness_cut=0.5, emean_cut=200, emx_cut=400):
+        """Set default cut values"""
+
+        self.small_cut = small_cut  # small clusters
+        self.circularity_cut = circularity_cut  #  round topology
+        self.flatness_cut = flatness_cut  # flat energy distribution
+        self.emean_cut = emean_cut  #  cut on high energy loss per pixel
+        self.emx_cut = emx_cut  # cut on maximum pixel energy
 
     def parse_args(self):
         # - parse command line arguments
@@ -30,7 +35,7 @@ class clusterReader:
             '--circularity_cut', type=float, default=0.5, help='cut on circularity for alpha detection (0.5)'
         )
         parser.add_argument('--small_cut', type=float, default=4, help='max. number of pixels for small cluster (4)')
-        parser.add_argument('--flatness_cut', type=float, default=0.4, help='cut on flatness for alpha detection (0.6)')
+        parser.add_argument('--flatness_cut', type=float, default=0.5, help='cut on flatness for alpha detection (0.6)')
         parser.add_argument('--emean_cut', type=float, default=200, help='cut on mean pixel energy (keV)')
         parser.add_argument('--emx_cut', type=float, default=400, help='cut on maximum pixel energy (keV)')
 
@@ -102,7 +107,7 @@ class clusterReader:
             print("  Data written on " + s_time + "with device  " + s_device)
             print("  " + s_frames)
             print(f"  {self.n_clusters} clusters -> rate = {self.n_clusters / self.T_alive:.3g} Hz")
-            print("  cluster features:\n  ", self.keys)
+            print("\n*==* cluster features:\n  ", self.keys)
             print()
         else:
             print("   no meta-data available")
@@ -174,6 +179,17 @@ class clusterReader:
         c_beta, _low, _high = sigmaclip(self.df[self.sel_beta][_key], 2.5, 2.5)
         c_gamma, _low, _high = sigmaclip(self.df[self.sel_gamma][_key], 2.5, 2.5)
 
+        # print cuts
+        print("*==* selection cuts")
+        print(f"  ɑ: flatness < {self.flatness_cut}")
+        print(f"     circularity > {self.circularity_cut}")
+        if 'e_mx' in self.df.keys():
+            print(f"     emx_cut > {self.emx_cut} keV")
+        else:
+            print(f"     emean_cut > {self.emean_cut} keV")
+        print(f"  β: size > {self.small_cut} and not ɑ")
+        print("  γ: not(ɑ or β)")
+
         # print in tabular form
         print("\n*==* ɑ, β, γ Statistics:")
         print("                    " + f"\t {'ɑ ':>10s} \t {'β ':>10s} \t {'γ ':>10s}")
@@ -203,8 +219,7 @@ class clusterReader:
             return plt.hist(_vals, label=_labels, bins=_bins, color=_colors, alpha=0.75, rwidth=0.75, stacked=True)
 
         # *==* histogram energy distributions
-        # mx = max(df[is_clean_alpha][_key])
-        mx = 4500
+        mx = min(max(self.df[self.sel_alpha][_key]), 4990)
         f = 10 ** int(np.log10(mx / 5))
         _bins = np.linspace(0, mx, int(mx / f) + 1)
         _rc_hist = stacked_hists(_key, _bins)
@@ -225,14 +240,13 @@ class clusterReader:
 
 
 if __name__ == "__main__":  # ------------------------------------------------------------------------
-    # ->>  set input file
-    if len(sys.argv) <= 1:
-        print("!!! no input file name given !!!")
-        sys.exit(1)
-
-    print(" .... importing yaml, be patient ...")
+    # instantiate cluster file reader
     reader = clusterReader()
+    # parse command line arguments
+    reader.parse_args()
+    print(" .... importing yaml, be patient ...")
+    # read data, set selection masks, collect and print statistics
     reader()
+    # plot energy distributions
     fig = reader.plot()
-
     plt.show()
