@@ -1,12 +1,36 @@
 #!/usr/bin/env python
-"""Read cluster data written with mPIXdaq and provide a summary of
-data datking and statistics
+"""Read cluster data written with mPIXdaq, print meta data and statistics
+
+Default cuts on cluster features are used to classify clusters as  ɑ, β or γ signatures.
+
+  ɑ: round cluster shape and peaking energy distribution, high ionization per pixel
+  β: shape is not round, low ionization per pixel, >5 pixels
+  γ: not (ɑ or β)
+
+Methods:
+
+   * __init__(): instantiate class clusterReader and - optionally - set input file name
+   * set_cuts(): set cut values
+
+      - small_cut: separate small and large clusters
+      - circularity_cut: round topology
+      - flatness_cut: flat energy distribution
+      - emean_cut: energy loss per pixel (only used if emx not in feature list)
+      - emx_cut: maximum pixel energy
+      - no_saturation:  ignore clusters with saturated pixels
+
+   * parse_args():  read command line arguments if used interactively
+   * read_data(): load data in yaml formt in pandas data frame
+   * set_selection_masks(): define boolean masks to select ɑ, β and γ
+   * get_statistics(): count signatures and provide parameters of energy distributions
+   * plot(): plot energy distributions of ɑ, β and γ
+   * __call__(): execute read_data(), set_selection_masks() and get_statistics()
+
 """
 
 import argparse
 import numpy as np
 import matplotlib.pyplot as plt
-from matplotlib.colors import LogNorm
 from scipy.stats import sigmaclip
 import pandas as pd
 import yaml
@@ -15,9 +39,39 @@ import sys
 
 
 class clusterReader:
-    """Class implementing data input, classification of clusters and plotting"""
+    """Read cluster data written with mPIXdaq, print meta data and statistics
 
-    def __init__(self, small_cut=4, circularity_cut=0.5, flatness_cut=0.5, emean_cut=200, emx_cut=400):
+    Default cuts on cluster features are used to classify clusters as ɑ, β or γ signatures.
+
+      ɑ: round cluster shape and peaking energy distribution, high ionization per pixel
+      β: shape is not round, low ionization per pixel, >5 pixels
+      γ: not (ɑ or β)
+
+    Methods:
+
+       * __init__(): instantiate class clusterReader and - optionally - set input file name
+       * set_cuts(): set cut values
+          - small_cut: separate small and large clusters
+          - circularity_cut: round topology
+          - flatness_cut: flat energy distribution
+          - emean_cut: energy loss per pixel (only used if emx not in feature list)
+          - emx_cut: maximum pixel energy
+          - no_saturation:  ignore clusters with saturated pixels
+       * parse_args():  read command line arguments if used interactively
+       * read_data(): load data in yaml formt in pandas data frame
+       * set_selection_masks(): define boolean masks to select ɑ, β and γ
+       * get_statistics(): count signatures and provide parameters of energy distributions
+       * plot(): plot energy distributions of ɑ, β and γ
+       * __call__(): execute read_data(), set_selection_masks() and get_statistics()
+    """
+
+    def __init__(self, filename=None):
+        self.filename = filename
+        self.set_cuts()  # set default cut values
+
+    def set_cuts(
+        self, small_cut=4, circularity_cut=0.5, flatness_cut=0.5, emean_cut=200, emx_cut=400, no_saturation=False
+    ):
         """Set default cut values"""
 
         self.small_cut = small_cut  # small clusters
@@ -25,9 +79,11 @@ class clusterReader:
         self.flatness_cut = flatness_cut  # flat energy distribution
         self.emean_cut = emean_cut  #  cut on high energy loss per pixel
         self.emx_cut = emx_cut  # cut on maximum pixel energy
+        self.no_saturation = no_saturation  #  ignore clusters with saturated pixels
 
     def parse_args(self):
-        # - parse command line arguments
+        """parse command line arguments"""
+
         parser = argparse.ArgumentParser(description="read cluster data and show summary")
         parser.add_argument("filename")
         parser.add_argument('-v', '--verbosity', type=int, default=1, help='verbosity level (1)')
@@ -38,7 +94,9 @@ class clusterReader:
         parser.add_argument('--flatness_cut', type=float, default=0.5, help='cut on flatness for alpha detection (0.6)')
         parser.add_argument('--emean_cut', type=float, default=200, help='cut on mean pixel energy (keV)')
         parser.add_argument('--emx_cut', type=float, default=400, help='cut on maximum pixel energy (keV)')
-
+        parser.add_argument(
+            '--no-saturation', dest='no_saturation', action='store_true', help='neglect ɑ with saturated pixels'
+        )
         args = parser.parse_args()
         self.filename = args.filename
 
@@ -48,6 +106,7 @@ class clusterReader:
         self.flatness_cut = args.flatness_cut  # flat energy distribution
         self.emean_cut = args.emean_cut  #  cut on high energy loss per pixel
         self.emx_cut = args.emx_cut  # cut on maximum pixel energy
+        self.no_saturation = args.no_saturation
 
     def read_data(self, fn):
         """load yaml from file and fill pandas data frame"""
@@ -59,6 +118,9 @@ class clusterReader:
         elif '.yml' in fn:  # or from file in yaml format
             f = gzip.open(fn, 'rb') if fn.split('.')[-1] == 'gz' else open(fn, 'r')
             self.input_dict = yaml.load(f, Loader=yaml.CLoader)
+            if 'cluster_data' not in self.input_dict.keys():
+                print("!!! no cluster data found in file - exiting!")
+                sys.exit(1)
             self.keys = self.input_dict['keys']
             self.meta_data = self.input_dict["meta_data"]
             #  get cluster data: 1st is list of cluster properties, 2nd is list of [pixel index, energy] pairs
@@ -130,9 +192,9 @@ class clusterReader:
         #   - a peaking energy distribution and
         #   - a large value of the maximum pixel energy
         shape_is_alpha = is_circular & ~is_flat
-        # a loose definition of an ɑ based only on dEdx
+        # a loose ɑ definition based only on dEdx
         is_cand_alpha = is_high_dEdx
-        # a tight definition of an ɑ as the logical 'and' of criterea
+        # a tight ɑ definition as the logical 'and' of criterea
         is_alpha = shape_is_alpha & is_high_dEdx
         # avoid non-linearity of response if max. pixel energy is too high
         if 'e_mx' in self.df.keys():
@@ -141,22 +203,24 @@ class clusterReader:
             is_saturating = self.df['Epix_mean'] > 210
         is_clean_alpha = is_alpha & ~is_saturating
 
-        # *==* definition of β candidates (long non-alpha tracks)
+        # *==* definition of β candidates (long non-alpha tracks with low small dEdx)
         shape_is_beta = ~shape_is_alpha & ~is_small
-        is_beta = shape_is_beta & ~is_high_dEdx  # and wit low energy deposits
+        is_beta = shape_is_beta & ~is_high_dEdx  #  request β shape  & low energy deposits
 
         # *==* define γ candidates (low-multiplicity clusters with small dEdx)
         is_gamma = is_small & ~is_high_dEdx
 
         # export selection
-        # self.sel_alpha = is_cand_alpha
-        self.sel_alpha = is_alpha
-        # self.sel_alpha = is_clean_alpha  # well-measured alpha
+        if self.no_saturation:
+            self.sel_alpha = is_clean_alpha  # well-measured alphas only
+        else:
+            self.sel_alpha = is_alpha
+        # self.sel_alpha = is_cand_alpha  # alternative: selection based only on dEdx
         self.sel_beta = is_beta
         self.sel_gamma = is_gamma
 
     def __call__(self):
-        """read read data, initialize selection cuts"""
+        """read read data, print meta data, initialize selection cuts, collect and print statistics"""
         # read data
         self.read_data(self.filename)
         # set selection criterea
@@ -164,22 +228,48 @@ class clusterReader:
         # collect and print
         self.get_statistics()
 
-    def get_statistics(self):
-        """Print results"""
+    def get_statistics(self, pr=True):
+        """Collect statistics, construct result dictionary and print
+
+        Returns:
+           result dictionary: events, rate, mean and sigma of energy distribution for ɑ, β, γ
+        """
+
+        # result dictionary
+        d = {'alpha': {}, 'beta': {}, 'gamma': {}}
+
+        # create 2.5 sigma truncated samples (to avoid outliers)
+        _k = 'energy'
+        self.c_alpha, _low, _high = sigmaclip(self.df[self.sel_alpha][_k], 2.5, 2.5)
+        self.c_beta, _low, _high = sigmaclip(self.df[self.sel_beta][_k], 2.5, 2.5)
+        self.c_gamma, _low, _high = sigmaclip(self.df[self.sel_gamma][_k], 2.5, 2.5)
 
         # *==* collect statistics
-        _key = 'energy'
-        # number of events per class (number of True values in masks)
-        N_alpha = self.sel_alpha.sum()
-        N_beta = self.sel_beta.sum()
-        N_gamma = self.sel_gamma.sum()
+        #  - number of events per class (number of True values in masks)
+        self.N_alpha = int(self.sel_alpha.sum())
+        self.N_beta = int(self.sel_beta.sum())
+        self.N_gamma = int(self.sel_gamma.sum())
+        d['alpha']['N'] = self.N_alpha
+        d['beta']['N'] = self.N_beta
+        d['gamma']['N'] = self.N_gamma
+        #  - rates
+        _tl = self.T_alive
+        d['alpha']['r'] = self.N_alpha / _tl
+        d['beta']['r'] = self.N_beta / _tl
+        d['gamma']['r'] = self.N_gamma / _tl
+        #  - trimmed mean energy
+        d['alpha']['E'] = self.c_alpha.mean()
+        d['beta']['E'] = self.c_beta.mean()
+        d['gamma']['E'] = self.c_gamma.mean()
+        #  - sigma of energy distribution
+        d['alpha']['sE'] = self.c_alpha.std()
+        d['beta']['sE'] = self.c_beta.std()
+        d['gamma']['sE'] = self.c_gamma.std()
 
-        # create 2.5 sigma truncated sample (to avoid outliers)
-        c_alpha, _low, _high = sigmaclip(self.df[self.sel_alpha][_key], 2.5, 2.5)
-        c_beta, _low, _high = sigmaclip(self.df[self.sel_beta][_key], 2.5, 2.5)
-        c_gamma, _low, _high = sigmaclip(self.df[self.sel_gamma][_key], 2.5, 2.5)
+        if not pr:
+            return d
 
-        # print cuts
+        # print cut values
         print("*==* selection cuts")
         print(f"  ɑ: flatness < {self.flatness_cut}")
         print(f"     circularity > {self.circularity_cut}")
@@ -192,33 +282,26 @@ class clusterReader:
 
         # print in tabular form
         print("\n*==* ɑ, β, γ Statistics:")
-        print("                    " + f"\t {'ɑ ':>10s} \t {'β ':>10s} \t {'γ ':>10s}")
-        print("  events            " + f"\t {int(N_alpha):10d} \t {int(N_beta):10d} \t {int(N_gamma):10d}")
-        _tl = self.T_alive
-        print("  rate (Hz)         " + f"\t {N_alpha / _tl:10.3g} \t {N_beta / _tl:10.3g} \t {N_gamma / _tl:10.3g}")
-        print("  mean energy (keV) " + f"\t {c_alpha.mean():10.3g} \t {c_beta.mean():10.3g} \t {c_gamma.mean():10.3g}")
-        print("  sigma energy (keV) " + f"\t {c_alpha.std():10.3g} \t {c_beta.std():10.3g} \t {c_gamma.std():10.3g}")
+        print("             " + f"\t {'ɑ ':>10s} \t {'β ':>10s} \t {'γ ':>10s}")
+        print("  events     " + f"\t {d['alpha']['N']:10d} \t {d['beta']['N']:10d} \t {d['gamma']['N']:10d}")
+        print("  rate (Hz)  " + f"\t {d['alpha']['r']:10.3g} \t {d['beta']['r']:10.3g} \t {d['gamma']['r']:10.3g}")
+        print("  meanE (keV)" + f"\t {d['alpha']['E']:10.3g} \t {d['beta']['E']:10.3g} \t {d['gamma']['E']:10.3g}")
+        print("  sigE (keV)" + f"\t {d['alpha']['sE']:10.3g} \t {d['beta']['sE']:10.3g} \t {d['gamma']['sE']:10.3g}")
         print()
-
-        self.c_alpha = c_alpha
-        self.c_beta = c_beta
-        self.c_gamma = c_gamma
-        self.N_alpha = N_alpha
-        self.N_beta = N_beta
-        self.N_gamma = N_gamma
+        return d
 
     def plot(self):
         """Graphical output"""
-        _key = 'energy'
 
-        def stacked_hists(_key, _bins):
+        def stacked_hists(key, _bins):
             """helper to produce stacked histograms for alpha, beta and gamma candidates"""
-            _vals = (self.df[self.sel_alpha][_key], self.df[self.sel_beta][_key], self.df[self.sel_gamma][_key])
+            _vals = (self.df[self.sel_alpha][key], self.df[self.sel_beta][key], self.df[self.sel_gamma][key])
             _labels = ('ɑ', 'β', 'γ')
             _colors = ('r', 'b', 'y')
             return plt.hist(_vals, label=_labels, bins=_bins, color=_colors, alpha=0.75, rwidth=0.75, stacked=True)
 
         # *==* histogram energy distributions
+        _key = "energy"
         mx = min(max(self.df[self.sel_alpha][_key]), 4990)
         f = 10 ** int(np.log10(mx / 5))
         _bins = np.linspace(0, mx, int(mx / f) + 1)
