@@ -1,7 +1,10 @@
 """Helper functions for mpixdaq
 
 - class fileDecoders to decode  various input file formats: mPIXdaq .npy and .yml and Advacam .txt and .clog
+- class clusterReader() to read (and analyze) pixel clusters written with mPIXdaq
 - function plot_cluster() to plot energy map of pixel cluster
+- class shmManager for management of shared memory blocks
+
 """
 
 import argparse
@@ -313,7 +316,7 @@ class clusterReader:
             self.filename = fn
         if self.filename is None:
             print("!!! no filename given - exit !")
-            sys.exit("no filename given")   
+            sys.exit("no filename given")
         else:
             fn = self.filename
 
@@ -367,7 +370,7 @@ class clusterReader:
         self.df['flatness'] = self.df['varE_mx'] / np.maximum(self.df['var_mx'].to_numpy(), 0.001)
         #  - straightness",
         self.df['straightness'] = self.df[['w', 'h']].max(axis=1) / self.df['n_pix']
- 
+
         # *==* meta data
         self.meta_data['N_frames'] = self.n_frames
         self.meta_data['N_clusters'] = self.n_clusters

@@ -473,8 +473,11 @@ The components, classes and scripts of the package are
       - class `controlGUI` for mouse-based control of the data-acquisition process
 
 - `mpixhelers` for decoding supported file formats and plotting of cluster data
-    - class `fileDecoders`
-    - function `plot_cluster(pxlist, num=0)`
+
+    - class fileDecoders to decode  various input file formats: mPIXdaq .npy and .yml and Advacam .txt and .clog
+    - class clusterReader() to read (and analyze) pixel clusters written with mPIXdaq
+    - function plot_cluster() to plot energy map of pixel cluster
+    - class shmManager for management of shared memory blocks
 
 - `physics_tools` for calculations of the (mean) energy deposits 
 
@@ -612,6 +615,51 @@ class fileDecoders:
      """
 ```
 
+
+```
+class readClusters:
+   """Read cluster data written with mPIXdaq, print meta data and statistics
+
+    Default cuts on cluster features are used to classify clusters as ɑ, β or γ signatures.
+
+      ɑ: round cluster shape and peaking energy distribution, high ionization per pixel
+      β: shape is not round, low ionization per pixel, >5 pixels
+      γ: not (ɑ or β)
+
+    Methods:
+
+       * __init__(): instantiate class clusterReader and - optionally - set input file name
+       * set_cuts(): set cut values
+          - small_cut: separate small and large clusters
+          - circularity_cut: round topology
+          - flatness_cut: flat energy distribution
+          - emean_cut: energy loss per pixel (only used if emx not in feature list)
+          - emx_cut: maximum pixel energy
+          - no_saturation:  ignore clusters with saturated pixels
+       * parse_args():  read command line arguments if used interactively
+       * read_data(): load data in yaml formt in pandas data frame
+       * set_selection_masks(): define boolean masks to select ɑ, β and γ
+       * get_statistics(): count signatures and provide parameters of energy distributions
+       * plot(): plot energy distributions of ɑ, β and γ
+       * __call__(): execute read_data(), set_selection_masks() and get_statistics()
+    """
+```
+
+
+```
+def pxl2map(pxlist):
+    """Create pixel energy map from pixel list
+
+    Args:
+      - pxlist: list of pixels [ ..., [px_idx, px_energy], ...]
+      - num: int, for numbering figures
+
+    Returns:
+      - numpy array
+    """
+```
+
+
 ```
 plot_cluster(pxlist, num=0):
     """Plot energy map of pixel cluster
@@ -624,6 +672,19 @@ plot_cluster(pxlist, num=0):
       - matplotlib figure
     """
 ```
+
+```
+class shmManager:
+    """simple management of shared memory blocks
+
+    class methods:
+      - def get_sharedMem(name, size): create or link to shared memory
+
+      do not forget to close() and finally unlink() all requested blocks
+      in calling process
+    """
+```
+
 
 #### mplhelpers.py
 
