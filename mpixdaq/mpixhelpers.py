@@ -301,7 +301,7 @@ class clusterReader:
         self.emx_cut = args.emx_cut  # cut on maximum pixel energy
         self.no_saturation = args.no_saturation
 
-    def read_data(self, fn, pr=True):
+    def read_data(self, fn=None, pr=True):
         """load yaml from file and fill pandas data frame
 
         Returns:
@@ -309,7 +309,15 @@ class clusterReader:
            -  meta-data dictionary
         """
 
-        if '.csv' in fn:  # from csv file
+        if fn is not None:
+            self.filename = fn
+        if self.filename is None:
+            print("!!! no filename given - exit !")
+            sys.exit("no filename given")   
+        else:
+            fn = self.filename
+
+        if '.csv' in self.filename:  # from csv file
             self.df = pd.read_csv(fn)
             self.meta_data = {}
             self.input_dict = None
@@ -357,7 +365,9 @@ class clusterReader:
         #  - flatness (of energy distribution) as the ratio of maximum variances
         #    of pixel and energy distributions in clusters
         self.df['flatness'] = self.df['varE_mx'] / np.maximum(self.df['var_mx'].to_numpy(), 0.001)
-
+        #  - straightness",
+        self.df['straightness'] = self.df[['w', 'h']].max(axis=1) / self.df['n_pix']
+ 
         # *==* meta data
         self.meta_data['N_frames'] = self.n_frames
         self.meta_data['N_clusters'] = self.n_clusters
