@@ -284,14 +284,18 @@ class clusterReader:
         parser.add_argument("filename")
         parser.add_argument('-v', '--verbosity', type=int, default=1, help='verbosity level (1)')
         parser.add_argument(
-            '--circularity_cut', type=float, default=0.5, help='cut on circularity for alpha detection (0.5)'
+            '-c', '--circularity_cut', type=float, default=0.5, help='cut on circularity for alpha detection (0.5)'
         )
-        parser.add_argument('--small_cut', type=float, default=4, help='max. number of pixels for small cluster (4)')
-        parser.add_argument('--flatness_cut', type=float, default=0.5, help='cut on flatness for alpha detection (0.6)')
-        parser.add_argument('--emean_cut', type=float, default=200, help='cut on mean pixel energy (keV)')
-        parser.add_argument('--emx_cut', type=float, default=400, help='cut on maximum pixel energy (keV)')
         parser.add_argument(
-            '--no-saturation', dest='no_saturation', action='store_true', help='neglect ɑ with saturated pixels'
+            '-s', '--small_cut', type=float, default=4, help='max. number of pixels for small cluster (4)'
+        )
+        parser.add_argument(
+            '-f', '--flatness_cut', type=float, default=0.5, help='cut on flatness for alpha detection (0.6)'
+        )
+        parser.add_argument('--emean_cut', type=float, default=200, help='cut on mean pixel energy (keV)')
+        parser.add_argument('-m', '--emx_cut', type=float, default=400, help='cut on maximum pixel energy (keV)')
+        parser.add_argument(
+            '-n', '--no-saturation', dest='no_saturation', action='store_true', help='neglect ɑ with saturated pixels'
         )
         args = parser.parse_args()
         self.filename = args.filename
@@ -511,7 +515,7 @@ class clusterReader:
             print(f"     emx_cut > {self.emx_cut} keV")
         else:
             print(f"     emean_cut > {self.emean_cut} keV")
-        print(f"  β: size > {self.small_cut} and not ɑ")
+        print(f"  β: size > {self.small_cut:.0f} and not ɑ")
         print("  γ: not(ɑ or β)")
 
         # print in tabular form
