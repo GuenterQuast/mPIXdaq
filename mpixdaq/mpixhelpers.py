@@ -368,8 +368,9 @@ class clusterReader:
         #  - flatness (of energy distribution) as the ratio of maximum variances
         #    of pixel and energy distributions in clusters
         self.df['flatness'] = self.df['varE_mx'] / np.maximum(self.df['var_mx'].to_numpy(), 0.001)
-        #  - straightness",
-        self.df['straightness'] = self.df[['w', 'h']].max(axis=1) / self.df['n_pix']
+        #  - straightness"
+        if 'w' in self.df.keys():
+            self.df['straightness'] = self.df[['w', 'h']].max(axis=1) / self.df['n_pix']
 
         # *==* meta data
         self.meta_data['N_frames'] = self.n_frames
@@ -431,6 +432,12 @@ class clusterReader:
         # *==* define γ candidates (low-multiplicity clusters with small dEdx)
         is_gamma = is_small & ~is_high_dEdx
 
+        # *==* define muon candidates (ling, straight beta-like traces)
+        if 'straightness' in self.df.keys():
+            is_muon = is_beta & (self.df['straightness'] > 0.9) & (self.df['n_pix'] > 25)
+        else:
+            is_muon = None
+
         # export selection
         if self.no_saturation:
             self.sel_alpha = is_clean_alpha  # well-measured alphas only
@@ -439,6 +446,7 @@ class clusterReader:
         # self.sel_alpha = is_cand_alpha  # alternative: selection based only on dEdx
         self.sel_beta = is_beta
         self.sel_gamma = is_gamma
+        self.sel_muon = is_muon
 
     def __call__(self):
         """read read data, print meta data, initialize selection cuts, collect and print statistics"""
@@ -487,6 +495,11 @@ class clusterReader:
         d['beta']['sE'] = self.c_beta.std()
         d['gamma']['sE'] = self.c_gamma.std()
 
+        if self.sel_muon is not None:
+            self.N_muon = int(self.sel_muon.sum())
+            d['muon'] = {}
+            d['muon']['N'] = self.N_muon
+
         if not pr:
             return d
 
@@ -508,6 +521,9 @@ class clusterReader:
         print("  rate (Hz)  " + f"\t {d['alpha']['r']:10.3g} \t {d['beta']['r']:10.3g} \t {d['gamma']['r']:10.3g}")
         print("  meanE (keV)" + f"\t {d['alpha']['E']:10.3g} \t {d['beta']['E']:10.3g} \t {d['gamma']['E']:10.3g}")
         print("  sigE (keV)" + f"\t {d['alpha']['sE']:10.3g} \t {d['beta']['sE']:10.3g} \t {d['gamma']['sE']:10.3g}")
+        if self.sel_muon is not None and self.N_muon > 0:
+            print(8 * '\t' + f" {self.N_muon} µ")
+
         print()
         return d
 
