@@ -528,7 +528,7 @@ class clusterReader:
         if self.sel_muon is not None and self.N_muon > 0:
             print(8 * '\t' + f" {self.N_muon} µ")
 
-        print()
+        print(flush=True)
         return d
 
     def plot(self):
