@@ -526,7 +526,7 @@ class clusterReader:
         print("  meanE (keV)" + f"\t {d['alpha']['E']:10.3g} \t {d['beta']['E']:10.3g} \t {d['gamma']['E']:10.3g}")
         print("  sigE (keV)" + f"\t {d['alpha']['sE']:10.3g} \t {d['beta']['sE']:10.3g} \t {d['gamma']['sE']:10.3g}")
         if self.sel_muon is not None and self.N_muon > 0:
-            print("  muons " + 8 * '\t' + f" {self.N_muon} µ")
+            print("  muons " + 7 * '\t' + f" {self.N_muon} µ")
 
         print(flush=True)
         return d

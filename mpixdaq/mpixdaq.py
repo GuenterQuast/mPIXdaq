@@ -1244,22 +1244,10 @@ class runDAQ:
         - animated figures to show a live view of incoming data
         - event loop controlling data acquisition, data output to file and graphical display
     """
-
-    def __init__(self, wd_path=None):
-        """initialize:
-
-        - options from command line arguments
-        - miniPIX detector or optionally input from file
-        - graphics display
-        """
-
-        # - set current directory as working directory if no path given
-        if wd_path is None:
-            #    wd_path = os.getenv("HOME")
-            wd_path = os.getcwd()
-        self.wd_path = wd_path
-
-        # - parse command line arguments
+    @staticmethod
+    def parse_args():
+        """parse command line arguments for mPIXdaq"""
+    
         parser = argparse.ArgumentParser(description="read, analyze, display and histogram data from miniPIX device")
         parser.add_argument('-v', '--verbosity', type=int, default=1, help='verbosity level (1)')
         parser.add_argument('-o', '--overlay', type=int, default=4, help='number of frames to overlay in graph (4)')
@@ -1282,7 +1270,24 @@ class runDAQ:
         parser.add_argument('--guiControl', action='store_true', default=False, help='switch on gui control')
         parser.add_argument('--no-guiControl', dest='guiControl', action='store_false', help='switch off gui control')
 
-        args = parser.parse_args()
+        return parser.parse_args()
+
+    def __init__(self, wd_path=None):
+        """initialize:
+
+        - options from command line arguments
+        - miniPIX detector or optionally input from file
+        - graphics display
+        """
+
+        # - set current directory as working directory if no path given
+        if wd_path is None:
+            #    wd_path = os.getenv("HOME")
+            wd_path = os.getcwd()
+        self.wd_path = wd_path
+
+        # parse command-line arguments
+        args = self.parse_args()
 
         timestamp = time.strftime('%y%m%d-%H%M', time.localtime())
 

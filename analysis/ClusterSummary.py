@@ -36,7 +36,7 @@ if __name__ == "__main__":  # --------------------------------------------------
     reader = clusterReader()
     # parse command line arguments
     reader.parse_args()
-    print(" .... importing yaml, be patient ...")
+    print(" .... importing yaml, be patient ...", flush=True)
     # read data, set selection masks, collect and print statistics
     reader()
     # plot energy distributions

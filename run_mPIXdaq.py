@@ -9,6 +9,11 @@ import platform
 import sys
 import multiprocessing
 
+from mpixdaq.mpixdaq import runDAQ
+
+# parse command line arguments
+runDAQ.parse_args()
+
 # on some Linux systems, pypixet requires '.' in LD_LIBRARY_PATH to find C-libraries
 #  - add current directory to LD-LIBRARY_PATH
 #  - and restart python script for changes to take effect
