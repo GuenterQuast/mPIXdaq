@@ -12,7 +12,7 @@ import multiprocessing
 from mpixdaq.mpixdaq import runDAQ
  
 # start with parsing mPIXdaq command line arguments for compatibility with grun.py
-runDAQ.parse_args()
+args=runDAQ.argparser().parse_args()
 
 # on some Linux systems, pypixet requires '.' in LD_LIBRARY_PATH to find C-libraries
 #  - add current directory to LD-LIBRARY_PATH

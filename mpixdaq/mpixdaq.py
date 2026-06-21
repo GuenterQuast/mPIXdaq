@@ -3,7 +3,7 @@
 
 Code for reading data from device taken from examples provided by the manufacturer,
 see https://wiki.advacam.cz/wiki/Python_API
-
+argparse
 This code depends on standard libraries from Python's scientific ecosystem
 
   - numpy
@@ -1246,7 +1246,7 @@ class runDAQ:
     """
 
     @staticmethod
-    def parse_args():
+    def argparser():
         """parse command line arguments for mPIXdaq"""
 
         parser = argparse.ArgumentParser(description="read, analyze, display and histogram data from miniPIX device")
@@ -1271,7 +1271,7 @@ class runDAQ:
         parser.add_argument('--guiControl', action='store_true', default=False, help='switch on gui control')
         parser.add_argument('--no-guiControl', dest='guiControl', action='store_false', help='switch off gui control')
 
-        return parser.parse_args()
+        return parser
 
     def __init__(self, wd_path=None):
         """initialize:
@@ -1288,7 +1288,7 @@ class runDAQ:
         self.wd_path = wd_path
 
         # parse command-line arguments
-        args = self.parse_args()
+        args = self.argparser().parse_args()
 
         timestamp = time.strftime('%y%m%d-%H%M', time.localtime())
 
