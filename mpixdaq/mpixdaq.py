@@ -1249,7 +1249,7 @@ class runDAQ:
     def argparser():
         """parse command line arguments for mPIXdaq"""
 
-        parser = argparse.ArgumentParser(description="read, analyze, display and histogram data from miniPIX device")
+        parser = argparse.ArgumentParser(description="Read, analyze & display miniPIX data")
         parser.add_argument('-v', '--verbosity', type=int, default=1, help='verbosity level (1)')
         parser.add_argument('-o', '--overlay', type=int, default=4, help='number of frames to overlay in graph (4)')
         parser.add_argument('-a', '--acq_time', type=float, default=0.5, help='acquisition time/frame in seconds (0.5)')
