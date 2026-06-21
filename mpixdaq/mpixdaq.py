@@ -1244,10 +1244,11 @@ class runDAQ:
         - animated figures to show a live view of incoming data
         - event loop controlling data acquisition, data output to file and graphical display
     """
+
     @staticmethod
     def parse_args():
         """parse command line arguments for mPIXdaq"""
-    
+
         parser = argparse.ArgumentParser(description="read, analyze, display and histogram data from miniPIX device")
         parser.add_argument('-v', '--verbosity', type=int, default=1, help='verbosity level (1)')
         parser.add_argument('-o', '--overlay', type=int, default=4, help='number of frames to overlay in graph (4)')
@@ -1637,7 +1638,11 @@ class runDAQ:
         # start daq loop
         self.t_start = time.time()
         if mpixControl.kbd_control:
-            print("\n" + 25 * ' ' + "\033[36m type 'E<ret>' or close graphics window to end" + "\033[31m", end='\r')
+            print(
+                "\n" + 25 * ' ' + "\033[36m type 'E<ret>' or close graphics window to end" + "\033[31m",
+                end='\r',
+                flush=True,
+            )
         try:
             while (self.dt_alive < self.run_time) and mpixControl.mplActive.is_set() and mpixControl.runActive.is_set():
                 # check kbd input
@@ -1654,7 +1659,7 @@ class runDAQ:
                 # wait here if paused
                 if not mpixControl.mpixActive.is_set():
                     if mpixControl.kbd_control:
-                        print("  Paused - 'R' to resume     ", end="\r")
+                        print("  Paused - 'R' to resume     ", end="\r", flush=True)
                     self.mpixgraph_fig.canvas.start_event_loop(0.01)  # keep graphics window alive
                     if mpixControl.gui_control:
                         mpixControl.statQ.put(stat + " - paused")
@@ -1729,7 +1734,7 @@ class runDAQ:
                 self.fps = i_frame / self.dt_active
                 stat = f"#{i_frame}  {self.dt_active:.0f}s  {self.fps:0.1f}fps "
                 if mpixControl.kbd_control:
-                    print(stat, end="\r")
+                    print(stat, end='\r')
                 if mpixControl.gui_control:
                     mpixControl.statQ.put(stat + "  " + self.mpixvis.statistics)
             else:  # normal end of while
