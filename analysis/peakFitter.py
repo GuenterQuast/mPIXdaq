@@ -1,4 +1,4 @@
-"""peakFitter: find and fit peaks in a spectrum"""
+"""class peakFitter to find and fit peaks in a spectrum"""
 
 import numpy as np
 import matplotlib.pyplot as plt

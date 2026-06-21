@@ -1,4 +1,4 @@
-"""Fit a Landau-pdf to histogram data"""
+"""Function for import to fit a Landau-pdf to histogram data"""
 
 from PhyPraKit import histstat, hFit
 from scipy.stats import landau

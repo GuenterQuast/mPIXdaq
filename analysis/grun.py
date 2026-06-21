@@ -17,7 +17,7 @@ Start:
     pip install PyQt5
     python grun.py
 
-    
+
             Code generated with Claude AI, June 2026
 """
 
@@ -414,8 +414,8 @@ class MainWindow(QMainWindow):
         if not path or not os.path.isfile(path):
             # set default path
             path = self.pythonscript
-#            QMessageBox.warning(self, "Fehler", "Bitte einen gültigen Skriptpfad angeben.")
-#            return
+        #            QMessageBox.warning(self, "Fehler", "Bitte einen gültigen Skriptpfad angeben.")
+        #            return
         try:
             parser = extract_parser(path)
         except Exception as e:
@@ -440,7 +440,7 @@ class MainWindow(QMainWindow):
         self.form_scroll.setWidget(form_widget)
         self.run_btn.setEnabled(True)
         self.statusBar().showMessage(
-            f"Geladen: {os.path.basename(path)} " f"({len(self.form_builder.fields)} Argument(e) gefunden)", 5000
+            f"Geladen: {os.path.basename(path)} ({len(self.form_builder.fields)} Argument(e) gefunden)", 5000
         )
         self._update_preview()
 
@@ -507,10 +507,10 @@ class MainWindow(QMainWindow):
 
 
 def main():
-    # set (default) input file 
+    # set (default) input file
     if len(sys.argv) > 1:
         script = sys.argv[1]
-    else: 
+    else:
         script = default_script
 
     print(f" script {sys.argv[0]}: wrapping {script} with GUI ...")
@@ -523,4 +523,3 @@ def main():
 if __name__ == "__main__":
     default_script = "ClusterSummary.py"
     main()
-    
