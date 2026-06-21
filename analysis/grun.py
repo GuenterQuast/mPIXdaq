@@ -42,7 +42,6 @@ from PyQt5.QtWidgets import (
     QComboBox,
     QCheckBox,
     QLabel,
-    QPlainTextEdit,
     QTextEdit,
     QGroupBox,
     QSplitter,

@@ -6,7 +6,6 @@
 # the most authoritative and comprehensive source today is:
 #     https://physics.nist.gov/PhysRefData/Star/Text/ESTAR.html
 
-import numpy as np
 import matplotlib.pyplot as plt
 
 import mpixdaq.physics_tools as pt
@@ -23,7 +22,7 @@ if __name__ == "__main__":  # -------------------------------------------------
 
     _fig = plt.figure("dEdx_alpha", figsize=fsize)
     ax_dEdx_alpha = _fig.add_subplot()
-    plt.suptitle(rf"$\alpha$ energy loss & energy vs. penetration depth in air")
+    plt.suptitle(r"$\alpha$ energy loss & energy vs. penetration depth in air")
     fig_dEdx_alpha = pt.plot_dEdx_alpha(mp.air, axis=ax_dEdx_alpha)
 
     _fig = plt.figure("dE_pixels", figsize=fsize)
@@ -48,14 +47,14 @@ if __name__ == "__main__":  # -------------------------------------------------
         E0_e = 0.5
         print(f"Energy loss of electrons of {E0_e} MeV in water: ", end='')
         print(f"dE/dx = {mp.H2O['rho'] * pt.dEdx(E0_e, mp.H2O, mp.electron):.2f} MeV/cm")
-        print(f"                                       in Si: ", end='')
+        print("                                       in Si: ", end='')
         _dEdx_e = mp.Si['rho'] * pt.dEdx(E0_e, mp.Si, mp.electron)
         print(f"dE/dx = {_dEdx_e:.2f} MeV/cm   {_dEdx_e / mp.Si['w_eh'] / 10000:.0f} e-h pairs/µm")
 
         E0_mu = 300.0
         print(f"Energy loss of muons of {E0_mu} MeV in water: ", end='')
         print(f"dE/dx = {mp.H2O['rho'] * pt.dEdx(E0_mu, mp.H2O, mp.muon):.2f} MeV/cm")
-        print(f"                                       in Si: ", end='')
+        print("                                       in Si: ", end='')
         _dEdx_mu = mp.Si['rho'] * pt.dEdx(E0_mu, mp.Si, mp.muon)
         print(f"dE/dx = {_dEdx_mu:.2f} MeV/cm   {_dEdx_mu / mp.Si['w_eh'] / 10000:.0f} e-h pairs/µm")
 
