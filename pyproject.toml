@@ -50,7 +50,7 @@ include = ["mpixdaq*"]
 version = {attr = "mpixdaq.__version__"}
 
 [tool.setuptools]
-script-files = ["run_mPIXdaq.py"]
+script-files = ["run_mPIXdaq.py", "grun_mPIXdaq.py"]
 
 [project.urls]
 Homepage = "http://www.etp.kit.edu/~quast/"
