@@ -37,4 +37,7 @@
   release for Advacam SDK v1.8.5 and Python 3.12 for Windows
 
 ## towards [1.1.1]
-  - fixed widht and height of bounding box
+  - fixed width and height of cluster bounding box
+  - added grun_mpixDAQ.py and argparse_tk_gui.py for start via gui
+  - improved dcoumentation
+  
