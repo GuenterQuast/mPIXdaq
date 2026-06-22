@@ -20,7 +20,7 @@ def main():
 
     #    clbk = None
     def clbk(args):
-        arg_lst = [sys.executable, script_name] + args
+        arg_lst = [script_name] + args
         cmd_str = " ".join(shlex.quote(a) for a in arg_lst)
         print("Starte: ", cmd_str)
         print(flush=True)
