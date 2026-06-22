@@ -192,6 +192,8 @@ class ArgparseGUI:
     capture_output:
         Wenn True (Default) und ein Subprozess verwendet wird, wird dessen
         stdout/stderr in einem Textfeld im Fenster angezeigt.
+    win_geom:
+        Tuple (width, height) of graphics window in pixels    
     """
 
     def __init__(
@@ -202,6 +204,7 @@ class ArgparseGUI:
         title: Optional[str] = None,
         capture_output: bool = True,
         theme: Optional[str] = None,
+        win_geom: Option(tuple) = (350, 725)
     ):
         self.parser = parser
         self.run_callback = run_callback
@@ -214,13 +217,10 @@ class ArgparseGUI:
         # get screen width and height
         ws = self.root.winfo_screenwidth()  # width of the screen
         hs = self.root.winfo_screenheight()  # height of the screen
-        w, h = (
-            550,
-            950,
-        )
-        x, y = 50, 50
+        w, h = win_geom
+        x, y = ws//2 - w//2, hs//2 - h//2  # screen center
         self.root.geometry('%dx%d+%d+%d' % (w, h, x, y))
-        self.root.minsize(480, 360)
+        self.root.minsize(350, 350)
 
         style = ttk.Style(self.root)
         try:
