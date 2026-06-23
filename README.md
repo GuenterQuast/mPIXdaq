@@ -1,7 +1,7 @@
 ---
 title: Recording, analysis and visualization of data 
        from Advacam miniPIX (EDU) silicon pixel detector  
-author: Günter Quast, Aug. 2025, last updated Mai 2026
+author: Günter Quast, Aug. 2025, last updated June 2026
 ...
 
 <head>
@@ -22,7 +22,7 @@ author: Günter Quast, Aug. 2025, last updated Mai 2026
 ## mPIXdaq Data acquisition and analysis for *miniPIX (EDU)* pixel detector 
 
 &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;
-&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; Vers. 1.1, May 2026
+&nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; Vers. 1.1.1, June 2026
 &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; 
 [![DOI](images/DOI-badge.png)](https://doi.org/10.5281/zenodo.19280859)
 
@@ -122,27 +122,27 @@ the environment variable `LD_LIBRARY_PATH` if necessary and then restarting
 to execute the *Python* code in the new environment.  
  
 
-## Running the example script
+## Running *mpixDAQ*
 
-Available options of the *Python* example to steer data taking and 
-data archival to disk are shown by typing 
+Available options of the *Python* program *mPIXdaq.py* to steer data taking,
+online analysis and and data archival to disk are shown by typing 
 
   ``run_mPIXdaq.py --help``, resulting in the following output:
 
 ```
-usage: run_mPIXdaq.py [-h] [-v VERBOSITY] [-o OVERLAY] [-a ACQ_TIME]
-                      [-c ACQ_COUNT] [-f FILE]  [-w WRITEFILE] [-t TIME] 
-                      [--circularity_cut CIRCULARITY_CUT] 
-                      [--flatness_cut FLATNESS_CUT] [-r READFILE]
+> run_mPIXdaq.py -h
+usage: run_mPIXdaq.py [-h] [-v VERBOSITY] [-o OVERLAY] [-a ACQ_TIME] [-c ACQ_COUNT] [-f FILE] [-w WRITEFILE] [-t TIME]
+                      [--circularity_cut CIRCULARITY_CUT] [--flatness_cut FLATNESS_CUT] [-p PRESCALE] [-r READFILE] [-b BADPIXELS]
+                      [--no-kbdControl] [--no-guiControl]
 
-read, analyze and display data from miniPIX device
+Read, analyze & display miniPIX data
 
 options:
   -h, --help            show this help message and exit
   -v VERBOSITY, --verbosity VERBOSITY
                         verbosity level (1)
   -o OVERLAY, --overlay OVERLAY
-                        number of frames to overlay in graph (10)
+                        number of frames to overlay in graph (4)
   -a ACQ_TIME, --acq_time ACQ_TIME
                         acquisition time/frame in seconds (0.5)
   -c ACQ_COUNT, --acq_count ACQ_COUNT
@@ -161,7 +161,15 @@ options:
                         file to read frame data
   -b BADPIXELS, --badpixels BADPIXELS
                         file with bad pixels to mask
+  --no-kbdControl       switch off keyboard control
+  --no-guiControl       switch off gui control
 ```
+
+As an alternative to the command line, a script ``grun_mPIXdaq.py`` is
+provided, which starts a graphical interface for argument setting. 
+This script is particularly useful if tied to a desktop icon. 
+
+> > > > > > ![Graphical interface to start mPIXdaq](images/grun_interface.png)
 
 The default values are adjusted to situations with low rates, where
 frames from the *miniPIX* with an exposure time of `acq_time = 0.5` s
@@ -317,7 +325,7 @@ They may also be downloaded from their web page,
 are provided here for convenience as *Python* packages.
 
 
-## Data Analysis
+## On-line Data Analysis
 
 The on-line analysis is intentionally very straight-forward and based on 
 standard libraries and functions. Clustering of pixels is performed by
@@ -433,16 +441,53 @@ explicitly specifying the file extension:
 **Histograms** displayed in the on-line graphical display may be saved using
 the control buttons in the *matplotlib* window. 
 
+## Analysis of output data 
+
 A **_Jupyter_ notebook**, *analysis/analyze_mPIXclusters.ipynb*, is distributed 
 as part of the package and illustrates how to read and interpret cluster data. 
-This notebook and some *Python* code are collected in the subdirectory 'analysis/'
-of the *mPIXdaq* package. 
+This notebook and some *Python* code are collected in the subdirectory `analysis/`
+of the *mPIXdaq* package. This example is meant as a starting point for data 
+analysis ba students.
 
-The *Python* program **ClusterSummary.py** in the subdirectory */analysis* reads 
+The *Python* program **ClusterSummary.py** in the subdirectory `/analysis` reads 
 cluster data written with *mPIXdaq*, provides an overview of data and meta-data
-and counts α, β, γ and µ signatures. This script requires some parameters, which
-can be comfortably set using a graphical user interface **grun.py** that reads the
-argument list of a *Python* program to set parameters and execute the script. 
+and counts α, β, γ and µ signatures with pre-defined selection cuts on the cluster features explained above.  
+The required parameters can be comfortably set using the graphical interface **grun.py** that reads the argument list of a *Python* program and permits interactive parameter setting before executing the script. 
+
+An **analysis example** of data taken over two hours from an air sample  
+collected in a basement rooms on a paper towel with a vacuum cleaner
+is shown in the output and figure below. 
+
+    *==* Contents of file ../data/Radon_clusters.yml.gz
+      Data written on Sun Apr 12 23:36:34 2026  with device  EduMiniPIX TSWB sn: 2987
+      16313 frames of 0.5s exposure time
+      47227 clusters -> rate = 5.79 Hz
+
+    *==* cluster features:
+       Index(['time', 'x_mean', 'y_mean', 'n_pix', 'energy', 'e_mx', 'x_mn', 'y_mn',
+       'w', 'h', 'var_mx', 'var_mn', 'angle', 'xE_mean', 'yE_mean', 'varE_mx',
+       'varE_mn', 'pixels', 'Epix_mean', 'circularity', 'flatness',
+       'straightness'], dtype='object')
+
+    *==* selection cuts
+      ɑ: flatness < 0.5
+         circularity > 0.5
+         emx_cut > 400.0 keV
+      β: size > 4 and not ɑ
+      γ: not(ɑ or β)
+
+    *==* ɑ, β, γ Statistics:
+                 	         ɑ  	         β  	         γ 
+      events     	       6465 	      19843 	      20691
+      rate (Hz)  	      0.793 	       2.43 	       2.54
+      meanE (keV)	   6.29e+03 	        231 	       74.9
+      sigE (keV)	   2.78e+03 	       95.9 	       53.3
+      muons 		                                					 5 µ
+
+
+
+> > >![Distribution of Cluster energies per particle type, produced by *ClusterSummary.py*](
+  images/ClusterSummary.png)
 
 
 ## Package Structure
@@ -622,7 +667,6 @@ class fileDecoders:
     supports mPIXdaq .npy and .yml and Advacam .txt and .clog
      """
 ```
-
 
 ```
 class readClusters:
