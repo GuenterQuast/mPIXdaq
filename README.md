@@ -530,9 +530,16 @@ The components, classes and scripts of the package are
     - function plot_cluster() to plot energy map of pixel cluster
     - class shmManager for management of shared memory blocks
 
+- `argparse_tk_gui.py` is a small, dependency-free *Python* library that automatically 
+    generates a graphical interface (Tkinter/TTK) from an existing `argparse.ArgumentParser`.
+    This library is used by the package script `grun_mPIXdaq.py` to conveniently set
+    all daq parameters and start the *mPIXdaq* program. 
+
 - `physics_tools` for calculations of the (mean) energy deposits 
 
 - package script `run_mPIXdaq.py`
+
+- package script `grun_mPIXdaq.py`
 
 - script `calculate_dEdx` for calculating and plotting the energy loss in matter
 

@@ -29,7 +29,7 @@ author: Günter Quast, April 2026
 ---
 ---
 
-This document is a guide for educators who want to explore the possibilitieslt3
+This document is a guide for educators who want to explore the possibilities
 of a modern radiation detection sensor and its implications on new ways to teach 
 the subject of radioactivity at secondary and high-school level. 
 
