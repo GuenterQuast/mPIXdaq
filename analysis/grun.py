@@ -6,7 +6,8 @@ Lädt ein beliebiges Python-Skript, das `argparse` verwendet, extrahiert
 dessen ArgumentParser (ohne das Skript "richtig" laufen zu lassen) und
 baut daraus automatisch ein Eingabeformular. Beim Klick auf "Ausführen"
 wird das Original-Skript als Subprozess mit den eingegebenen Parametern
-gestartet; die Ausgabe erscheint live im Log-Fenster.
+gestartet; die Ausgabe erscheint im Terminalfenster, aus dem grun.py
+ausgeführt wurde.
 
 Funktioniert mit Skripten, die irgendwo (egal ob auf Modulebene oder
 in einer per `if __name__ == "__main__":` geschützten Funktion)
