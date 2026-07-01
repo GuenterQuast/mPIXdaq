@@ -361,7 +361,7 @@ class MainWindow(QMainWindow):
         self.form_scroll.setWidget(form_widget)
         self.run_btn.setEnabled(True)
         self.statusBar().showMessage(
-            f"Geladen: {os.path.basename(path)} " f"({len(self.form_builder.fields)} Argument(e) gefunden)", 5000
+            f"Geladen: {os.path.basename(path)} ({len(self.form_builder.fields)} Argument(e) gefunden)", 5000
         )
         self._update_preview()
 
@@ -392,7 +392,7 @@ class MainWindow(QMainWindow):
         cmd = ["python3", self.script_path]
         arg_lst = cmd + argv
         cmd_str = " ".join(shlex.quote(a) for a in arg_lst)
-        print("Starte ", arg_lst)
+        print("Starte ", cmd_str)
         self.proc = subprocess.run(arg_lst)
 
 
