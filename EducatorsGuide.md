@@ -26,8 +26,6 @@ author: Günter Quast, April 2026
 &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; 
 [![DOI](images/DOI-badge.png)](https://doi.org/10.5281/zenodo.19280859)
 
----
----
 
 This document is a guide for educators who want to explore the possibilities
 of a modern radiation detection sensor and its implications on new ways to teach 
@@ -592,11 +590,13 @@ It is also important to note that the path of a track in a pixel is not
 precisely known, because it may cross the sensitive area at an unknown elevation 
 angle w.r.t the pixel plane. Furthermore, traces traversing the pixels not in the
 x- or y-directions have a longer path length by up to a factor of $\sqrt{2}$, and
-the energy of tracks passing at the pixel edges my be shared between adjacent 
+the energy of tracks passing at the pixel edges may be shared between adjacent 
 pixels. With appropriate selection of tracks, these problems can be mitigated.
 Long tracks have a small inclination angle with the pixel plane, and neighboring 
 pixels can be summed up by projection them on the x or y axes for tracks 
-oriented along the x- or y-direction, respectively.
+oriented along the x- or y-direction, respectively. In this way one obtains
+a good approximation of the electron energy at every pixel position, and the
+deposited energy per pixel can be studied as a function of the electron energy.
 
 Data were recorded with a Strontium-90 source by reading 10000 frames with 
 an exposure time of 50 ms, resulting in a large data set of 350000 clusters 
