@@ -19,6 +19,21 @@ author: Günter Quast, Aug. 2025, last updated June 2026
 
 <!-- ------------------------------------------------------------------ -->
 
+This document describes the installation, general purpose and use of the 
+*mPIXdaq* software as well as the options for data acquisition, data analysis 
+and visualization. 
+
+A guide for educators who want to explore the possibilities of a modern radiation 
+detection sensor and its implications on new ways to teach the subject of radioactivity 
+at secondary and high-school level is provided in the document *EducaorsGuide.md*. 
+
+**German Version**:
+ Ein Leitfaden für Lehrkräfte, die die Möglichkeiten eines modernen Strahlungssensors 
+ und dessen Möglichkeiten für neue Wege der Vermittlung  des Themas Radioaktivität in 
+ der Sekundarstufe und an der Hochschule erkunden möchten, findet sich im Dokument
+ *Anleitung.md*.
+
+
 ## mPIXdaq Data acquisition and analysis for *miniPIX (EDU)* pixel detector 
 
 &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;

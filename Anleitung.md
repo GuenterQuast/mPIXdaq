@@ -29,7 +29,7 @@ author: Günter Quast, April 2026
 
 Dieses Dokument ist ein Leitfaden für Lehrkräfte, die die Möglichkeiten eines 
 modernen Strahlungssensors und dessen Möglichkeiten für neue Wege der Vermittlung 
-des Themas Radioaktivität in der Sekundarstufe erkunden möchten. 
+des Themas Radioaktivität in der Sekundarstufe und an der Hochschule erkunden möchten. 
 
 Während Installation, allgemeiner Zweck und Nutzung der *mPIXdaq*-Software sowie 
 die Möglichkeiten der Datenerfassung, -analyse und -visualisierung im *README*-Dokument 
