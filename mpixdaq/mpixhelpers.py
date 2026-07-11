@@ -254,7 +254,7 @@ class clusterReader:
           - emx_cut: maximum pixel energy
           - no_saturation:  ignore clusters with saturated pixels
        * parse_args():  read command line arguments if used interactively
-       * read_data(): load data in yaml formt in pandas data frame
+       * read_data(): load data in yaml format in pandas data frame
        * set_selection_masks(): define boolean masks to select ɑ, β and γ
        * get_statistics(): count signatures and provide parameters of energy distributions
        * plot(): plot energy distributions of ɑ, β and γ
