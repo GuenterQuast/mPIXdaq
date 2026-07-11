@@ -778,7 +778,7 @@ eines Gebäudes ausgesetzt war, ist unten dargestellt.
 > ![Rate der Radon-Zerfallsprodukte vs. Zeit](images/Radon-decayRate.png) 
 
 Ausgehend von einer Untergrundrate von etwa 0,3 Hz springt die Rate der 
-nachgewiesenen Cluster bzw. Einzelpixel bei Exposition des Sensors gegenüber 
+nachgewiesenen Cluster bzw. Einzelpixel bei Exposition des Sensors mit 
 dem Tuch auf über 10 Hz und fällt dann exponentiell mit der Zeit ab.  
 
 Am Ende der Radon-Zerfallsreihe entsteht Pb-210 mit einer Halbwertszeit von 
