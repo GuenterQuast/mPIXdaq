@@ -28,13 +28,13 @@ author: Günter Quast, April 2026
 
 
 Dieses Dokument ist ein Leitfaden für Lehrkräfte, die die Möglichkeiten eines 
-modernen Strahlungssensors und dessen Möglichkeiten für neue Wege der Vermittlung 
+modernen Strahlungssensors und das Potenzial für neue Wege der Vermittlung 
 des Themas Radioaktivität in der Sekundarstufe und an der Hochschule erkunden möchten. 
 
 Während Installation, allgemeiner Zweck und Nutzung der *mPIXdaq*-Software sowie 
-die Möglichkeiten der Datenerfassung, -analyse und -visualisierung im *README*-Dokument 
-des *mPIXdaq*-Pakets beschrieben werden, konzentriert sich dieser Leitfaden auf 
-konkrete Anwendungen in (Praktikums-)Experimenten.
+die Details zur der Datenerfassung, -analyse und -visualisierung im Dokument
+*README_de* des *mPIXdaq*-Pakets beschrieben werden, konzentriert sich dieser Leitfaden
+auf konkrete Anwendungen in (Praktikums-)Experimenten.
 
 
 ## Der miniPIX (EDU) und sein pädagogisches Potenzial  
@@ -44,10 +44,10 @@ Verteilung und Größe von Energiedepositionen ionisierender Teilchen, die das
 empfindliche Volumen aus 256x256 Pixeln zu je 55x55x300µm³ durchqueren, präzise 
 misst.       
 Segmentierte Siliziumdetektoren wie der *miniPIX* wurden ursprünglich zur 
-Spurverfolgung geladener Teilchen in der Hochenergiephysik entwickelt. 
-Sie werden heute darüber hinaus in vielfältigen Bereichen zur Teilchendetektion, 
-zur Messung von Strahlendosen sowie zur Bildgebung in den Materialwissenschaften 
-und in der Medizin eingesetzt.  
+Spurverfolgung geladener Teilchen in der Teilchenphysik entwickelt. 
+Sie werden heute darüber hinaus in vielfältigen Bereichen zur Messung von
+Strahlendosen sowie zur Bildgebung in den Materialwissenschaften und in
+der Medizin eingesetzt.  
 
 Die preisgünstige Variante *miniPIX* *(EDU)* von 
 [_Advacam_](https://advacam.com/camera/minipix-edu/) 
@@ -59,8 +59,8 @@ https://cds.cern.ch/record/2730889/files/CERN-Brochure-2015-007-Eng.pdf).
 
 Dank der USB-Schnittstelle und der Verfügbarkeit eines Anwenderprogramms 
 sowie von Treibern für verschiedene Plattformen inklusive eines 
-Software-Development-Kits (SDK) ist der Detektor einfach zu einzusetzen und 
-ermöglicht die Datenvisualisierung und -analyse in Echtzeit. 
+Software-Development-Kits (SDK) ist der Detektor auch im Bildungsbereich einfach
+einzusetzen und ermöglicht die Datenvisualisierung und -analyse in Echtzeit. 
 Er eignet sich besonders gut, um die Eigenschaften und Wechselwirkungen von 
 α-, β- und γ-Strahlung sowie von Myonen aus der kosmischen Strahlung mit Materie 
 interaktiv zu untersuchen und eröffnet damit neue und sehr anschauliche Wege der 
@@ -70,14 +70,14 @@ Der visuelle Eindruck der aufgezeichneten Energiedepositionen im Pixelsensor
 aufzubauen und zu bedienen und bietet zusätzlich den Vorteil, dass auch 
 quantitative, digitale Information mit präziser räumlicher Auflösung der 
 deponierten Energie verfügbar ist. 
-Neben der visuellen Betrachtung können aufgezeichnete Datensätze somit im Detail 
+Neben der visuellen Betrachtung können aufgezeichnete Datensätze auch im Detail 
 analysiert werden, um die Eigenschaften von Strahlung quantitativ zu untersuchen. 
 
 Der *miniPIX* ist ein technologisches Spitzenprodukt, das 65536 einzelne, 
-strahlungsempfindliche Pixel in einer Anordnung von 256x256 vereint. 
-Das empfindliche Volumen des Pixelsensors hat die Größe von 14,1 x 14,1 x 0,3 mm³ 
+strahlungsempfindliche Silizium-Pixel in einer Anordnung von 256x256 vereint. 
+Das empfindliche Volumen des Pixelsensors beträgt 14,1 x 14,1 x 0,3 mm³ 
 und ist in 256 x 256 quadratische Pixel mit je 55 µm² Fläche unterteilt.
-Der Chip ist mit einer sehr dünnen Aluminiumfolie von 0,5µm Dicke bedeckt; 
+Der Chip ist mit einer sehr dünnen Aluminiumfolie von nur 0,5µm Dicke abgedeckt; 
 zusätzlich befindet sich vor dem empfindlichen Volumen nur noch eine tote 
 Siliziumschicht von weniger als 1 µm Dicke. An den Sensor gebondet ist 
 ein Ausleseschip, der jedes Element der Pixelmatrix mit einem eigenen 
@@ -113,20 +113,18 @@ des durchquerenden Teilchens.
 Im Vergleich zu anderen Nachweistechniken, die lediglich das Auftreten einzelner 
 Teilchenwechselwirkungen in einem großen Volumen zählen, ist der *miniPIX* 
 besonders, weil er mit hoher Ortsauflösung alle Energiedepositionen erfasst, 
-die innerhalb einer frei wählbaren Belichtungszeit auftreten. Während der 
-Belichtung werden alle Energiedepositionen in jedem Pixel summiert, indem die 
-Zeit gemessen wird, während der das Pixelsignal einen gegebenen Schwellenwert 
-überschreitet. Ist die Gesamtzahl der auf den Detektor treffenden Objekte 
-hinreichend klein, wird die gesamte Energiedeposition in jedem Pixel nur einem 
-einzigen Teilchen zugeordnet. 
+die innerhalb einer frei wählbaren Belichtungszeit auftreten. Ist die Gesamtzahl
+der auf den Detektor treffenden Objekte hinreichend klein, wird die gesamte
+Energiedeposition in jedem Pixel nur einem einzigen Teilchen zugeordnet. 
 
 Ein Schema des Detektors ist unten dargestellt.
 
 > ![Schematischer Aufbau des miniPIX-Detektors](images/timepix2-sensor.png)
 
-Der Chip wird im sogenannten "Frame-Modus" betrieben, d.h. alle Pixel werden 
-gleichzeitig ausgelesen, wodurch ein Frame (entsprechende einem Einzelbild eines
-Films) mit den deponierten Energien pro Pixel entsteht.
+Der Chip wird im sogenannten "Frame-Modus" betrieben, d.h. alle Pixel werden
+am Ende der Belichtungzeit gleichzeitig ausgelesen, wodurch ein Frame
+(entsprechende einem Einzelbild eines Films) mit den deponierten Energien
+pro Pixel entsteht.
 Wird der *miniPIX* im Time-over-Threshold-Modus ("*ToT*") betrieben, geben die
 Pixelwerte die Zeit an, während der das Signal einen gegebenen Schwellenwert 
 überschreitet, gemessen in Takten der Chip-Clock mit einer Frequenz von etwa 
@@ -139,7 +137,7 @@ angenähert
 
 Typische Werte der Kalibrationskonstanten sind $a$ = 1,6, $b$=23, $c$=23 und 
 $t$=4,3. 
-Jeder Pixel besitzt eine individuelle in einer gerätespezifischen Datei 
+Jeder Pixel besitzt eine individuelle, in einer gerätespezifischen Datei 
 gespeicherten Kalibration, die mit jedem Gerät mitgeliefert und bei der Initialisierung 
 geladen wird. Diese Kalibration wird angewendet, um Pixelwerte in Einheiten von 
 keV zu erhalten.
@@ -166,14 +164,14 @@ eröffnen sich weit umfangreichere Möglichkeiten:
 - Untersuchungen von Photonenwechselwirkungen in Materie (dominiert durch den Compton-Prozess),
 - Energieverlust von Myonen und dessen Fluktuationen entlang der Spur.
 
-Es gibt noch weitere Vorteile für die praktische in Praktika oder auch in
+Es gibt noch weitere Vorteile für die Anwendung in Praktika oder auch in
 Schulversuchen:
 
 - Verwendung schwach aktiver radioaktiver Proben, um natürliche Radioaktivität 
   in Experimenten unter Beteiligung der Schülerinnen und Schüler zu untersuchen, 
-- frei einstellbare Belichtungszeit zur Anpassung an unterschiedliche Strahlungsintensitäten,
 - vernachlässigbare Rauschraten, effiziente Unterdrückung von Untergrund und 
   wohldefinierte Nachweiszeit,
+- frei einstellbare Belichtungszeit zur Anpassung an unterschiedliche Strahlungsintensitäten,
 - digitale Überlagerung vieler aufgezeichneter Frames, um auch bei schwach 
   aktiven Quellen merkmalsreiche Bilder zu erhalten,
 - Speicherung der Daten auf der Festplatte für eine spätere, vertiefte Analyse 
@@ -197,7 +195,7 @@ Frames wird angezeigt und demonstriert die Poisson-Natur der zugrundeliegenden
 Prozesse der Entstehung und des Nachweises radioaktiver Teilchen.
 Weitere Einzelheiten zur Echtzeitanalyse in *mPIXdaq* folgen weiter unten.
 
-![Pixelkarte und Histogramme einer Columbit-Probe, aufgezeichnet mit *mPIXdaq*](
+![Pixelbild und Histogramme einer Columbit-Probe, aufgezeichnet mit *mPIXdaq*](
   images/mPIXdaq_Columbit.png)
 
 Energiespektren von γ-Strahlen können mit dem *miniPIX* nicht gemessen werden, 
@@ -346,17 +344,16 @@ Zusätzlich zu dem sehr nützlichen visuellen Eindruck wird es damit möglich,
 computerbasierte Methoden einzusetzen, um die Eigenschaften der 
 Energiedepositionen verschiedener Teilchenarten im Detail zu untersuchen. 
 
-In einem ersten Schritt werden zusammenhängende Pixelbereiche, sogenannte 
-Cluster, in jedem aufgezeichneten Frame mithilfe der Methode *label()* der 
-Bildverarbeitungsbibliothek *scipy.ndimage* bestimmt. 
-
-Die wichtigsten Merkmale jedes Clusters sind die mittlere Position in 
-Pixelkoordinaten, die Anzahl der Pixel, die Summe aller Pixelenergien und die 
-maximale Energie in einem einzelnen Pixel des Clusters. Position und Größe eines 
+In einem ersten Schritt der Analyse werden zusammenhängende Pixelbereiche,
+sogenannte Cluster, in jedem Frame mithilfe der Methode *label()* der 
+Bildverarbeitungsbibliothek *scipy.ndimage* bestimmt.  
+Die wichtigsten Merkmale jedes Clusters sind die Position in Pixelkoordinaten,
+die Anzahl der Pixel, die Summe aller Pixelenergien und die maximale Energie
+in einem einzelnen Pixel des Clusters. Position und Größe eines 
 Clusters werden durch die "Bounding Box" angenähert, ein rechteckiges Gebiet, das 
 alle Pixel des Clusters enthält. Ein α-Teilchen aktiviert die meisten Pixel in 
 dieser Box, d.h. die Anzahl der Pixel ist gegeben durch das Produkt aus Breite 
-*w* und Höhe *h* der Bounding Box. β-Teilchen dagegen aktivieren nur Pixel 
+*w* und Höhe *h* der Bounding-Box. β-Teilchen dagegen aktivieren nur Pixel 
 entlang ihrer Spur, und die minimale Anzahl aktiver Pixel entspricht der Länge 
 der Diagonalen der Box. 
 
@@ -370,10 +367,10 @@ Nahezu identische Halbachsenlängen kennzeichnen eine kreisförmige Geometrie,
 während stark unterschiedliche Werte charakteristisch für lineare Topologien 
 sind. 
 Das Verhältnis der beiden Halbachsenlängen wird daher als Maß für die 
-"Rundheit" des Clusters verwendet, das bereits eine gute Trennung von α- und 
-β-Teilchen ermöglicht.
+"Rundheit" des Clusters verwendet, das bereits eine gute Trennung von α-
+und β-Teilchen ermöglicht.
 
-Eine weitere, sehr empfindliche Variable ist die Kovarianzmatrix der 
+Eine weitere, sehr sensitive Variable ist die Kovarianzmatrix der 
 Energieverteilung in den Clustern, ${\rm cov}(E(x_i, y_i))$. Bei α-Teilchen 
 weist diese Verteilung ein Maximum in der Mitte auf und fällt zu den Rändern 
 hin steil ab, was zu einer kleinen Varianz führt. Die Eigenschaften der 
@@ -430,10 +427,10 @@ Energiespektren von α-Teilchen.
 Als weitere Option enthält eine Datei mit Clusterdaten im *yaml*-Format die 
 Positionen und Energien aller beitragenden Pixel. Damit lassen sich 
 anspruchsvollere Analysestrategien erproben. So ist es beispielsweise möglich, 
-β-Spuren zu identifizieren, die im aktiven Volumen des Detektors zur Ruhe 
-kommen, indem die deutliche Zunahme der deponierten Energie genutzt wird, wenn 
-die Elektronen im Material zur Ruhe kommen. Die gezielte Auswahl solcher Spuren 
-eröffnet begrenzte Möglichkeiten zur β-Spektroskopie.
+β-Spuren zu identifizieren, die im aktiven Volumen des Detektors stoppen,
+indem die deutliche Zunahme der deponierten Energie genutzt wird, wenn 
+die Elektronen im Material sehr langsam werden. Die gezielte Auswahl solcher
+Spuren eröffnet begrenzte Möglichkeiten zur β-Spektroskopie.
 
 
 ## Vertiefte Themen für Praktika an Hochschulen
@@ -441,8 +438,8 @@ eröffnet begrenzte Möglichkeiten zur β-Spektroskopie.
 Typische (klassische) Experimente der Kernphysik, wie Energiespektren
 und Energieverlust von α-Teilchen in Luft oder das Durchdringungsvermögen 
 und die Absorption von β-Strahlung, lassen sich mit dem *miniPIX*-Detektor 
-problemlos durchführen. Seine feinkörnige Ortsauflösung ermöglicht zusätzliche 
-Einblicke, die sonst nicht zugänglich wären. 
+problemlos durchführen. Seine feinkörnige Ortsauflösung ermöglicht dabei
+zusätzliche Einblicke, die sonst nicht zugänglich wären. 
 
 Zur Unterstützung quantitativer Experimente wird mit diesem Paket das 
 *Python*-Skript `calculate_dEdx.py` zur Bestimmung des (mittleren) spezifischen 
@@ -458,8 +455,8 @@ die tabellierten Daten des amerikanischen NIST (ESTAR, ASTAR und PStar), siehe
 [_NIST Standard Reference Database_](
 https://www.nist.gov/pml/stopping-power-range-tables-electrons-protons-and-helium-ions).
 
- Eine Auswahl an Experimenten mit dem *miniPIX*-Detektor und dem *mPIXdaq*-Paket 
- wird in den folgenden Unterkapiteln beschrieben.
+Eine Auswahl an Experimenten mit dem *miniPIX*-Detektor und dem *mPIXdaq*-Paket 
+wird in den folgenden Unterkapiteln beschrieben.
 
 
 ### Reichweite von α-Teilchen in Luft  
@@ -583,7 +580,7 @@ Er wird aus der Abhängigkeit der Zählrate von der durchquerten Materialdicke
 gewonnen. Typischerweise besteht das Absorbermaterial aus sehr dünnen 
 Aluminiumfolien von einigen zehn µm Dicke.
 
-Bei diesem Experiment hängen die gemessenen Raten vom Energiespektrum der von 
+Bei diesem Experiment hängen die gemessenen Energien vom Energiespektrum der von 
 der Quelle emittierten β-Strahlung ab, das mit den Absorptionseigenschaften des 
 Materials gefaltet ist. 
 
@@ -639,13 +636,13 @@ bekannt ist, da sie den empfindlichen Bereich unter einem unbekannten
 Höhenwinkel bezüglich der Pixelebene durchqueren kann. Zudem haben Spuren, die 
 die Pixel nicht in x- oder y-Richtung durchqueren, eine um bis zu einen Faktor 
 $\sqrt{2}$ längere Weglänge, und die Energie von Spuren, die an den Pixelkanten 
-verlaufen, kann auf benachbarte Pixel aufgeteilt werden. Durch geeignete Auswahl 
+verlaufen, kann auf benachbarte Pixel aufgeteilt sein. Durch geeignete Auswahl 
 der Spuren lassen sich diese Probleme abmildern.
-Lange Spuren haben einen kleinen Neigungswinkel zur Pixelebene, und benachbarte 
-Pixel lassen sich für Spuren entlang der x- bzw. y-Richtung durch Projektion 
-auf die x- bzw. y-Achse aufsummieren. So erhält man eine ntue Näherung der
-Energie der Elektronen an jeder einzelnen Pixelpostion und kann die im Pixel
-deponierte Energie als Funktion der Elektronenergie untersuchen. 
+Lange Spuren haben einen kleinen Neigungswinkel zur Pixelebene, und Energien
+benachbartet Pixel lassen sich für Spuren entlang der x- bzw. y-Richtung durch
+Projektion auf die x- bzw. y-Achse korrekt aufsummieren. So erhält man eine gute
+Näherung der Energie der Elektronen an jeder einzelnen Pixelpostion und kann die
+im Pixel deponierte Energie als Funktion der Elektronenergie untersuchen. 
 
 Die Daten wurden mit einer Strontium-90-Quelle aufgenommen, indem 10000 Frames 
 mit einer Belichtungszeit von je 50 ms ausgelesen wurden, was einen großen 
@@ -742,13 +739,13 @@ Myonen sind schwer und streuen daher kaum im Silizium, was zu sehr geraden
 Spuren führt. Außerdem sind sie hochenergetisch und minimal-ionisierend, weshalb 
 ihr Ionisationsverlust entlang der Spur konstant ist. Dies steht im Gegensatz 
 zu β-Elektronen, einen großen Teil ihrer Anfangsenergie verlieren und deren
-Ionisation mit abfallender Energie ansteigt.   
+Ionisation dann mit abfallender Energie ansteigt.   
 Spuren von Myonen lassen sich nur dann von Elektronensignaturen unterscheiden, 
 wenn die Spuren lang genug sind, d. h. wenn sie den empfindlichen Bereich unter 
 einem flachen Winkel durchqueren, sodass viele Pixel ansprechen. Man beachte, 
 dass ein Myon unter 45° nur 5 Pixel auslöst und ein Myon unter 30° 10 Pixel. 
 Die meisten Myonen treffen unter 90° von oben ein, und wenn der Sensor richtig 
-ausgerichtet ist, ist ein nennenswerter Anteil des gesamten Myonenflusses von 
+ausgerichtet ist, ist ein nennenswerter Anteil des gesamten Myonenflusses 
 im *miniPIX* beobachtbar.  
 Mit einer Reihe von Messungen bei unterschiedlichen Detektorausrichtungen werden 
 Untersuchungen sowohl der Rate als auch der Richtung von Myonen möglich. Dies 
@@ -785,10 +782,9 @@ Am Ende der Radon-Zerfallsreihe entsteht Pb-210 mit einer Halbwertszeit von
 22 Jahren, das über einen zweifachen β-Zerfall zu Bi-210 und Po-210 mit 
 anschließendem α-Zerfall schließlich das stabile Pb-206-Nuklid erreicht. 
 Pb-210 stellt eine bedeutende Quelle natürlicher Umgebungsstrahlung dar und 
-ist in Gebieten mit hohen Radonwerten angereichert, wie z. B. schlecht belüfteten 
-Kellern von Gebäuden. Diese langlebige Komponente ist für den flachen Teil 
-verantwortlich, der im Ratenverlauf jenseits von 11000 s zu sehen ist und etwa 
-um den Faktor drei über dem anfänglichen Untergrundniveau liegt.  
+ist in Gebieten mit hohen Radonwerten angereichert. Diese langlebige Komponente
+ist für den flachen Teil verantwortlich, der im Ratenverlauf jenseits von 11000 s
+zu sehen ist und etwa um den Faktor drei über dem anfänglichen Untergrundniveau liegt.  
 Die kurzlebigen, aus Radonzerfällen entstehenden Nuklide bieten einen der 
 seltenen Fälle, in denen ein exponentielles Zerfallsgesetz direkt beobachtet 
 werden kann. Zu beachten ist jedoch, dass es sich dabei wegen der Erzeugung 
@@ -904,7 +900,7 @@ der *Jupyter*-Umgebung wird das Notebook über die Kommandozeile mit
 
 Das Notebook behandelt folgende Themen:  
 
-1. Datenimport in einen *pandas*-Dataframe
+1. Datenimport in ein *pandas*-Dataframe
 2. Überblick über Merkmale und Datenqualitätsprüfungen
 3. Klassifizierung von Clustern
 4. Untersuchung von α-Teilchen

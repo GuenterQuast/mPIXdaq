@@ -57,13 +57,13 @@ and visualization.
 ### Documentation 
 A guide for educators who want to explore the possibilities of a modern radiation 
 detection sensor and its implications on new ways to teach the subject of radioactivity 
-at secondary and high-school level is provided in the document *EducaorsGuide.md*. 
+at secondary and high-school level is provided in the document *doc/EducaorsGuide.md*. 
 
 **German Version**:
  Ein Leitfaden für Lehrkräfte, die die Möglichkeiten eines modernen Strahlungssensors 
  und dessen Möglichkeiten für neue Wege der Vermittlung  des Themas Radioaktivität in 
  der Sekundarstufe und an der Hochschule erkunden möchten, findet sich im Dokument
- *Anleitung.md*.
+ *doc/Anleitung.md*.
 
 
 ## mPIXdaq Data acquisition and analysis for *miniPIX (EDU)* pixel detector 
