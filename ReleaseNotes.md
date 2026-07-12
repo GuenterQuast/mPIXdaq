@@ -32,12 +32,15 @@
   - added status field to graphics display 
   - refinements to analysis notebook
   - added section on adanced experiments to EducatorsGuide
+  - added tracking of sensor temperature in graphics window
 
 ## [1.1.0] - 2026-05-17
   release for Advacam SDK v1.8.5 and Python 3.12 for Windows
 
-## towards [1.1.1]
+## [1.1.1] - 2026-07-13
   - fixed width and height of cluster bounding box
+  - added analysis/ClusterSummary.py to read and analyze cluster files
   - added grun_mpixDAQ.py and argparse_tk_gui.py for start via gui
-  - improved dcoumentation
+  - improved dcoumentation and README_de.md and Anleitung.md in German
+  - moved Docu to doc/
   
