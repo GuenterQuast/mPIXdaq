@@ -19,10 +19,42 @@ author: Günter Quast, Aug. 2025, last updated June 2026
 
 <!-- ------------------------------------------------------------------ -->
 
+
+
+## Overview
 This document describes the installation, general purpose and use of the 
 *mPIXdaq* software as well as the options for data acquisition, data analysis 
 and visualization. 
 
+
+### What ist _mPIXdaq_
+
+#### Purpose: Recording, analysis and visualization of data from Advacam miniPIX (EDU) silicon pixel detector
+
+* an open-source package under GNU GPLv3 licence
+
+* handles the full workflow around the Advacam *miniPIX* (EDU) device  
+  - __acquiring data__ from the detector, 
+  - __visualizing pixel hit patterns/frames__, 
+  - __determination of cluster-features__ in real-time
+  - __storage__ of raw pixel data and cluster features
+
+* quality control of recorded data via animated, real-time histograms
+
+* possibility to __reprocess__ previously recorded __data__ 
+
+* supports TimePix _.clog_ (Cluster Log) format for reading data; 
+  this is useful to process data recorded with the *Advacam* **PIXet Basic** program
+
+* relies on *standard libraries* from the Python eco-system for data analysis
+
+* supports Linux, Windows and X86/ARM architectures, in particular also 
+  Raspberry Pi single board computers.
+
+* provides **_Jupyter_ notebooks** for analysis of stored cluster features
+
+
+### Documentation 
 A guide for educators who want to explore the possibilities of a modern radiation 
 detection sensor and its implications on new ways to teach the subject of radioactivity 
 at secondary and high-school level is provided in the document *EducaorsGuide.md*. 

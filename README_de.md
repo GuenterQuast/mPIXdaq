@@ -19,14 +19,45 @@ author: Günter Quast, Aug. 2025, zuletzt aktualisiert Juni 2026
 
 <!-- ------------------------------------------------------------------ -->
 
-Dieses Dokument beschreibt die Installation, den allgemeinen Zweck und die Verwendung 
-der *mPIXdaq*-Software sowie die Möglichkeiten der Datenaufnahme, Datenanalyse 
-und Visualisierung. 
+## Übersicht
 
-Eine Anleitung für Lehrkräfte, die die Möglichkeiten eines modernen Strahlungssensors 
-und dessen Implikationen für neue Wege der Vermittlung des Themas Radioaktivität 
-in der Sekundarstufe und an Hochschulen erkunden möchten, findet sich im Dokument 
-*EducaorsGuide.md*. 
+Dieses Dokument beschreibt die Installation, den allgemeinen Zweck und die
+Verwendung der *mPIXdaq*-Software sowie die Möglichkeiten der Datenaufnahme,
+Datenanalyse und Visualisierung. 
+
+### Was it *mPIXdaq*
+
+#### Zweck: Aufzeichnung, Analyse und Visualisierung von Daten des Advacam miniPIX (EDU) Silizium-Pixeldetektors
+
+* ein Open-Source-Paket unter der GNU-GPLv3-Lizenz
+
+* deckt den gesamten Arbeitsablauf rund um das Advacam miniPIX (EDU) Gerät ab
+  - Erfassung von Daten vom Detektor,
+  - Visualisierung von Pixel-Trefferbildern/Frames,
+  - Bestimmung von Cluster-Merkmalen in Echtzeit
+  - Speicherung von Rohpixeldaten und Cluster-Merkmalen
+
+* Qualitätskontrolle der aufgezeichneten Daten durch animierte Histogramme in Echt-Zeit
+
+* Möglichkeit zur erneuten Verarbeitung zuvor aufgezeichneter Daten
+
+* unterstützt das TimePix-Format .clog (Cluster Log) zum Einlesen von Daten;
+  dies ist nützlich, um mit dem Advacam-Programm __PIXet Basic__ aufgezeichnete Daten
+   zu verarbeiten
+
+* stützt sich auf Standardbibliotheken aus dem Python-Ökosystem zur Datenanalyse
+
+* unterstützt Linux, Windows sowie X86/ARM-Architekturen, insbesondere auch
+Raspberry-Pi-Einplatinencomputer
+
+* stellt Jupyter-Notebooks für die Analyse gespeicherter Cluster-Merkmale bereit
+
+
+### Dokumentation 
+
+Eine Anleitung für Lehrkräfte, die die Möglichkeiten eines modernen
+Strahlungssensors und dessen Implikationen für neue Wege der Vermittlung des
+Themas Radioaktivität in der Sekundarstufe und an Hochschulen erkunden möchten, findet sich im Dokument *Anleitung.md*. 
 
 
 ## mPIXdaq Datenaufnahme und -analyse für den Pixeldetektor *miniPIX (EDU)* 
@@ -63,8 +94,8 @@ einem Satz von je 256x256 Pixelenergien, die über eine konfigurierbare
 Belichtungszeit akkumuliert werden. 
 Aufgenommene Frames werden als Bilder mit einer logarithmischen Farbskala 
 dargestellt, die die deponierten Energien in jedem Pixel repräsentiert. Es werden 
-außerdem eine Echtzeit-Clusterbildung von Pixeln sowie eine schnelle Analyse der 
-Clustereigenschaften mithilfe gängiger Open-Source-Werkzeuge zur Datenanalyse 
+außerdem eine Echtzeit-Clusterbildung von Pixeln sowie eine schnelle Bestimmung der 
+Cluster-Merkmale mithilfe gängiger Open-Source-Werkzeuge zur Datenanalyse 
 durchgeführt. Rohdaten und Analyseergebnisse können in Dateien exportiert werden. 
 Ein Beispiel für eine Analyse auf Basis dieser Ausgabedaten wird in Form eines 
 Jupyter-Notebooks bereitgestellt. 
@@ -302,8 +333,11 @@ Tracking-Modus, die gewünschte Belichtungszeit pro Frame und die Anzahl der
 Frames aus, drücken Sie dann die Aufnahme-Schaltfläche, und speichern Sie 
 die aufgezeichneten Frames nach Abschluss über die *Speichern*-Schaltfläche 
 im Format *.clog*. Dieses Format wird von *mPIXdaq* verstanden und kann über 
-die Option *--readfile* eingelesen werden, wodurch Sie dann die Clusteranalyse durchführen und Dateien in denselben Formaten schreiben können, wie sie in 
-*mPIXdaq* implementiert sind. Falls Ihr miniPIX-Gerät unter rauschenden Pixeln leidet, kann mit der Option *--badpixel* eine Bad-Pixel-Karte angegeben werden.
+die Option *--readfile* eingelesen werden, wodurch Sie dann die Clusteranalyse
+ durchführen und Dateien in denselben Formaten schreiben können, wie sie in 
+*mPIXdaq* implementiert sind. 
+Falls Ihr miniPIX-Gerät unter rauschenden Pixeln leidet, kann mit der 
+Option *--badpixel* eine Bad-Pixel-Karte angegeben werden.
 
 
 ## Implementierungsdetails
@@ -353,34 +387,35 @@ Sie können auch von deren Webseite,
 Diese Dateien werden hier zur Vereinfachung als *Python*-Pakete bereitgestellt.
 
 
-## Online-Datenanalyse
+## Echtzeit-Datenanalyse
 
-Die Online-Analyse ist bewusst sehr einfach gehalten und basiert auf 
-Standardbibliotheken und -funktionen. Die Clusterbildung von Pixeln erfolgt 
-durch Auffinden zusammenhängender Bereiche im Pixelbild mit 
-*scipy.ndimage.label()*.
+Die Analyse der Daten während der Aufzeichnung ist bewusst sehr einfach 
+gehalten und basiert auf Standardbibliotheken. 
+Zunächst werden zusammenhängende Bereiche im Pixelbild, sog. "Cluster", mit 
+Hilfe der Bibliothek *scipy.ndimage.label()*  gesucht.
 Die Form der Cluster wird aus dem Verhältnis des kleineren zum größeren der 
 beiden Eigenwerte der Kovarianzmatrix bestimmt, die aus den *x*- und 
 *y*-Koordinaten der Pixel in einem Cluster mit *numpy.cov()* berechnet wird. 
 Bei kreisförmigen Clustern, wie sie typischerweise von α-Strahlung erzeugt 
 werden, liegt dieses Verhältnis nahe bei eins, während es bei den längeren 
-Spuren von β-Strahlung nahezu null ist. In ähnlicher Weise wird auch die Form 
-der Energieverteilung berücksichtigt, die bei α-Teilchen ein scharfes 
-Maximum im Zentrum zeigt, ansonsten aber eher flach verläuft.
+Spuren von β-Strahlung sehr klein nahe NUll ist. In ähnlicher Weise wird 
+auch die Form der Energieverteilung berücksichtigt, die bei α-Teilchen ein 
+scharfes Maximum im Zentrum zeigt, ansonsten aber eher flach verläuft.
 
 Die folgende Abbildung zeigt die grafische Darstellung mit einem Pixelbild 
-und den typischen Verteilungen der Pixel- und Clusterenergien sowie der 
+und den typischen Verteilungen der Pixel- und Cluster-Energien sowie der 
 Anzahl der Pixel pro Cluster. Als Quelle diente ein schwach radioaktiver 
 Stein (ca. 10 Bq/cm²) aus dem Schwarzwald, der eine geringe Menge Uran und 
-dessen Zerfallsprodukte enthält. Die gezeigte Pixelkarte wurde über einen 
+dessen Zerfallsprodukte enthält. Das gezeigte Pixelbild wurde über einen 
 Zeitraum von fünf Sekunden aufgenommen. Das Histogramm in der unteren rechten 
-Ecke zeigt, dass die Clustertypen der verschiedenen Strahlungsarten gut 
+Ecke zeigt, dass die Typen von Clustern der verschiedenen Strahlungsarten gut 
 voneinander getrennt sind: α-Strahlen im grünen Band mit relativ geringer 
 Pixelzahl pro Cluster, Elektronen (β) als lange Spuren mit großer Pixelzahl 
 pro Cluster und eher niedrigen Energien. Einzelne, keinem Cluster 
 zugeordnete Pixel stammen meist von γ-Strahlen. Einige der Elektronenspuren 
-mit typischerweise niedrigen Energien stammen ebenfalls von 
-Photonenwechselwirkungen im Detektormaterial (über den Compton-Prozess).
+mit typischerweise niedrigen Energien werden ebenfalls durch
+Wechselwirkungen von Photonen im Detektormaterial verursacht - hauptsächlich 
+über den Compton-Prozess.
 
 ![Die grafische Darstellung von miniPIXdaq](images/miniPIXdaq.png)
 
@@ -391,7 +426,7 @@ Dies eignet sich für Untersuchungen natürlicher Radioaktivität, wie sie von
 Mineralien wie Pechblende (=Uraninit), Columbit, Thorianit und anderen 
 ausgesendet wird. 
 Auch der Nachweis von Radon und dessen Zerfallsprodukten aus der Luft in 
-Kellerräumen, angereichert auf einem Papiertuch mit einem Staubsauger oder 
+Kellerräumen, angereichert mit einem Staubsauger auf einem Papiertuch oder 
 auf der Oberfläche eines elektrostatisch aufgeladenen Ballons, funktioniert 
 gut.
 
@@ -406,17 +441,18 @@ Nutzung mehrerer Prozessorkerne für die Analyseaufgabe bereitgestellt werden.
 
 ### Ausgabedateien und -formate  
 
-*miniPIXdaq* bietet die Möglichkeit, Roh- oder Clusterdaten für weitere 
-Offline-Analysen zu schreiben, was für den Einsatz der Software in 
-Physik-Praktika von großem Wert ist. Diese Funktion ermöglicht es 
-Studierenden, eigene Strategien für die Analyse von im Praktikum 
-aufgenommenen Daten zu entwickeln. 
+Das Programm *miniPIXdaq* bietet die Möglichkeit, Roh- oder Clusterdaten für 
+weitere Offline-Analysen in Dateien zu schreiben, was für den Einsatz der
+Software in Physik-Praktika von großem Wert ist. Diese Funktion ermöglicht es,
+eigene Strategien für die Auswertung der während der Datennahmephase aufgenommenen Daten zu entwickeln. 
 
-Das Standard-Ausgabeformat ist *yaml*, das eine gute Lesbarkeit, klare 
-Struktur und Modularität der Datenblöcke bietet. Ausgabedateien werden 
-während der laufenden Datenaufnahme sequenziell als Textdateien geschrieben.
-Dateien können mit *gzip* oder *zip* komprimiert werden, um eine 
-kompaktere Darstellung der aufgezeichneten Daten zu erhalten.
+Das Standard-Ausgabeformat ist das Datenserialisierungformat *yaml*, das 
+eine gute Lesbarkeit, klare Struktur und Modularität der Datenblöcke bietet.
+Ausgabedateien werden während der laufenden Datenaufnahme sequenziell als Textdateien geschrieben, so dass sich der Bedarf an Hauptspeicher auch
+für länger andaudernde Datennahmen in Grenzen hält. 
+Dateien können nach der Aufzeichnung mit *gzip* oder *zip* komprimiert 
+werden, um eine kompaktere Speicherung zu ermöglichen. Beim Zurücklesen
+der Daten werden diese Formate automatisch entpackt. 
 
 **Frame-Daten** und **Cluster-Daten** einschließlich einiger Metadaten werden 
 in *yaml*-Strukturen mit den Schlüsseln 
@@ -457,44 +493,43 @@ Die Schlüssel der Variablen in *list_of_clusterproperties* sind
     h       : Höhe des Begrenzungsrahmens
     var_mx  : maximale Varianz der geometrischen Clusterform (in Pixeln)
     var_mn  : minimale Varianz der geometrischen Clusterform (in Pixeln)
-    angle   : Orientierung des Clusters (0 = entlang der x-Achse, pi/2 = entlang der y-Achse)
+    angle   : Orientierung des Clusters (0 = entlang der x-Achse, π/2 = entlang der y-Achse)
     xE_mean : mittleres x der Energieverteilung  (in Pixelnummern)
     yE_mean : mittleres y der Energieverteilung  (in Pixelnummern)
     varE_mx : maximale Varianz der Energieverteilung  
     varE_mn : minimale Varianz der Energieverteilung 
 
-Leere Frames ohne Cluster oder Einzelpixel werden durch einen Eintrag 
-dargestellt, der nur den Zeitstempel enthält. Dies ist wichtig für 
-Szenarien, die eine detaillierte Analyse der Teilchenraten erfordern. 
+Leere Frames werden durch einen Eintrag dargestellt, der nur den 
+Zeitstempel enthält. Dies ist wichtig für  Szenarien, die eine detaillierte 
+Analyse der Teilchenraten erfordern. 
 
-Es ist außerdem möglich, die Clustereigenschaften im einfachen *.csv*-Format 
+Es ist außerdem möglich, die Clustereigenschaften im einfacheren *.csv*-Format 
 zu speichern, indem die Dateiendung explizit angegeben wird:
   `run_mPIXdaq <options> -w <name>_clusters.csv`. 
 
-**Histogramme**, die in der Online-Grafikanzeige dargestellt werden, können 
-über die Steuerelemente im *matplotlib*-Fenster gespeichert werden. 
+Bilder von **Histogramme**n, die in der Online-Grafikanzeige dargestellt 
+werden, können über die Steuerelemente im *matplotlib*-Fenster gespeichert werden. 
 
 ## Analyse der Ausgabedaten 
 
 Ein **_Jupyter_-Notebook**, *analysis/analyze_mPIXclusters.ipynb*, wird als 
 Teil des Pakets mitgeliefert und veranschaulicht, wie Clusterdaten gelesen 
 und interpretiert werden. 
-Dieses Notebook sowie einiger *Python*-Code sind im Unterverzeichnis 
+Dieses Notebook sowie weiterer *Python*-Code sind im Unterverzeichnis 
 `analysis/` des Pakets *mPIXdaq* zusammengefasst. Dieses Beispiel ist als 
 Ausgangspunkt für die Datenanalyse durch Studierende gedacht. 
 
 Das *Python*-Programm **ClusterSummary.py** im Unterverzeichnis `/analysis` 
 liest mit *mPIXdaq* geschriebene Clusterdaten ein, bietet einen Überblick 
 über Daten und Metadaten und zählt α-, β-, γ- und µ-Signaturen anhand 
-vordefinierter Auswahlkriterien für die oben erläuterten Clustereigenschaften.  
+vordefinierter Auswahlkriterien für die oben erläuterten Cluster-Merkmale.  
 Die erforderlichen Parameter lassen sich bequem über die grafische Oberfläche 
 **grun.py** einstellen, die die Argumentliste eines *Python*-Programms 
 einliest und eine interaktive Parametereinstellung vor der Ausführung des 
 Skripts ermöglicht. 
 
-Ein **Analysebeispiel** anhand von Daten, die über zwei Stunden aus einer 
-Luftprobe erfasst wurden, die in einem Kellerraum mit einem Staubsauger auf 
-einem Papiertuch gesammelt wurde, ist in der folgenden Ausgabe und Abbildung 
+Ein **Analysebeispiel** anhand von Daten, die aus einer Luftprobe aus 
+einem Kellerraum gewonnen wurden, ist in der folgenden Ausgabe und Abbildung 
 dargestellt. 
 
     *==* Contents of file ../data/Radon_clusters.yml.gz
@@ -525,18 +560,18 @@ dargestellt.
 
 
 
-> > >![Verteilung der Clusterenergien pro Teilchentyp, erzeugt von *ClusterSummary.py*](
-  images/ClusterSummary.png)
+> > >![Verteilung der Clusterenergien pro Teilchentyp, erzeugt von
+ *ClusterSummary.py*](images/ClusterSummary.png)
 
 
 ## Paketstruktur
 
-Dieses Paket besteht aus mehreren *Python*-Dateien mit Klassen, die die 
+Das Paket *mPIXDAQ* besteht aus mehreren *Python*-Dateien mit Klassen, die die 
 Basisfunktionalität bereitstellen. Wie oben erwähnt, stützt es sich auf 
 einige [Advacam-Bibliotheken](https://wiki.advacam.cz/wiki/Python_API)
 zur Einrichtung und zum Auslesen des Sensors. 
 Weitere Abhängigkeiten sind bekannte Bibliotheken aus dem *Python*-Ökosystem 
-für die Datenanalyse:  
+für Datenanalyse:  
 
 - `scipy`
   - `.ndimage.label`
@@ -548,7 +583,7 @@ für die Datenanalyse:
 
 Die Komponenten, Klassen und Skripte des Pakets sind:
 
-- `mpixdaq` Hauptcode für Auslesung, Datenanalyse, Visualisierung und Speicherung
+- `mpixdaq` Hauptcode für Auslese, Datenanalyse, Visualisierung und Speicherung
   - Klassen: 
     - `mpixControl`
     - `miniPIXdaq`
@@ -569,11 +604,11 @@ Die Komponenten, Klassen und Skripte des Pakets sind:
     - Funktion plot_cluster() zum Plotten der Energiekarte eines Pixelclusters
     - Klasse shmManager zur Verwaltung gemeinsam genutzter Speicherblöcke ("shared memory")
 
-- `argparse_tk_gui.py` ist eine kleine, abhängigkeitsfreie *Python*-Bibliothek, die 
-    automatisch eine grafische Oberfläche (Tkinter/TTK) aus einem bestehenden 
-    `argparse.ArgumentParser` erzeugt.
-    Diese Bibliothek wird vom Paketskript `grun_mPIXdaq.py` verwendet, um bequem 
-    alle DAQ-Parameter einzustellen und das *mPIXdaq*-Programm zu starten. 
+- `argparse_tk_gui.py` ist eine kleine, abhängigkeitsfreie *Python*-Bibliothek,
+  die automatisch eine grafische Oberfläche (Tkinter/TTK) aus einem bestehenden 
+  `argparse.ArgumentParser` erzeugt.
+  Diese Bibliothek wird vom Paketskript `grun_mPIXdaq.py` verwendet, um bequem 
+  alle DAQ-Parameter einzustellen und das *mPIXdaq*-Programm zu starten. 
 
 - `physics_tools` für Berechnungen der (mittleren) Energieverluste 
 
@@ -581,16 +616,20 @@ Die Komponenten, Klassen und Skripte des Pakets sind:
 
 - Paketskript `grun_mPIXdaq.py`
 
-- Skript `calculate_dEdx` zur Berechnung und Darstellung des Energieverlusts in Materie
+- Skript `calculate_dEdx` zur Berechnung und Darstellung des Energieverlusts von 
+  ionisierender Strahlung in Materie
 
-- Unterverzeichnis `analysis/` mit einem *Jupyter*-Notebook zur Analyse von Clusterdaten
+- Unterverzeichnis `analysis/` mit einem *Jupyter*-Notebook zur Analyse von
+  Clusterdaten
     - `analyze_mPIXclusters.ipynb`
     - `ClusterSummary.py` zum Einlesen von Clusterdaten und Erstellen einer Zusammenfassung
     - `LandauFit.py` zum Anpassen einer Landau-Verteilung 
-    - `peakFitter.py` zum Suchen und Anpassen einer Gauß-Funktion an Peaks in Spektren
-    - `grun.py` ist ein argparse-GUI-Runner zur Anzeige und Einstellung von Argumenten in 
-       einer grafischen Oberfläche sowie zum Starten der Skriptausführung (für alle, die 
-       mit der Kommandozeile nicht vertraut sind)
+    - `peakFitter.py` zum Suchen und Anpassen einer Gauß-Funktion an Peaks 
+      in Spektren
+    - `grun.py` ist ein argparse-GUI-Runner zur Anzeige und Einstellung von
+      Argumenten in einer grafischen Oberfläche sowie zum Starten von 
+      *Python*-Programmen (für jene, die mit der Kommandozeile nicht vertraut
+      sind)
 
 - Unterverzeichnis `data/` enthält einige kleine Datensätze als Beispiele für das *Jupyter*-Notebook
 
