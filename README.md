@@ -71,7 +71,7 @@ at secondary and high-school level is provided in the document *doc/EducaorsGuid
 &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp;
 &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; Vers. 1.1.1, June 2026
 &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; &nbsp; 
-[![DOI](images/DOI-badge.png)](https://doi.org/10.5281/zenodo.19280859)
+[![DOI](doc/images/DOI-badge.png)](https://doi.org/10.5281/zenodo.19280859)
 
 The [miniPIX EDU](https://advacam.com/camera/minipix-edu) is a camera
 for radiation based on the [Timepix](https://home.cern/tags/timepix) 
@@ -216,7 +216,7 @@ As an alternative to the command line, a script ``grun_mPIXdaq.py`` is
 provided, which starts a graphical interface for argument setting. 
 This script is particularly useful if tied to a desktop icon. 
 
-> > > > > > ![Graphical interface to start mPIXdaq](images/grun_interface.png)
+> > > > > > ![Graphical interface to start mPIXdaq](doc/images/grun_interface.png)
 
 The default values are adjusted to situations with low rates, where
 frames from the *miniPIX* with an exposure time of `acq_time = 0.5` s
@@ -400,7 +400,7 @@ associated to clusters mostly originate from γ rays. Some of the electron
 tracks  with typically low energies also stem from photon interactions 
 in the detector material (via the Compton process).
 
-![The graphical display of miniPIXdaq](images/miniPIXdaq.png)
+![The graphical display of miniPIXdaq](doc/images/miniPIXdaq.png)
 
 The frame collection time is chosen to be on the order of seconds, 
 so that analysis results can be displayed in real-time on a 
@@ -534,7 +534,7 @@ is shown in the output and figure below.
 
 
 > > >![Distribution of Cluster energies per particle type, produced by *ClusterSummary.py*](
-  images/ClusterSummary.png)
+  doc/images/ClusterSummary.png)
 
 
 ## Package Structure
