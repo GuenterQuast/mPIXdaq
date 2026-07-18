@@ -839,4 +839,19 @@ The notebook covers the following topics:
 7. Identification of tracks from cosmic muons
 8. Rates and energies of α, β, γ radiation
 9. Access to and detailed analysis of pixel data
-10. Landau distribution of pixel energies along β tracks
+10. Landau distribution of pixel energies along β 
+
+## Practical Notes on the Experimental Setup
+
+The miniPIX is a very sensitive device. The thin foil in front of the sensor must not be touched. In addition, light can penetrate through the thin foil and lead to strong noise. During continuous operation at room temperature, the sensor heats up to over 40°C, thereby exceeding the optimal operating temperature of 22°C recommended by the manufacturer Advacam. Measures are therefore advisable to ensure safe use even under conditions of a 
+student lab and to ensure stable operation for long-term measurements.
+
+The image below shows the setup used in the Physics Practicum at KIT, as well as some of 
+the additional components used.
+
+![Experimenal set-up at KIT](images/miniPIX-setup.png)
+
+A 3D-printed, sliding cover protects the sensor from light and contact. When α-radiation is to be measured, the cover is shifted so that the opening — covered with a fly screen — exposes the sensor, while still protecting it from accidental contact.
+A Peltier element attached to the back of the sensor with a thermally conductive adhesive is connected to an internally ventilated heat sink with a fan. The power supply for the Peltier element, 0.8–1.2 A at approximately 2 V supply voltage, is provided by an adjustable DC-DC converter.
+
+With this setup, the miniPIX can be operated safely and stably over long measurement periods.
