@@ -914,20 +914,28 @@ Das Notebook behandelt folgende Themen:
 
 ## Praktische Hinweise zum experimentellen Aufbau
 
-Der *miniPIX" ist ein sehr empfindliches Gerät. Die dünne Folie vor dem Sensor darf nicht
-berührt werden. Außerdem kann Licht durch die dünne Folie dringen und zu starkem Rauschen führen. Im Dauerbetrieb bei Zimmertemperatur erwärmt sich der Sensor auf über 40°C und überschreitet damit die vom Hersteller *Advacam* empfohlene optimale Betriebstemperatur 
-von 22°C. Es sind daher Massnahmen empfehlenswert, um die sichere Verwendung auch unter
-Praktikumsbedingungen und stabile Betriebsbedingungen für Langzeitmessungen sicher zu stellen.  
+Der *miniPIX" ist ein sehr empfindliches Gerät. Die dünne Folie vor dem Sensor darf 
+nicht berührt werden. Außerdem kann Licht durch die dünne Folie dringen und zu starkem
+Rauschen führen. Im Dauerbetrieb bei Zimmertemperatur erwärmt sich der Sensor auf über
+40°C und überschreitet damit die vom Hersteller *Advacam* empfohlene optimale
+Betriebstemperatur von 22°C.
+Es sind daher Massnahmen empfehlenswert, um die sichere Verwendung auch unter
+eher rauen Praktikumsbedingungen und stabileb Betrieb für Langzeitmessungen 
+sicher zu stellen.
 
 Im Bild unten ist der im Physikalischen Praktikum am KIT verwendete Aufbau sowie einige
-der verwendeten zusätzlichen Bauteile gezeigt. 
+der zusätzlichen Bauteile gezeigt. 
 
 ![Experimenteller Aufbau](images/miniPIX-setup.png)
 
-Eine im 3d-Druck gefertigte, verschiebbare Abdeckung schützt den Sensor vor Licht und Berührung. Wenn α-Strahlung gemessen werden soll, wird die Abdeckung verschoben, so dass
-die mit einem Fliegengitter abgedeckte Öffnung den Sensor frei gibt, dieser aber immer 
-noch vor versehentlicher Berührung geschützt ist.  
-Ein auf der Sensorrückseite mit einem wärmeleitenden Kleber angebrachtes Peltier-element ist mit einem innenbelüfteten Kühlkörper mit Lüfter verbunden. Die Stromversorgung für das Peltier-Element von 0.8 - 1.2 A bei ca. 2 V Versorgungsspannung liefert ein regelbarer DC-DC-Konverter. 
+Eine im 3d-Druck gefertigte, verschiebbare Abdeckung schützt den Sensor vor Licht und
+Berührung. Wenn α-Strahlung gemessen werden soll, wird die Abdeckung verschoben, 
+so dass die mit einem Fliegengitter abgedeckte Öffnung den Sensor frei gibt, dieser 
+aber immer noch vor versehentlicher Berührung geschützt ist.  
+Ein auf der Sensorrückseite mit einem wärmeleitenden Kleber angebrachtes Peltier-Element
+ist mit einem innenbelüfteten Kühlkörper mit Lüfter verbunden. Die Stromversorgung für
+das Peltier-Element von 0.8 - 1.2 A bei ca. 2 V Versorgungsspannung liefert ein
+regelbarer DC-DC-Konverter. 
 
 Mit diesem Aufbau kann der *miniPIX* auch unter Praktikumsbedingungen sicher und über 
 lange Messzeiten stabil betrieben werden. 

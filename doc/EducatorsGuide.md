@@ -843,11 +843,13 @@ The notebook covers the following topics:
 
 ## Practical Notes on the Experimental Setup
 
-The miniPIX is a very sensitive device. The thin foil in front of the sensor must not be touched. In addition, light can penetrate through the thin foil and lead to strong noise. During continuous operation at room temperature, the sensor heats up to over 40°C, thereby exceeding the optimal operating temperature of 22°C recommended by the manufacturer Advacam. Measures are therefore advisable to ensure safe use even under conditions of a 
-student lab and to ensure stable operation for long-term measurements.
+The *miniPIX* is a very sensitive device. The thin foil in front of the sensor must not be touched. In addition, light can penetrate through the thin foil and lead to strong noise. 
+During continuous operation at room temperature, the sensor heats up to over 40°C, thereby
+exceeding the optimal operating temperature of 22°C recommended by the manufacturer *Advacam*.
+Measures are therefore advisable to ensure safe use even under the rather harsh conditions 
+of a student lab and to ensure stable operation for long-term measurements.
 
-The image below shows the setup used in the Physics Practicum at KIT, as well as some of 
-the additional components used.
+The image below shows the setup used in physics lab courses at KIT.
 
 ![Experimenal set-up at KIT](images/miniPIX-setup.png)
 
