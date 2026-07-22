@@ -44,3 +44,6 @@
   - improved dcoumentation and README_de.md and Anleitung.md in German
   - moved Docu to doc/
   
+## towards [1.1.2]
+  - added Pause/Resume and End buttons to graphics window
+  

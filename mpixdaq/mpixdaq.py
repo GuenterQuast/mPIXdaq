@@ -60,6 +60,7 @@ from scipy import ndimage
 
 import matplotlib as mpl
 import matplotlib.pyplot as plt
+from matplotlib.widgets import Button
 
 from .mplhelpers import bhist, scatterplot, run_controlGUI
 from .mpixhelpers import fileDecoders, shmManager
@@ -871,6 +872,19 @@ class mpixGraphs:
         """call-back for matplotlib 'close_event'"""
         mpixControl.mplActive.clear()
 
+    def on_button_clicked(self, event):
+        # find numer of the clicked button
+        b_idx = self.baxes.index(event.inaxes)
+        # extract sommand
+        cmd = self.button_values[b_idx][1]
+        if not mpixControl.from_file:
+            if cmd == 'P':
+                self.stat_text.set_text("- - paused - -")
+            else:    
+                self.stat_text.set_text("")
+        # send command via Queue
+        mpixControl.cmdQ.put(cmd)
+
     def __init__(self, nover=10, unit='keV', circ=0.5, flat=0.5, acq_time=1.0, prescale=1):
         """initialize figure with pixel image, rate history and two histograms and a scatter plot
 
@@ -937,6 +951,17 @@ class mpixGraphs:
         self.fig.canvas.mpl_connect('close_event', self.on_mpl_close)
         mpixControl.mplActive.set()
 
+        #  add control buttons
+        self.button_dict = {"End": [2, "E"], "Pause": [1, "P"], "Resume": [0, "R"]}
+        self.button_names = list(self.button_dict.keys())
+        self.button_values = list(self.button_dict.values())
+        self.baxes = []
+        self.buttons = []
+        for i, key in enumerate(self.button_names):
+            self.baxes.append(self.fig.add_axes([0.80 + self.button_values[i][0] * 0.06, 0.9725, 0.05, 0.025]))
+            self.buttons.append(Button(self.baxes[-1], key, color="0.25", hovercolor="0.5"))
+            self.buttons[-1].on_clicked(self.on_button_clicked)
+
         # Print header
         # - HW info
         if mpixControl.from_file:
@@ -961,7 +986,7 @@ class mpixGraphs:
             badpixel_map = np.ma.masked_where(bp == 1, bp).reshape((self.npx, self.npx))
             # badpixel_map = bp.reshape((self.npx, self.npx))
         #  pixel image
-        self.axim = self.fig.add_subplot(gs[:, :col1])
+        self.axim = self.fig.add_subplot(gs[1:, :col1])
         self.axim.set_title("Pixel Energy Map " + self.unit, y=0.975, size="x-large")
         self.axim.set_xlabel("# x        ", loc="right")
         self.axim.set_ylabel("# y             ", loc="top")
@@ -1063,7 +1088,7 @@ class mpixGraphs:
         )
 
         # - scatter plot: cluster energies & sizes
-        self.ax3 = self.fig.add_subplot(gs[11:15, col2:])
+        self.ax3 = self.fig.add_subplot(gs[11:nrows-1, col2:])
         mxx = 11999
         bex = np.linspace(0.0, mxx, 300, endpoint=True)
         mxy = 55
@@ -1225,6 +1250,7 @@ class mpixGraphs:
                 self.i_frame_l = i_frame
                 self.dt_active_l = dt_active
                 self.stat_text.set_text(f"{fps:.1f} fps    {mpixControl.tempQ.get():.1f} °C")
+
             self.fig.canvas.start_event_loop(0.001)  # better than plt.pause(), which would steal the focus
             # the following code for re-drawing does not work with TkAgg
             # self.fig.canvas.update()
@@ -1267,8 +1293,7 @@ class runDAQ:
         parser.add_argument(
             '--no-kbdControl', dest='nkbdControl', action='store_true', help='switch off keyboard control'
         )
-        parser.add_argument('--no-guiControl', dest='nguiControl', action='store_true', help='switch off gui control')
-
+        
         return parser
 
     def __init__(self, wd_path=None):
@@ -1327,7 +1352,7 @@ class runDAQ:
         mpixControl.daqSettings['acq_time'] = self.acq_time
         mpixControl.daqSettings['acq_count'] = self.acq_count
         mpixControl.kbd_control = not args.nkbdControl  # keyboard control
-        mpixControl.gui_control = not args.nguiControl  # gui control
+        mpixControl.gui_control = False  # gui control
 
         # - conditional import
         if self.out_filename is not None and '.npy' in self.out_filename:
