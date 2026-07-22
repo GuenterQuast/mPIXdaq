@@ -877,11 +877,20 @@ class mpixGraphs:
         b_idx = self.baxes.index(event.inaxes)
         # extract sommand
         cmd = self.button_values[b_idx][1]
+        # toggle visible buttons
+        if cmd == 'P':
+            self.baxes[1].set_visible(False)
+            self.baxes[2].set_visible(True)
+        elif cmd == 'R':
+            self.baxes[1].set_visible(True)
+            self.baxes[2].set_visible(False)
+        # display paused state
         if not mpixControl.from_file:
             if cmd == 'P':
                 self.stat_text.set_text("- - paused - -")
-            else:    
+            else:
                 self.stat_text.set_text("")
+
         # send command via Queue
         mpixControl.cmdQ.put(cmd)
 
@@ -959,8 +968,12 @@ class mpixGraphs:
         self.buttons = []
         for i, key in enumerate(self.button_names):
             self.baxes.append(self.fig.add_axes([0.80 + self.button_values[i][0] * 0.06, 0.9725, 0.05, 0.025]))
-            self.buttons.append(Button(self.baxes[-1], key, color="0.25", hovercolor="0.5"))
+            self.buttons.append(Button(self.baxes[-1], key, color='0.25', hovercolor="0.5"))
             self.buttons[-1].on_clicked(self.on_button_clicked)
+        self.buttons[0].label.set_color('red')
+        self.buttons[1].label.set_color('wheat')
+        self.buttons[2].label.set_color('wheat')
+        self.baxes[2].set_visible(False)
 
         # Print header
         # - HW info
@@ -1088,7 +1101,7 @@ class mpixGraphs:
         )
 
         # - scatter plot: cluster energies & sizes
-        self.ax3 = self.fig.add_subplot(gs[11:nrows-1, col2:])
+        self.ax3 = self.fig.add_subplot(gs[11 : nrows - 1, col2:])
         mxx = 11999
         bex = np.linspace(0.0, mxx, 300, endpoint=True)
         mxy = 55
@@ -1293,7 +1306,7 @@ class runDAQ:
         parser.add_argument(
             '--no-kbdControl', dest='nkbdControl', action='store_true', help='switch off keyboard control'
         )
-        
+
         return parser
 
     def __init__(self, wd_path=None):
