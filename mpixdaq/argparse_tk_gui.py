@@ -58,6 +58,7 @@ Python-Standardbibliothek (tkinter, argparse, subprocess, sys, shlex).
      Code erzeugt mit Claude AI, Juni 2026
 
 """
+
 from __future__ import annotations
 
 import argparse
@@ -193,7 +194,7 @@ class ArgparseGUI:
         Wenn True (Default) und ein Subprozess verwendet wird, wird dessen
         stdout/stderr in einem Textfeld im Fenster angezeigt.
     win_geom:
-        Tuple (width, height) of graphics window in pixels    
+        Tuple (width, height) of graphics window in pixels
     """
 
     def __init__(
@@ -204,7 +205,7 @@ class ArgparseGUI:
         title: Optional[str] = None,
         capture_output: bool = True,
         theme: Optional[str] = None,
-        win_geom: Option(tuple) = (350, 725)
+        win_geom: Option(tuple) = (350, 725),
     ):
         self.parser = parser
         self.run_callback = run_callback
@@ -218,7 +219,7 @@ class ArgparseGUI:
         ws = self.root.winfo_screenwidth()  # width of the screen
         hs = self.root.winfo_screenheight()  # height of the screen
         w, h = win_geom
-        x, y = ws//2 - w//2, hs//2 - h//2  # screen center
+        x, y = ws // 2 - w // 2, hs // 2 - h // 2  # screen center
         self.root.geometry('%dx%d+%d+%d' % (w, h, x, y))
         self.root.minsize(350, 350)
 
@@ -523,9 +524,7 @@ class ArgparseGUI:
             return
 
         # Fallback: nur anzeigen
-        self._append_output(
-            "(Kein run_callback und kein script_path gesetzt – " "nur die Argumente wurden ermittelt.)\n"
-        )
+        self._append_output("(Kein run_callback und kein script_path gesetzt – nur die Argumente wurden ermittelt.)\n")
 
     def _run_subprocess(self, cmd: list[str]):
         self._append_output(f"Starte: {' '.join(shlex.quote(c) for c in cmd)}\n")

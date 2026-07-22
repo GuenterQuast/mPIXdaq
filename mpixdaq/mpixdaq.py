@@ -62,7 +62,7 @@ import matplotlib as mpl
 import matplotlib.pyplot as plt
 from matplotlib.widgets import Button
 
-from .mplhelpers import bhist, scatterplot, run_controlGUI
+from .mplhelpers import bhist, scatterplot
 from .mpixhelpers import fileDecoders, shmManager
 
 
@@ -130,7 +130,6 @@ class mpixControl:
 
     # set up Queues
     cmdQ = Queue()  # form commands
-    statQ = Queue()  # for statistics
     tempQ = Queue()  # sensor temperature
 
     # set default device information (assuming a miniPIX EDU is connected)
@@ -144,7 +143,6 @@ class mpixControl:
 
     # define control method
     kbd_control = True
-    gui_control = False
 
     @classmethod
     def keyboard_input(cls):
@@ -209,21 +207,6 @@ class mpixControl:
         if mpixControl.kbd_control:  # start a background thread to check for keyboard input
             self.kbdthread = Thread(name="kbdInput", target=mpixControl.keyboard_input)
             self.kbdthread.start()
-
-        if mpixControl.gui_control:  # start a background process for controlGUI
-            # define dict for up to 8 buttons, key=name, values = [position, command]
-            button_dict = {"End": [5, "E"], "Pause": [3, "P"], "Resume": [2, "R"]}
-            # queue for status text
-            self.guiProc = Process(
-                name="ControlGUI",
-                target=run_controlGUI,
-                args=(mpixControl.cmdQ, "miniPIX DAQ", mpixControl.statQ, button_dict),
-            )
-            self.guiProc.start()
-
-    def __del__(self):
-        if mpixControl.gui_control:
-            self.guiProc.terminate()
 
 
 # - class handling data acquisition from the miniPIX device - - - - - - - - - -
@@ -1365,7 +1348,6 @@ class runDAQ:
         mpixControl.daqSettings['acq_time'] = self.acq_time
         mpixControl.daqSettings['acq_count'] = self.acq_count
         mpixControl.kbd_control = not args.nkbdControl  # keyboard control
-        mpixControl.gui_control = False  # gui control
 
         # - conditional import
         if self.out_filename is not None and '.npy' in self.out_filename:
@@ -1512,7 +1494,7 @@ class runDAQ:
         if self.cluster_filename is not None and self.prescale_analysis != 1:
             print("*!!* analysis prescaling disabled to write cluster information for all frames")
 
-        # set up kbd and/or gui control
+        # set active flag
         mpixControl.runActive.set()
         self.mpixControl = mpixControl()
 
@@ -1697,8 +1679,6 @@ class runDAQ:
                     if mpixControl.kbd_control:
                         print("  Paused - 'R' to resume     ", end="\r", flush=True)
                     self.mpixgraph_fig.canvas.start_event_loop(0.01)  # keep graphics window alive
-                    if mpixControl.gui_control:
-                        mpixControl.statQ.put(stat + " - paused")
                     time.sleep(0.1)
                     continue
 
@@ -1771,8 +1751,6 @@ class runDAQ:
                 stat = f"#{i_frame}  {self.dt_active:.0f}s  {self.fps:0.1f}fps "
                 if mpixControl.kbd_control:
                     print(stat, end='\r')
-                if mpixControl.gui_control:
-                    mpixControl.statQ.put(stat + "  " + self.mpixvis.statistics)
             else:  # normal end of while
                 if not mpixControl.mplActive.is_set():
                     mpixControl.runActive.clear()
@@ -1837,10 +1815,6 @@ class runDAQ:
                 # last chance to drain dataQ
                 while not self.daq.dataQ.empty():
                     _ = self.daq.dataQ.get()
-
-            # terminate control gui if still active
-            if mpixControl.gui_control and self.mpixControl.guiProc.is_alive():
-                self.mpixControl.guiProc.terminate()
 
             # wait for kbd control to exit
             if mpixControl.kbd_control:
