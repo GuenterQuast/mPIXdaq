@@ -855,27 +855,25 @@ class mpixGraphs:
         """call-back for matplotlib 'close_event'"""
         mpixControl.mplActive.clear()
 
-    def on_button_clicked(self, event):
-        # find numer of the clicked button
-        b_idx = self.baxes.index(event.inaxes)
-        # extract sommand
-        cmd = self.button_values[b_idx][1]
-        # toggle visible buttons
-        if cmd == 'P':
-            self.baxes[1].set_visible(False)
-            self.baxes[2].set_visible(True)
-        elif cmd == 'R':
-            self.baxes[1].set_visible(True)
-            self.baxes[2].set_visible(False)
-        # display paused state
-        if not mpixControl.from_file:
-            if cmd == 'P':
-                self.stat_text.set_text("- - paused - -")
-            else:
-                self.stat_text.set_text("")
+    def on_end_button_clicked(self, event):
+        # end
+        mpixControl.cmdQ.put('E')
 
-        # send command via Queue
-        mpixControl.cmdQ.put(cmd)
+    def on_pr_button_clicked(self, event):
+        # pause/resume
+        if mpixControl.mpixActive.is_set():
+            # in active mode, pause
+            mpixControl.cmdQ.put('P')
+            # toggle label of button
+            self.button_pr.label.set_text('Resume')
+            if not mpixControl.from_file:
+                self.stat_text.set_text("- - paused - -")
+        else:
+            # in paused mode, resume
+            mpixControl.cmdQ.put('R')
+            self.button_pr.label.set_text('Pause')
+            if not mpixControl.from_file:
+                self.stat_text.set_text('')
 
     def __init__(self, nover=10, unit='keV', circ=0.5, flat=0.5, acq_time=1.0, prescale=1):
         """initialize figure with pixel image, rate history and two histograms and a scatter plot
@@ -943,20 +941,17 @@ class mpixGraphs:
         self.fig.canvas.mpl_connect('close_event', self.on_mpl_close)
         mpixControl.mplActive.set()
 
-        #  add control buttons
-        self.button_dict = {"End": [2, "E"], "Pause": [1, "P"], "Resume": [0, "R"]}
-        self.button_names = list(self.button_dict.keys())
-        self.button_values = list(self.button_dict.values())
-        self.baxes = []
-        self.buttons = []
-        for i, key in enumerate(self.button_names):
-            self.baxes.append(self.fig.add_axes([0.80 + self.button_values[i][0] * 0.06, 0.9725, 0.05, 0.025]))
-            self.buttons.append(Button(self.baxes[-1], key, color='0.25', hovercolor="0.5"))
-            self.buttons[-1].on_clicked(self.on_button_clicked)
-        self.buttons[0].label.set_color('red')
-        self.buttons[1].label.set_color('wheat')
-        self.buttons[2].label.set_color('wheat')
-        self.baxes[2].set_visible(False)
+        #  add control buttons for end and pause/resume
+        # End button
+        self.ax_button_end = self.fig.add_axes([0.94, 0.9725, 0.05, 0.025])
+        self.button_end = Button(self.ax_button_end, 'END', color='0.25', hovercolor="0.5")
+        self.button_end.on_clicked(self.on_end_button_clicked)
+        self.button_end.label.set_color('red')
+        # pause/resume button
+        self.ax_button_pr = self.fig.add_axes([0.88, 0.9725, 0.05, 0.025])
+        self.button_pr = Button(self.ax_button_pr, 'Pause', color='0.25', hovercolor="0.5")
+        self.button_pr.on_clicked(self.on_pr_button_clicked)
+        self.button_pr.label.set_color('wheat')
 
         # Print header
         # - HW info

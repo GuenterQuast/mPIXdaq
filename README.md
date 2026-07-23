@@ -180,7 +180,7 @@ online analysis and and data archival to disk are shown by typing
 > run_mPIXdaq.py -h
 usage: run_mPIXdaq.py [-h] [-v VERBOSITY] [-o OVERLAY] [-a ACQ_TIME] [-c ACQ_COUNT] [-f FILE] [-w WRITEFILE] [-t TIME]
                       [--circularity_cut CIRCULARITY_CUT] [--flatness_cut FLATNESS_CUT] [-p PRESCALE] [-r READFILE] [-b BADPIXELS]
-                      [--no-kbdControl] [--no-guiControl]
+                      [--no-kbdControl]
 
 Read, analyze & display miniPIX data
 
@@ -209,7 +209,6 @@ options:
   -b BADPIXELS, --badpixels BADPIXELS
                         file with bad pixels to mask
   --no-kbdControl       switch off keyboard control
-  --no-guiControl       switch off gui control
 ```
 
 As an alternative to the command line, a script ``grun_mPIXdaq.py`` is
@@ -568,7 +567,6 @@ The components, classes and scripts of the package are
 
       - class `bhist` for animated bar-graph histograms
       - class `scatterplot` for animated scatter-plots
-      - class `controlGUI` for mouse-based control of the data-acquisition process
 
 - `mpixhelers` for decoding supported file formats and plotting of cluster data
 
